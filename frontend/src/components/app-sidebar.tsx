@@ -1,0 +1,219 @@
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
+} from "@/components/ui/sidebar"
+import {
+  Home,
+  Wallet,
+  PieChart,
+  Goal,
+  Settings,
+  BarChart3,
+  ChevronDown,
+  CreditCard,
+  TrendingUp,
+  Shield,
+  HelpCircle,
+} from "lucide-react"
+import { Link, useLocation } from "react-router-dom"
+import { useState } from "react"
+
+const mainMenuItems = [
+  {
+    title: "Dashboard",
+    icon: Home,
+    subItems: [
+      { title: "Tổng quan", url: "/" },
+      { title: "Phân tích", url: "/analytics" },
+    ],
+  },
+  {
+    title: "Giao dịch",
+    url: "/transactions",
+    icon: Wallet,
+  },
+  {
+    title: "Ngân sách",
+    url: "/budgets",
+    icon: PieChart,
+  },
+  {
+    title: "Mục tiêu",
+    url: "/goals",
+    icon: Goal,
+  },
+  {
+    title: "Báo cáo",
+    url: "/reports",
+    icon: BarChart3,
+  },
+  {
+    title: "Thanh toán",
+    url: "/payments",
+    icon: CreditCard,
+  },
+]
+
+const moreMenuItems = [
+  {
+    title: "Cài đặt",
+    url: "/settings",
+    icon: Settings,
+  },
+  {
+    title: "Đầu tư",
+    url: "/investments",
+    icon: TrendingUp,
+  },
+  {
+    title: "Bảo mật",
+    url: "/security",
+    icon: Shield,
+  },
+  {
+    title: "Trợ giúp",
+    url: "/help",
+    icon: HelpCircle,
+  },
+]
+
+export function AppSidebar() {
+  const location = useLocation()
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({ Dashboard: true })
+
+  const toggleMenu = (title: string) => {
+    setOpenMenus((prev) => ({ ...prev, [title]: !prev[title] }))
+  }
+
+  const isActive = (url?: string) => {
+    if (!url) return false
+    return location.pathname === url
+  }
+
+  const isGroupActive = (item: (typeof mainMenuItems)[0]) => {
+    if (item.subItems) {
+      return item.subItems.some((sub) => location.pathname === sub.url)
+    }
+    return location.pathname === item.url
+  }
+
+  const renderMenuItem = (item: (typeof mainMenuItems)[0]) => {
+    const active = isGroupActive(item)
+
+    if (item.subItems) {
+      return (
+        <SidebarMenuItem key={item.title}>
+          <SidebarMenuButton
+            onClick={() => toggleMenu(item.title)}
+            className={`
+              flex items-center justify-between w-full px-3 py-2 rounded-md text-sm font-medium transition-colors
+              ${active
+                ? "text-violet-600"
+                : "text-slate-600 hover:text-violet-600 hover:bg-slate-50"
+              }
+            `}
+          >
+            <div className="flex items-center gap-3">
+              <item.icon className={`w-4 h-4 ${active ? "text-violet-500" : "text-slate-400"}`} />
+              <span>{item.title}</span>
+            </div>
+            <ChevronDown
+              className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${openMenus[item.title] ? "rotate-180" : ""
+                }`}
+            />
+          </SidebarMenuButton>
+
+          {openMenus[item.title] && (
+            <SidebarMenuSub className="ml-6 mt-1 border-l border-slate-200 pl-0">
+              {item.subItems.map((sub) => (
+                <SidebarMenuSubItem key={sub.title}>
+                  <SidebarMenuSubButton asChild>
+                    <Link
+                      to={sub.url}
+                      className={`
+                        block px-3 py-1.5 text-sm rounded-md transition-colors
+                        ${isActive(sub.url)
+                          ? "text-violet-600 font-medium"
+                          : "text-slate-500 hover:text-violet-600"
+                        }
+                      `}
+                    >
+                      {sub.title}
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              ))}
+            </SidebarMenuSub>
+          )}
+        </SidebarMenuItem>
+      )
+    }
+
+    return (
+      <SidebarMenuItem key={item.title}>
+        <Link to={item.url!} className="w-full">
+          <SidebarMenuButton
+            tooltip={item.title}
+            className={`
+              flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors
+              ${active
+                ? "text-violet-600 bg-violet-50"
+                : "text-slate-600 hover:text-violet-600 hover:bg-slate-50"
+              }
+            `}
+          >
+            <item.icon className={`w-4 h-4 ${active ? "text-violet-500" : "text-slate-400"}`} />
+            <span>{item.title}</span>
+          </SidebarMenuButton>
+        </Link>
+      </SidebarMenuItem>
+    )
+  }
+
+  return (
+    <Sidebar collapsible="none" className="border-r border-slate-200 bg-white sticky top-0 h-screen overflow-y-auto">
+      <SidebarContent className="bg-white text-slate-700">
+        <SidebarGroup>
+          {/* Logo Section */}
+          <div className="flex items-center gap-3 px-4 pt-6 pb-6">
+            <div className="bg-violet-500 text-white p-2 rounded-lg">
+              <Wallet className="w-5 h-5" />
+            </div>
+            <span className="font-bold text-lg tracking-tight text-slate-800">SpendWise</span>
+          </div>
+
+          {/* Main Menu */}
+          <SidebarGroupLabel className="px-4 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
+            Trang
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu className="space-y-0.5 px-2">
+              {mainMenuItems.map((item) => renderMenuItem(item))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* More Section */}
+        <SidebarGroup className="mt-4">
+          <SidebarGroupLabel className="px-4 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
+            Thêm
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu className="space-y-0.5 px-2">
+              {moreMenuItems.map((item) => renderMenuItem(item))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+    </Sidebar>
+  )
+}
