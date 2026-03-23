@@ -30,6 +30,17 @@ spring:
   # Security – JWT is handled in SecurityConfig
   # ==========================================
 
+  # ==========================================
+  # Spring AI – Google Gemini
+  # ==========================================
+  ai:
+    google:
+      genai:
+        api-key: AIzaSyBzZRh0Ab8dtuaXFZOI1dKOg_Yl7TwlzzI
+        chat:
+          options:
+            model: gemini-2.0-flash
+
 server:
   port: 8080
 
