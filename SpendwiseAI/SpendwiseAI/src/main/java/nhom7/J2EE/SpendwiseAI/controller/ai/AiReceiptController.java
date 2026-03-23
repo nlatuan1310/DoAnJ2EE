@@ -12,8 +12,8 @@ import org.springframework.web.multipart.MultipartFile;
  */
 @RestController
 @RequestMapping("/api/ai/receipt")
+@CrossOrigin("*")
 public class AiReceiptController {
-
     private final ReceiptScannerService receiptScannerService;
 
     public AiReceiptController(ReceiptScannerService receiptScannerService) {
