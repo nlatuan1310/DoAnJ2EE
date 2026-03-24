@@ -23,6 +23,7 @@ import {
   TrendingUp,
   Shield,
   HelpCircle,
+  ScanLine,
 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { useState } from "react"
@@ -40,6 +41,11 @@ const mainMenuItems = [
     title: "Giao dịch",
     url: "/transactions",
     icon: Wallet,
+  },
+  {
+    title: "Quét hóa đơn",
+    url: "/receipt-scanner",
+    icon: ScanLine,
   },
   {
     title: "Ngân sách",
