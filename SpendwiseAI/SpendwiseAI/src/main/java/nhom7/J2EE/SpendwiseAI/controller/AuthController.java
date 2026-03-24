@@ -44,6 +44,24 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công"));
     }
 
+    @PostMapping("/quen-mat-khau")
+    public ResponseEntity<Map<String, String>> quenMatKhau(@Valid @RequestBody AuthDTO.QuenMatKhauRequest request) {
+        authService.quenMatKhau(request);
+        return ResponseEntity.ok(Map.of("message", "Mã OTP đã được gửi đến email của bạn"));
+    }
+
+    @PostMapping("/xac-thuc-otp")
+    public ResponseEntity<Map<String, String>> xacThucOtp(@Valid @RequestBody AuthDTO.XacThucOtpRequest request) {
+        authService.xacThucOtp(request);
+        return ResponseEntity.ok(Map.of("message", "Xác thực OTP thành công"));
+    }
+
+    @PostMapping("/dat-lai-mat-khau")
+    public ResponseEntity<Map<String, String>> datLaiMatKhau(@Valid @RequestBody AuthDTO.DatLaiMatKhauRequest request) {
+        authService.datLaiMatKhau(request);
+        return ResponseEntity.ok(Map.of("message", "Đặt lại mật khẩu thành công"));
+    }
+
     @PostMapping("/dang-xuat")
     public ResponseEntity<Map<String, String>> dangXuat() {
         // Với JWT, việc đăng xuất thực chất được xử lý ở Client (xóa token)

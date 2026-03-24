@@ -44,9 +44,46 @@ public class AuthDTO {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
+    public static class XacThucOtpRequest {
+        @NotBlank(message = "Email không được để trống")
+        @Email(message = "Email không hợp lệ")
+        private String email;
+
+        @NotBlank(message = "Mã OTP không được để trống")
+        private String otp;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class DoiMatKhauRequest {
         @NotBlank(message = "Mật khẩu cũ không được để trống")
         private String matKhauCu;
+
+        @NotBlank(message = "Mật khẩu mới không được để trống")
+        @Size(min = 6, message = "Mật khẩu mới phải có ít nhất 6 ký tự")
+        private String matKhauMoi;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class QuenMatKhauRequest {
+        @NotBlank(message = "Email không được để trống")
+        @Email(message = "Email không hợp lệ")
+        private String email;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DatLaiMatKhauRequest {
+        @NotBlank(message = "Email không được để trống")
+        @Email(message = "Email không hợp lệ")
+        private String email;
+
+        @NotBlank(message = "Mã OTP không được để trống")
+        private String otp;
 
         @NotBlank(message = "Mật khẩu mới không được để trống")
         @Size(min = 6, message = "Mật khẩu mới phải có ít nhất 6 ký tự")
