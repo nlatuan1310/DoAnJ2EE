@@ -27,6 +27,10 @@ public class MucTieuTietKiemService {
         this.viTienRepository = viTienRepository;
     }
 
+    public List<MucTieuTietKiem> layTatCa() {
+        return mucTieuRepository.findAll();
+    }
+
     public List<MucTieuTietKiem> layTheoNguoiDung(UUID nguoiDungId) {
         return mucTieuRepository.findByNguoiDungId(nguoiDungId);
     }
@@ -37,10 +41,14 @@ public class MucTieuTietKiemService {
     }
 
     public MucTieuTietKiem tao(UUID nguoiDungId, UUID viId, MucTieuTietKiem mucTieu) {
-        mucTieu.setNguoiDung(nguoiDungRepository.findById(nguoiDungId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng")));
-        mucTieu.setViTien(viTienRepository.findById(viId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy ví")));
+        NguoiDung nd = nguoiDungRepository.findById(nguoiDungId)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+        
+        ViTien vi = viTienRepository.findById(viId)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy ví"));
+
+        mucTieu.setNguoiDung(nd);
+        mucTieu.setViTien(vi);
         if (mucTieu.getSoTienHienTai() == null) mucTieu.setSoTienHienTai(BigDecimal.ZERO);
         return mucTieuRepository.save(mucTieu);
     }
@@ -62,7 +70,15 @@ public class MucTieuTietKiemService {
         return dongGopRepository.findByMucTieuId(mucTieuId);
     }
 
+    @Transactional
     public void xoa(UUID id) {
+        // Xoá các đóng góp (lịch sử nạp tiền) trước để không bị lỗi Foreign Key Constraint
+        List<DongGopTietKiem> dongGops = dongGopRepository.findByMucTieuId(id);
+        if (dongGops != null && !dongGops.isEmpty()) {
+            dongGopRepository.deleteAll(dongGops);
+        }
+        
+        // Sau đó xoá mục tiêu
         mucTieuRepository.deleteById(id);
     }
 }

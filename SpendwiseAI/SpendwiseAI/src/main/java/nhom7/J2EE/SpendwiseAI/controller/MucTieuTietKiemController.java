@@ -20,6 +20,11 @@ public class MucTieuTietKiemController {
         this.mucTieuService = mucTieuService;
     }
 
+    @GetMapping
+    public ResponseEntity<List<MucTieuTietKiem>> layTatCa() {
+        return ResponseEntity.ok(mucTieuService.layTatCa());
+    }
+
     @GetMapping("/nguoi-dung/{nguoiDungId}")
     public ResponseEntity<List<MucTieuTietKiem>> layTheoNguoiDung(@PathVariable UUID nguoiDungId) {
         return ResponseEntity.ok(mucTieuService.layTheoNguoiDung(nguoiDungId));
