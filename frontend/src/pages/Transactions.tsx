@@ -38,8 +38,9 @@ interface GiaoDich {
   viTien?: { id: string; tenVi: string };
 }
 
+import { getCurrentUserId } from "../services/api";
+
 /* ═══════ CONFIG ═══════ */
-const USER_ID = "00000000-0000-0000-0000-000000000000"; // bypass đăng nhập để test
 const PAGE_SIZE = 10;
 
 /* ═══════ HELPERS ═══════ */
@@ -93,9 +94,10 @@ export default function Transactions() {
       setError(null);
       try {
         // Song song fetch giao dịch + danh mục
+        const currentUserId = getCurrentUserId();
         const [gdRes, dmRes] = await Promise.all([
-          fetch(`/api/giao-dich/nguoi-dung/${USER_ID}`),
-          fetch(`/api/danh-muc/nguoi-dung/${USER_ID}`),
+          fetch(`/api/giao-dich/nguoi-dung/${currentUserId}`),
+          fetch(`/api/danh-muc/nguoi-dung/${currentUserId}`),
         ]);
 
         // Xử lý giao dịch
