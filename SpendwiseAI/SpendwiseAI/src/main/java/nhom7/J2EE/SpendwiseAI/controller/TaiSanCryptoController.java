@@ -9,6 +9,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/tai-san-crypto")
+@CrossOrigin("*")
 public class TaiSanCryptoController {
 
     private final TaiSanCryptoRepository taiSanCryptoRepository;

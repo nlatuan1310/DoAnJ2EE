@@ -74,6 +74,16 @@ const formatNumber = (n: number, decimals = 2) =>
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
 
+const formatVnCurrencyInput = (val: string) => {
+  const numericVal = val.replace(/[^0-9]/g, "");
+  if (!numericVal) return "";
+  return new Intl.NumberFormat("vi-VN").format(parseInt(numericVal, 10));
+};
+
+const parseVnCurrency = (val: string) => {
+  return parseFloat(val.replace(/\./g, "")) || 0;
+};
+
 export default function Investments() {
   const [portfolio, setPortfolio] = useState<DanhMucCrypto[]>([]);
   const [availableAssets, setAvailableAssets] = useState<TaiSanCrypto[]>([]);
@@ -137,6 +147,44 @@ export default function Investments() {
   };
 
   // ========================
+  //  AUTO-FETCH LIVE PRICE
+  // ========================
+  const fetchLivePrice = async (kyHieu: string): Promise<number> => {
+    try {
+      const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${kyHieu.toUpperCase()}USDT`);
+      if (!res.ok) return 0;
+      const data = await res.json();
+      const usdPrice = parseFloat(data.price);
+      return Math.round(usdPrice * 25400); // Tỷ giá tham khảo 1 USD = 25,400 VNĐ
+    } catch {
+      return 0; // Fallback nếu lỗi (mất mạng, coin không có trên sàn Binance)
+    }
+  };
+
+  // Tự động điền giá khi chọn coin ở Modal Thêm Mới
+  useEffect(() => {
+    if (!addCoinForm.taiSanId || !isAddCoinOpen) return;
+    const coin = availableAssets.find(c => c.id.toString() === addCoinForm.taiSanId);
+    if (!coin) return;
+
+    fetchLivePrice(coin.kyHieu).then(price => {
+      if (price > 0) {
+        setAddCoinForm(prev => ({ ...prev, giaMuaTrungBinh: formatVnCurrencyInput(price.toString()) }));
+      }
+    });
+  }, [addCoinForm.taiSanId, isAddCoinOpen, availableAssets]);
+
+  // Tự động điền giá hiện tại khi mở Modal Ghi Lệnh
+  useEffect(() => {
+    if (!selectedCoin || !isTxModalOpen) return;
+    fetchLivePrice(selectedCoin.taiSan.kyHieu).then(price => {
+      if (price > 0) {
+        setTxForm(prev => ({ ...prev, gia: formatVnCurrencyInput(price.toString()) }));
+      }
+    });
+  }, [selectedCoin, isTxModalOpen]);
+
+  // ========================
   //  ADD COIN TO PORTFOLIO
   // ========================
   const handleAddCoin = async () => {
@@ -151,7 +199,7 @@ export default function Investments() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             soLuong: parseFloat(addCoinForm.soLuong) || 0,
-            giaMuaTrungBinh: parseFloat(addCoinForm.giaMuaTrungBinh) || 0,
+            giaMuaTrungBinh: parseVnCurrency(addCoinForm.giaMuaTrungBinh),
             diaChiVi: addCoinForm.diaChiVi || "",
           }),
         }
@@ -211,7 +259,7 @@ export default function Investments() {
           body: JSON.stringify({
             loai: txForm.loai,
             soLuong: parseFloat(txForm.soLuong),
-            gia: parseFloat(txForm.gia),
+            gia: parseVnCurrency(txForm.gia),
             ngayGiaoDich: txForm.ngayGiaoDich + ":00",
           }),
         }
@@ -449,10 +497,10 @@ export default function Investments() {
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Giá mua TB (VNĐ)</label>
                   <Input
-                    type="number" step="any"
+                    type="text"
                     placeholder="0"
                     value={addCoinForm.giaMuaTrungBinh}
-                    onChange={(e) => setAddCoinForm({ ...addCoinForm, giaMuaTrungBinh: e.target.value })}
+                    onChange={(e) => setAddCoinForm({ ...addCoinForm, giaMuaTrungBinh: formatVnCurrencyInput(e.target.value) })}
                     className="h-11 rounded-xl bg-slate-50 border-none font-bold text-slate-800"
                   />
                 </div>
@@ -540,9 +588,9 @@ export default function Investments() {
                   </div>
                   <div className="space-y-1">
                     <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-1">Giá (VNĐ)</label>
-                    <Input type="number" step="any" placeholder="0"
+                    <Input type="text" placeholder="0"
                       value={txForm.gia}
-                      onChange={(e) => setTxForm({ ...txForm, gia: e.target.value })}
+                      onChange={(e) => setTxForm({ ...txForm, gia: formatVnCurrencyInput(e.target.value) })}
                       className="h-11 rounded-xl bg-white border-slate-100 font-bold text-slate-800"
                     />
                   </div>

@@ -11,6 +11,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/crypto")
+@CrossOrigin("*")
 public class CryptoController {
 
     private final CryptoService cryptoService;
