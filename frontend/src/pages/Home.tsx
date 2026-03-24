@@ -1,10 +1,11 @@
+import { useState } from "react"
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle
 } from "@/components/ui/card"
-import { MoreHorizontal, Calendar } from "lucide-react"
+import { MoreHorizontal, Calendar, BellRing } from "lucide-react"
 
 import {
   Bar,
@@ -85,6 +86,12 @@ const channelColors: Record<string, string> = {
 }
 
 export default function Home() {
+  const [alerts] = useState<any[]>([
+    { type: 'Warning', message: 'Ngân sách tháng 3 đã dùng 75%. Hãy cân nhắc chi tiêu!' },
+    { type: 'Info', message: 'Hóa đơn Netflix sẽ hết hạn sau 2 ngày nữa.' },
+    { type: 'Danger', message: 'Phát hiện giao dịch 5.000.000đ bất thường tại Store XYZ.' }
+  ])
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
       
@@ -108,6 +115,20 @@ export default function Home() {
             Add View
           </button>
         </div>
+      </div>
+
+      {/* Chèn vào đây nè Đạt! */}
+      <div className="mb-6 space-y-3">
+          {alerts.map((alert, index) => (
+              <div key={index} className={`flex items-center gap-3 p-4 rounded-lg border-l-4 ${
+                  alert.type === 'Danger' ? 'bg-red-50 border-red-500 text-red-700' : 
+                  alert.type === 'Warning' ? 'bg-amber-50 border-amber-500 text-amber-700' : 
+                  'bg-blue-50 border-blue-500 text-blue-700'
+              }`}>
+                  <BellRing className="w-5 h-5" />
+                  <span className="font-medium text-sm">{alert.message}</span>
+              </div>
+          ))}
       </div>
 
       {/* 3 KPI Cards — Top Row */}

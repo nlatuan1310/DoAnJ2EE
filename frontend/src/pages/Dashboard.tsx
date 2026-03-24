@@ -18,7 +18,7 @@ import {
   RadialBar,
   Legend,
 } from "recharts"
-import { AlertTriangle, TrendingUp, Wallet, Target, CalendarDays } from "lucide-react"
+import { AlertTriangle, TrendingUp, Wallet, Target, CalendarDays, AlertOctagon, BellRing } from "lucide-react"
 
 // --- Types ---
 interface ForecastData {
@@ -58,6 +58,10 @@ export default function Dashboard() {
     message: "Cảnh báo: Bạn có thể vượt ngân sách!",
   })
   const [subs, setSubs] = useState<any[]>([])
+  const [alerts, setAlerts] = useState<any[]>([
+    { type: 'Warning', message: 'Cảnh báo: Bạn đã dùng 75% ngân sách tháng này!' },
+    { type: 'Info', message: 'Nhắc hẹn: Hóa đơn Netflix sẽ đến hạn sau 2 ngày.' }
+  ])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -72,7 +76,12 @@ export default function Dashboard() {
     fetch("http://localhost:8080/api/smart/subscriptions")
       .then(res => res.json())
       .then(data => setSubs(data))
-      .catch(() => {})
+      .catch(() => { })
+
+    fetch("http://localhost:8080/api/smart/alerts")
+      .then(res => res.json())
+      .then(data => setAlerts(data))
+      .catch(() => { })
   }, [])
 
   const percent = Math.round((data.currentSpent / data.budgetLimit) * 100)
@@ -100,6 +109,19 @@ export default function Dashboard() {
             <span>Cảnh báo vượt ngân sách!</span>
           </div>
         )}
+      </div>
+
+      {/* Nhiệm vụ 10: Smart Alerts Section */}
+      <div className="mb-6 space-y-3">
+        {alerts.map((alert, index) => (
+          <div key={index} className={`flex items-center gap-3 p-4 rounded-lg border-l-4 animate-in slide-in-from-top-2 ${alert.type === 'Danger' ? 'bg-red-50 border-red-500 text-red-700' :
+            alert.type === 'Warning' ? 'bg-amber-50 border-amber-500 text-amber-700' :
+              'bg-blue-50 border-blue-500 text-blue-700'
+            }`}>
+            {alert.type === 'Danger' ? <AlertOctagon className="w-5 h-5" /> : <BellRing className="w-5 h-5" />}
+            <span className="font-medium text-sm">{alert.message}</span>
+          </div>
+        ))}
       </div>
 
       {/* KPI Cards */}
@@ -287,34 +309,33 @@ export default function Dashboard() {
 
       {/* Subscription List */}
       <div className="mt-8">
-          <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <CalendarDays className="w-6 h-6 text-indigo-500" />
-              Quản lý Hóa đơn định kỳ
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {subs.map((sub) => (
-                  <Card key={sub.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-5">
-                          <div className="flex justify-between items-start mb-4">
-                              <div className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
-                                  sub.daysLeft <= 2 ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-500"
-                              }`}>
-                                  {sub.status}
-                              </div>
-                              <span className="text-xs text-slate-400">Còn {sub.daysLeft} ngày</span>
-                          </div>
-                          <h3 className="font-bold text-slate-700 text-lg">{sub.name}</h3>
-                          <p className="text-2xl font-black text-indigo-600 my-2">{fmtVND(sub.price)}</p>
-                          <div className="flex items-center justify-between mt-4 pt-4 border-t border-dashed border-slate-200">
-                              <span className="text-xs text-slate-500">Hạn: {sub.dueDate}</span>
-                              <button className="text-xs font-semibold text-indigo-500 hover:underline">
-                                  Nhắc tôi 🔔
-                              </button>
-                          </div>
-                      </CardContent>
-                  </Card>
-              ))}
-          </div>
+        <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+          <CalendarDays className="w-6 h-6 text-indigo-500" />
+          Quản lý Hóa đơn định kỳ
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {subs.map((sub) => (
+            <Card key={sub.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-5">
+                <div className="flex justify-between items-start mb-4">
+                  <div className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${sub.daysLeft <= 2 ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-500"
+                    }`}>
+                    {sub.status}
+                  </div>
+                  <span className="text-xs text-slate-400">Còn {sub.daysLeft} ngày</span>
+                </div>
+                <h3 className="font-bold text-slate-700 text-lg">{sub.name}</h3>
+                <p className="text-2xl font-black text-indigo-600 my-2">{fmtVND(sub.price)}</p>
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-dashed border-slate-200">
+                  <span className="text-xs text-slate-500">Hạn: {sub.dueDate}</span>
+                  <button className="text-xs font-semibold text-indigo-500 hover:underline">
+                    Nhắc tôi 🔔
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   )
