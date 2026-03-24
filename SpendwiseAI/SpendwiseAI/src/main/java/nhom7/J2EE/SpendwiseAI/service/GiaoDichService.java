@@ -2,6 +2,10 @@ package nhom7.J2EE.SpendwiseAI.service;
 
 import nhom7.J2EE.SpendwiseAI.entity.*;
 import nhom7.J2EE.SpendwiseAI.repository.*;
+import nhom7.J2EE.SpendwiseAI.specification.GiaoDichSpecification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -84,5 +88,47 @@ public class GiaoDichService {
         }
         viTienRepository.save(vi);
         giaoDichRepository.deleteById(id);
+    }
+
+    /**
+     * Tìm kiếm nâng cao: kết hợp nhiều điều kiện lọc + phân trang.
+     */
+    public Page<GiaoDich> timKiemNangCao(UUID nguoiDungId,
+                                          String keyword,
+                                          String loai,
+                                          LocalDateTime tuNgay,
+                                          LocalDateTime denNgay,
+                                          BigDecimal tuSoTien,
+                                          BigDecimal denSoTien,
+                                          Integer danhMucId,
+                                          Pageable pageable) {
+
+        Specification<GiaoDich> spec = Specification.where(
+                GiaoDichSpecification.thuocNguoiDung(nguoiDungId)
+        );
+
+        if (keyword != null && !keyword.isBlank()) {
+            spec = spec.and(GiaoDichSpecification.chứaTuKhoa(keyword));
+        }
+        if (loai != null && !loai.isBlank()) {
+            spec = spec.and(GiaoDichSpecification.theoLoai(loai));
+        }
+        if (tuNgay != null) {
+            spec = spec.and(GiaoDichSpecification.tuNgay(tuNgay));
+        }
+        if (denNgay != null) {
+            spec = spec.and(GiaoDichSpecification.denNgay(denNgay));
+        }
+        if (tuSoTien != null) {
+            spec = spec.and(GiaoDichSpecification.tuSoTien(tuSoTien));
+        }
+        if (denSoTien != null) {
+            spec = spec.and(GiaoDichSpecification.denSoTien(denSoTien));
+        }
+        if (danhMucId != null) {
+            spec = spec.and(GiaoDichSpecification.theoDanhMuc(danhMucId));
+        }
+
+        return giaoDichRepository.findAll(spec, pageable);
     }
 }
