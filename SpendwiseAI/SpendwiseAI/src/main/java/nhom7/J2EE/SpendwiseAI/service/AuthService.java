@@ -93,4 +93,33 @@ public class AuthService {
                 .vaiTro(nguoiDung.getVaiTro())
                 .build();
     }
+
+    public AuthDTO.NguoiDungResponse getMe(String email) {
+        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+
+        return AuthDTO.NguoiDungResponse.builder()
+                .id(nguoiDung.getId())
+                .email(nguoiDung.getEmail())
+                .hoVaTen(nguoiDung.getHoVaTen())
+                .dienThoai(nguoiDung.getDienThoai())
+                .vaiTro(nguoiDung.getVaiTro())
+                .anhDaiDien(nguoiDung.getAnhDaiDien())
+                .tienTe(nguoiDung.getTienTe())
+                .build();
+    }
+
+    public void doiMatKhau(String email, AuthDTO.DoiMatKhauRequest request) {
+        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+
+        // Kiểm tra mật khẩu cũ
+        if (!passwordEncoder.matches(request.getMatKhauCu(), nguoiDung.getMatKhauHash())) {
+            throw new RuntimeException("Mật khẩu cũ không đúng");
+        }
+
+        // Cập nhật mật khẩu mới
+        nguoiDung.setMatKhauHash(passwordEncoder.encode(request.getMatKhauMoi()));
+        nguoiDungRepository.save(nguoiDung);
+    }
 }
