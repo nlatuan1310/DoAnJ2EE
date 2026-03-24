@@ -37,6 +37,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/ai/**").permitAll() // Tạm thời mở để test giao diện
+                        .requestMatchers("/api/smart/**").permitAll() // Smart Dashboard - mở để test
                         .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
                         // Admin endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
