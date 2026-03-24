@@ -24,6 +24,7 @@ import {
   Shield,
   HelpCircle,
   ScanLine,
+  LayoutGrid,
 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { useState } from "react"
@@ -46,6 +47,11 @@ const mainMenuItems = [
     title: "Quét hóa đơn",
     url: "/receipt-scanner",
     icon: ScanLine,
+  },
+  {
+    title: "Danh mục & Thẻ",
+    url: "/categories",
+    icon: LayoutGrid,
   },
   {
     title: "Ngân sách",
@@ -142,7 +148,7 @@ export function AppSidebar() {
             <SidebarMenuSub className="ml-6 mt-1 border-l border-slate-200 pl-0">
               {item.subItems.map((sub) => (
                 <SidebarMenuSubItem key={sub.title}>
-                  <SidebarMenuSubButton asChild>
+                  <SidebarMenuSubButton>
                     <Link
                       to={sub.url}
                       className={`
