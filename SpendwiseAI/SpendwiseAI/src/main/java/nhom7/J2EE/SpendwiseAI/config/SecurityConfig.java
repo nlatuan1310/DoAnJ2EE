@@ -34,6 +34,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Cho phép truy cập không cần token
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/ai/**").permitAll() // Tạm thời mở để test giao diện
+                        .requestMatchers("/api/crypto/**").permitAll() // Quản lý Crypto - mở để test giao diện
+                        .requestMatchers("/api/tai-san-crypto/**").permitAll() // Danh sách coin - mở để giao diện truy cập
                         .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
                         // Admin endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
