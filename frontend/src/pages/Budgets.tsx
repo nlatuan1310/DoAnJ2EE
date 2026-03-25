@@ -1,32 +1,16 @@
 import { useState, useEffect } from "react";
 import { 
   Plus, 
-  Search, 
-  Filter, 
-  MoreVertical, 
   Edit2, 
   Trash2, 
-  PieChart, 
-  Wallet as WalletIcon, 
-  Calendar, 
-  AlertCircle,
-  CheckCircle2,
-  ChevronRight,
-  ArrowUpRight,
-  LayoutGrid,
-  List as ListIcon,
-  TrendingDown,
-  Target,
-  RefreshCw,
-  X,
-  Info
+  Info,
+  X
 } from "lucide-react";
 import { 
   Card, 
   CardContent, 
   CardHeader, 
-  CardTitle,
-  CardDescription
+  CardTitle
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,7 +52,6 @@ export default function Budgets() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   // Form Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -91,9 +74,10 @@ export default function Budgets() {
       const start = new Date(formData.ngayBatDau);
       const end = new Date(start);
       if (formData.chuKy === 'weekly') {
-        end.setDate(start.getDate() + 7);
+        end.setDate(start.getDate() + 6); // 7 days inclusive
       } else if (formData.chuKy === 'monthly') {
         end.setMonth(start.getMonth() + 1);
+        end.setDate(0); // Last day of the month
       }
       setFormData(prev => ({ ...prev, ngayKetThuc: end.toISOString().split('T')[0] }));
     }
@@ -118,12 +102,14 @@ export default function Budgets() {
 
       const enrichedBudgets = budgetsData.map((b: NganSach) => {
         const spent = txData
-          .filter((tx: any) => 
-            tx.loai === "expense" && 
-            tx.danhMuc?.id === b.danhMuc?.id &&
-            new Date(tx.ngayGiaoDich) >= new Date(b.ngayBatDau) &&
-            new Date(tx.ngayGiaoDich) <= new Date(b.ngayKetThuc)
-          )
+          .filter((tx: any) => {
+            const txDateStr = new Date(tx.ngayGiaoDich).toISOString().split('T')[0];
+            const isCorrectCategory = tx.danhMuc?.id === b.danhMuc?.id;
+            const isInDateRange = txDateStr >= b.ngayBatDau && txDateStr <= b.ngayKetThuc;
+            const isCorrectWallet = b.viTien?.id ? tx.viTien?.id === b.viTien.id : true;
+            
+            return tx.loai === "expense" && isCorrectCategory && isInDateRange && isCorrectWallet;
+          })
           .reduce((sum: number, tx: any) => sum + tx.soTien, 0);
         return { ...b, spent };
       });
@@ -220,6 +206,16 @@ export default function Budgets() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto animate-in fade-in duration-500 space-y-8">
       
+      {/* Notifications */}
+      {(success || error) && (
+        <div className={`fixed top-6 right-6 z-[9999] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl text-white font-bold text-sm transition-all animate-in slide-in-from-right
+          ${success ? "bg-emerald-500" : "bg-rose-500"}`}>
+          {success || error}
+          <button onClick={() => { setSuccess(null); setError(null); }} className="hover:opacity-70 transition-opacity">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
       {/* Header Section */}
       <div className="relative overflow-hidden rounded-[2rem] bg-indigo-600 p-8 text-white shadow-xl shadow-indigo-100">
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
@@ -261,7 +257,7 @@ export default function Budgets() {
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-slate-800 tracking-tight">Chi tiết ngân sách</h2>
           <div className="flex items-center bg-slate-100 p-1 rounded-xl">
-             <Button variant="white" size="sm" className="rounded-lg shadow-sm text-xs font-bold px-4">Lưới</Button>
+             <Button variant="outline" size="sm" className="rounded-lg shadow-sm text-xs font-bold px-4">Lưới</Button>
              <Button variant="ghost" size="sm" className="rounded-lg text-xs font-bold text-slate-400 px-4">Danh sách</Button>
           </div>
         </div>
