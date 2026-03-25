@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 import Home from "./pages/Home";
+import Investments from "./pages/Investments";
 import ReceiptScanner from "./pages/ReceiptScanner";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -9,6 +10,17 @@ import { AuthProvider } from "./hooks/useAuth";
 
 function App() {
   return (
+<<<<<<< HEAD
+    <BrowserRouter>
+      <Routes>
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/investments" element={<Investments />} />
+          <Route path="/receipt-scanner" element={<ReceiptScanner />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+=======
     <AuthProvider>
       <BrowserRouter>
         <Routes>
@@ -22,6 +34,7 @@ function App() {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+>>>>>>> develop
   )
 }
 
