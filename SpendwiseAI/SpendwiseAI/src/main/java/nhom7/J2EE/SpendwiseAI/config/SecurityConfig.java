@@ -37,7 +37,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/ai/**").permitAll() // Tạm thời mở để test giao diện
-                        .requestMatchers("/api/smart/**").permitAll() // Smart Dashboard - mở để test
+                        .requestMatchers("/api/ai/**").permitAll() // Tạm thời mở để test giao diện
+                        .requestMatchers("/api/crypto/**").permitAll() // Quản lý Crypto - mở để test giao diện
+                        .requestMatchers("/api/tai-san-crypto/**").permitAll() // Danh sách coin - mở để giao diện truy cập
                         .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
                         // Admin endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
@@ -58,5 +60,17 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
+        org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
+        configuration.setAllowedOrigins(java.util.List.of("http://localhost:5173")); // URL của React Frontend
+        configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type", "Accept"));
+        configuration.setAllowCredentials(true);
+        org.springframework.web.cors.UrlBasedCorsConfigurationSource source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }
