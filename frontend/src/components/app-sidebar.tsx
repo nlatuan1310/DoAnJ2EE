@@ -24,6 +24,7 @@ import {
   Shield,
   HelpCircle,
   ScanLine,
+  LayoutGrid,
 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { useState } from "react"
@@ -42,6 +43,7 @@ const mainMenuItems: MenuItem[] = [
     subItems: [
       { title: "Tổng quan", url: "/" },
       { title: "Phân tích", url: "/analytics" },
+      { title: "Smart Dashboard", url: "/smart-dashboard" },
     ],
   },
   {
@@ -53,6 +55,11 @@ const mainMenuItems: MenuItem[] = [
     title: "Quét hóa đơn",
     url: "/receipt-scanner",
     icon: ScanLine,
+  },
+  {
+    title: "Danh mục & Thẻ",
+    url: "/categories",
+    icon: LayoutGrid,
   },
   {
     title: "Ngân sách",
