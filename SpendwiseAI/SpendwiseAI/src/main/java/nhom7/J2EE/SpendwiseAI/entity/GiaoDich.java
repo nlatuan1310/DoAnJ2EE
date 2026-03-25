@@ -39,6 +39,10 @@ public class GiaoDich {
     @Column(name = "mo_ta", columnDefinition = "TEXT")
     private String moTa;
 
+    @Builder.Default
+    @Column(name = "ai_categorized")
+    private Boolean aiCategorized = false;
+
     @Column(name = "ngay_giao_dich")
     private LocalDateTime ngayGiaoDich;
 

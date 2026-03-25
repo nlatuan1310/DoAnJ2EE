@@ -18,6 +18,10 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   AlertCircle,
+  Plus,
+  X,
+  Sparkles,
+  Bot,
 } from "lucide-react";
 
 /* ═══════ TYPES ═══════ */
@@ -27,6 +31,11 @@ interface DanhMuc {
   loai?: string;
 }
 
+interface ViTien {
+  id: string;
+  tenVi: string;
+}
+
 interface GiaoDich {
   id: string;
   soTien: number;
@@ -34,11 +43,12 @@ interface GiaoDich {
   moTa: string;
   ngayGiaoDich: string;
   ngayTao: string;
+  aiCategorized?: boolean;
   danhMuc?: DanhMuc;
   viTien?: { id: string; tenVi: string };
 }
 
-import api, { getCurrentUserId } from "../services/api";
+import api, { getCurrentUserId, autoCategorizeApi } from "../services/api";
 
 /* ═══════ CONFIG ═══════ */
 const PAGE_SIZE = 10;
@@ -63,6 +73,7 @@ export default function Transactions() {
   /* --- raw data from API --- */
   const [allGiaoDich, setAllGiaoDich] = useState<GiaoDich[]>([]);
   const [categories, setCategories] = useState<DanhMuc[]>([]);
+  const [wallets, setWallets] = useState<ViTien[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -78,6 +89,25 @@ export default function Transactions() {
   /* --- pagination state --- */
   const [page, setPage] = useState(0);
 
+  /* --- create transaction modal state --- */
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newGD, setNewGD] = useState({
+    moTa: "",
+    soTien: "",
+    loai: "expense",
+    ngayGiaoDich: new Date().toISOString().slice(0, 16),
+    viId: "",
+    danhMucId: "",
+  });
+  const [aiSuggestion, setAiSuggestion] = useState<{
+    danhMucId: number;
+    tenDanhMuc: string;
+    doTinCay: number;
+  } | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
   /* ──── 1) Debounce keyword 500ms ──── */
   useEffect(() => {
     const t = setTimeout(() => {
@@ -88,38 +118,36 @@ export default function Transactions() {
   }, [keyword]);
 
   /* ──── 2) Fetch data từ Backend (1 lần) ──── */
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // Song song fetch giao dịch + danh mục
-        const currentUserId = getCurrentUserId();
-        const [gdRes, dmRes] = await Promise.all([
-          api.get(`/giao-dich/nguoi-dung/${currentUserId}`),
-          api.get(`/danh-muc/nguoi-dung/${currentUserId}`),
-        ]);
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const currentUserId = getCurrentUserId();
+      const [gdRes, dmRes, viRes] = await Promise.all([
+        api.get(`/giao-dich/nguoi-dung/${currentUserId}`),
+        api.get(`/danh-muc/nguoi-dung/${currentUserId}`),
+        api.get(`/vi-tien/nguoi-dung/${currentUserId}`),
+      ]);
 
-        // Xử lý giao dịch
-        setAllGiaoDich(Array.isArray(gdRes.data) ? gdRes.data : []);
-        
-        // Xử lý danh mục
-        setCategories(Array.isArray(dmRes.data) ? dmRes.data : []);
-      } catch (e) {
-        console.error("Lỗi khi tải dữ liệu:", e);
-        setError("Không thể kết nối đến Backend. Hãy kiểm tra server đang chạy.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+      setAllGiaoDich(Array.isArray(gdRes.data) ? gdRes.data : []);
+      setCategories(Array.isArray(dmRes.data) ? dmRes.data : []);
+      setWallets(Array.isArray(viRes.data) ? viRes.data : []);
+    } catch (e) {
+      console.error("Lỗi khi tải dữ liệu:", e);
+      setError("Không thể kết nối đến Backend. Hãy kiểm tra server đang chạy.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
   }, []);
 
   /* ──── 3) Lọc client-side (Advanced Search) ──── */
   const filtered = useMemo(() => {
     let list = [...allGiaoDich];
 
-    // Lọc theo từ khóa (debounced): tìm trong moTa, tenDanhMuc
     if (debouncedKw.trim()) {
       const kw = debouncedKw.toLowerCase().trim();
       list = list.filter(
@@ -129,17 +157,14 @@ export default function Transactions() {
       );
     }
 
-    // Lọc theo loại (income / expense)
     if (loai !== "all") {
       list = list.filter((gd) => gd.loai === loai);
     }
 
-    // Lọc theo danh mục
     if (danhMucId !== "all") {
       list = list.filter((gd) => gd.danhMuc?.id === Number(danhMucId));
     }
 
-    // Lọc theo khoảng ngày
     if (tuNgay) {
       const from = new Date(tuNgay + "T00:00:00");
       list = list.filter((gd) => new Date(gd.ngayGiaoDich) >= from);
@@ -149,7 +174,6 @@ export default function Transactions() {
       list = list.filter((gd) => new Date(gd.ngayGiaoDich) <= to);
     }
 
-    // Sắp xếp mới nhất trước
     list.sort(
       (a, b) =>
         new Date(b.ngayGiaoDich).getTime() - new Date(a.ngayGiaoDich).getTime()
@@ -162,7 +186,6 @@ export default function Transactions() {
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
-  /* Reset page khi bộ lọc thay đổi */
   const changeFilter = (setter: (v: string) => void, value: string) => {
     setter(value);
     setPage(0);
@@ -177,15 +200,118 @@ export default function Transactions() {
     setPage(0);
   };
 
+  /* ──── 5) AI Suggest Category ──── */
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  const handleAiSuggest = async () => {
+    if (!newGD.moTa.trim()) {
+      setAiError("Vui lòng nhập mô tả giao dịch trước khi gợi ý AI");
+      return;
+    }
+    setAiLoading(true);
+    setAiSuggestion(null);
+    setAiError(null);
+    try {
+      const res = await autoCategorizeApi.suggestCategory({
+        moTa: newGD.moTa,
+        loai: newGD.loai,
+      });
+      if (res.status === 200 && res.data) {
+        setAiSuggestion(res.data);
+        // Auto-select danh mục
+        if (res.data.danhMucId) {
+          setNewGD((prev) => ({ ...prev, danhMucId: String(res.data.danhMucId) }));
+        }
+      } else {
+        // 204 No Content — AI không tìm được danh mục phù hợp
+        setAiError("AI không thể phân loại. Hãy kiểm tra bạn đã tạo danh mục chưa (vào trang Danh mục).");
+      }
+    } catch (e: any) {
+      console.error("AI suggest error:", e);
+      const msg = e.response?.data?.message || e.message || "Lỗi kết nối";
+      setAiError(`AI gợi ý thất bại: ${msg}`);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  /* ──── 6) Create Transaction ──── */
+  const handleCreateTransaction = async () => {
+    setCreateError(null);
+    if (!newGD.moTa.trim()) {
+      setCreateError("Vui lòng nhập mô tả giao dịch");
+      return;
+    }
+    if (!newGD.soTien || Number(newGD.soTien) <= 0) {
+      setCreateError("Vui lòng nhập số tiền hợp lệ");
+      return;
+    }
+    const viId = newGD.viId || (wallets.length > 0 ? wallets[0].id : "");
+    if (!viId) {
+      setCreateError("Bạn chưa có ví nào. Hãy tạo ví trước.");
+      return;
+    }
+
+    setCreateLoading(true);
+    try {
+      const body = {
+        soTien: Number(newGD.soTien),
+        loai: newGD.loai,
+        moTa: newGD.moTa,
+        ngayGiaoDich: newGD.ngayGiaoDich,
+      };
+
+      if (newGD.danhMucId) {
+        // Tạo giao dịch thông thường (user đã chọn danh mục)
+        const uid = getCurrentUserId();
+        await api.post(
+          `/giao-dich?nguoiDungId=${uid}&viId=${viId}&danhMucId=${newGD.danhMucId}`,
+          body
+        );
+      } else {
+        // Tạo giao dịch với auto-categorize (AI chọn danh mục)
+        await autoCategorizeApi.createWithAutoCategory(viId, body);
+      }
+
+      // Reset form & refresh data
+      setShowCreateModal(false);
+      setNewGD({
+        moTa: "",
+        soTien: "",
+        loai: "expense",
+        ngayGiaoDich: new Date().toISOString().slice(0, 16),
+        viId: "",
+        danhMucId: "",
+      });
+      setAiSuggestion(null);
+      await fetchData();
+    } catch (e: any) {
+      console.error("Create error:", e);
+      setCreateError(e.response?.data?.message || "Không thể tạo giao dịch. Vui lòng thử lại.");
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
   /* ═══════════════ RENDER ═══════════════ */
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Giao dịch</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Tra cứu, lọc và quản lý toàn bộ giao dịch thu chi của bạn
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Giao dịch</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Tra cứu, lọc và quản lý toàn bộ giao dịch thu chi của bạn
+          </p>
+        </div>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700
+                     text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+        >
+          <Plus className="w-4 h-4" />
+          Thêm giao dịch
+        </button>
       </div>
 
       {/* ═══ FILTER BAR ═══ */}
@@ -445,12 +571,20 @@ export default function Transactions() {
                           )}
                         </td>
 
-                        {/* danh mục */}
+                        {/* danh mục + AI badge */}
                         <td className="px-6 py-3.5">
                           {gd.danhMuc ? (
-                            <span className="inline-block px-2.5 py-1 rounded-md text-xs font-medium bg-violet-50 text-violet-700">
-                              {gd.danhMuc.tenDanhMuc}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="inline-block px-2.5 py-1 rounded-md text-xs font-medium bg-violet-50 text-violet-700">
+                                {gd.danhMuc.tenDanhMuc}
+                              </span>
+                              {gd.aiCategorized && (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-600 border border-amber-200">
+                                  <Bot className="w-3 h-3" />
+                                  AI
+                                </span>
+                              )}
+                            </div>
                           ) : (
                             <span className="text-slate-400 italic text-xs">
                               Không phân loại
@@ -507,6 +641,238 @@ export default function Transactions() {
           </>
         )}
       </Card>
+
+      {/* ═══════════════════════════════════════════
+          MODAL: Thêm giao dịch mới (với AI Suggest)
+          ═══════════════════════════════════════════ */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Overlay */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowCreateModal(false)}
+          />
+
+          {/* Modal */}
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Plus className="w-5 h-5 text-violet-500" />
+                Thêm giao dịch mới
+              </h2>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              {/* Mô tả */}
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                  Mô tả giao dịch
+                </label>
+                <input
+                  type="text"
+                  placeholder="VD: Grab taxi đi làm, Ăn phở sáng..."
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm
+                             focus:bg-white focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400
+                             outline-none transition-all placeholder:text-slate-400"
+                  value={newGD.moTa}
+                  onChange={(e) => setNewGD({ ...newGD, moTa: e.target.value })}
+                />
+              </div>
+
+              {/* Số tiền */}
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                  Số tiền (VND)
+                </label>
+                <input
+                  type="number"
+                  placeholder="50000"
+                  min="0"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm
+                             focus:bg-white focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400
+                             outline-none transition-all placeholder:text-slate-400"
+                  value={newGD.soTien}
+                  onChange={(e) => setNewGD({ ...newGD, soTien: e.target.value })}
+                />
+              </div>
+
+              {/* Loại */}
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                  Loại giao dịch
+                </label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setNewGD({ ...newGD, loai: "expense", danhMucId: "" })}
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-medium border transition-all
+                      ${newGD.loai === "expense"
+                        ? "bg-rose-50 border-rose-300 text-rose-700 ring-2 ring-rose-500/20"
+                        : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
+                      }`}
+                  >
+                    ↗ Chi tiêu
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewGD({ ...newGD, loai: "income", danhMucId: "" })}
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-medium border transition-all
+                      ${newGD.loai === "income"
+                        ? "bg-emerald-50 border-emerald-300 text-emerald-700 ring-2 ring-emerald-500/20"
+                        : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
+                      }`}
+                  >
+                    ↙ Thu nhập
+                  </button>
+                </div>
+              </div>
+
+              {/* Ngày giao dịch */}
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                  Ngày giao dịch
+                </label>
+                <input
+                  type="datetime-local"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm
+                             outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400"
+                  value={newGD.ngayGiaoDich}
+                  onChange={(e) => setNewGD({ ...newGD, ngayGiaoDich: e.target.value })}
+                />
+              </div>
+
+              {/* Ví */}
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                  Ví
+                </label>
+                <select
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm
+                             appearance-none outline-none cursor-pointer
+                             focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400"
+                  value={newGD.viId || (wallets.length > 0 ? wallets[0].id : "")}
+                  onChange={(e) => setNewGD({ ...newGD, viId: e.target.value })}
+                >
+                  {wallets.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.tenVi}
+                    </option>
+                  ))}
+                  {wallets.length === 0 && <option value="">Chưa có ví</option>}
+                </select>
+              </div>
+
+              {/* Danh mục + AI Suggest */}
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                  Danh mục
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm
+                               appearance-none outline-none cursor-pointer
+                               focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400"
+                    value={newGD.danhMucId}
+                    onChange={(e) => {
+                      setNewGD({ ...newGD, danhMucId: e.target.value });
+                      setAiSuggestion(null);
+                    }}
+                  >
+                    <option value="">— Để AI phân loại —</option>
+                    {categories
+                      .filter((c) => {
+                        if (newGD.loai === "expense") return c.loai === "chi";
+                        if (newGD.loai === "income") return c.loai === "thu";
+                        return true;
+                      })
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.tenDanhMuc}
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleAiSuggest}
+                    disabled={aiLoading || !newGD.moTa.trim()}
+                    className="flex items-center gap-1.5 px-3 py-2.5 bg-gradient-to-r from-violet-500 to-purple-600
+                               hover:from-violet-600 hover:to-purple-700 text-white text-sm font-medium rounded-lg
+                               transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm
+                               hover:shadow-md active:scale-[0.98]"
+                    title="AI gợi ý danh mục dựa trên mô tả"
+                  >
+                    {aiLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-4 h-4" />
+                    )}
+                    AI
+                  </button>
+                </div>
+
+                {/* AI Suggestion Result */}
+                {aiSuggestion && (
+                  <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-violet-50 to-purple-50
+                                  border border-violet-200 rounded-lg animate-in fade-in slide-in-from-top-1">
+                    <Bot className="w-4 h-4 text-violet-500 shrink-0" />
+                    <span className="text-sm text-violet-700">
+                      AI gợi ý: <strong>{aiSuggestion.tenDanhMuc}</strong>
+                    </span>
+                    <span className="ml-auto text-xs text-violet-500 font-medium">
+                      {Math.round(aiSuggestion.doTinCay * 100)}% tin cậy
+                    </span>
+                  </div>
+                )}
+
+                {/* AI Error */}
+                {aiError && (
+                  <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    {aiError}
+                  </div>
+                )}
+              </div>
+
+              {/* Error */}
+              {createError && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-rose-50 border border-rose-200 rounded-lg text-sm text-rose-600">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {createError}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100
+                           rounded-lg transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleCreateTransaction}
+                disabled={createLoading}
+                className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-700
+                           text-white text-sm font-medium rounded-lg transition-colors shadow-sm
+                           disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {createLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                💾 Lưu giao dịch
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

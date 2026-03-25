@@ -21,15 +21,18 @@ public class GiaoDichService {
     private final ViTienRepository viTienRepository;
     private final NguoiDungRepository nguoiDungRepository;
     private final DanhMucRepository danhMucRepository;
+    private final AutoCategorizationService autoCategorizationService;
 
     public GiaoDichService(GiaoDichRepository giaoDichRepository,
                            ViTienRepository viTienRepository,
                            NguoiDungRepository nguoiDungRepository,
-                           DanhMucRepository danhMucRepository) {
+                           DanhMucRepository danhMucRepository,
+                           AutoCategorizationService autoCategorizationService) {
         this.giaoDichRepository = giaoDichRepository;
         this.viTienRepository = viTienRepository;
         this.nguoiDungRepository = nguoiDungRepository;
         this.danhMucRepository = danhMucRepository;
+        this.autoCategorizationService = autoCategorizationService;
     }
 
     public List<GiaoDich> layTheoNguoiDung(UUID nguoiDungId) {
@@ -64,6 +67,44 @@ public class GiaoDichService {
         giaoDich.setNguoiDung(nguoiDung);
         giaoDich.setViTien(vi);
         giaoDich.setDanhMuc(danhMuc);
+
+        // Cập nhật số dư ví
+        if ("income".equalsIgnoreCase(giaoDich.getLoai())) {
+            vi.setSoDu(vi.getSoDu().add(giaoDich.getSoTien()));
+        } else if ("expense".equalsIgnoreCase(giaoDich.getLoai())) {
+            vi.setSoDu(vi.getSoDu().subtract(giaoDich.getSoTien()));
+        }
+        viTienRepository.save(vi);
+
+        return giaoDichRepository.save(giaoDich);
+    }
+
+    /**
+     * Tạo giao dịch với phân loại tự động bằng AI.
+     * AI sẽ gợi ý danh mục dựa trên mô tả giao dịch.
+     */
+    @Transactional
+    public GiaoDich taoVoiAutoCategory(UUID nguoiDungId, UUID viId, GiaoDich giaoDich) {
+        NguoiDung nguoiDung = nguoiDungRepository.findById(nguoiDungId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+        ViTien vi = viTienRepository.findById(viId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy ví"));
+
+        giaoDich.setNguoiDung(nguoiDung);
+        giaoDich.setViTien(vi);
+
+        // Gọi AI để phân loại tự động
+        var suggestion = autoCategorizationService.goiYDanhMuc(
+                giaoDich.getMoTa(), giaoDich.getLoai(), nguoiDungId);
+
+        if (suggestion != null && suggestion.getDanhMucId() != null) {
+            DanhMuc danhMuc = danhMucRepository.findById(suggestion.getDanhMucId())
+                    .orElse(null);
+            if (danhMuc != null) {
+                giaoDich.setDanhMuc(danhMuc);
+                giaoDich.setAiCategorized(true);
+            }
+        }
 
         // Cập nhật số dư ví
         if ("income".equalsIgnoreCase(giaoDich.getLoai())) {
