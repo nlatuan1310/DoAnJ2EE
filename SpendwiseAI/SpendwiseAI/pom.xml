@@ -16,7 +16,7 @@
 	<url/>
 	<licenses>
 		<license/>
-	</licenses>`
+	</licenses>
 	<developers>
 		<developer/>
 	</developers>
@@ -113,6 +113,12 @@
 			<version>0.12.6</version>
 			<scope>runtime</scope>
 		</dependency>
+		
+		<!-- Thư viện Gửi Mail -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -145,4 +151,29 @@
 		</plugins>
 	</build>
 
+
 </project>
+=======
+	<repositories>
+		<repository>
+			<id>spring-milestones</id>
+			<name>Spring Milestones</name>
+			<url>https://repo.spring.io/milestone</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>spring-milestones</id>
+			<name>Spring Milestones</name>
+			<url>https://repo.spring.io/milestone</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</pluginRepository>
+	</pluginRepositories>
+
+</project>
+
