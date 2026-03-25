@@ -1,11 +1,18 @@
 package nhom7.J2EE.SpendwiseAI.controller;
 
+import nhom7.J2EE.SpendwiseAI.dto.ai.AutoCategorizeDTO;
 import nhom7.J2EE.SpendwiseAI.entity.GiaoDich;
+import nhom7.J2EE.SpendwiseAI.service.AutoCategorizationService;
 import nhom7.J2EE.SpendwiseAI.service.GiaoDichService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -15,9 +22,42 @@ import java.util.UUID;
 public class GiaoDichController {
 
     private final GiaoDichService giaoDichService;
+    private final AutoCategorizationService autoCategorizationService;
 
-    public GiaoDichController(GiaoDichService giaoDichService) {
+    public GiaoDichController(GiaoDichService giaoDichService,
+                              AutoCategorizationService autoCategorizationService) {
         this.giaoDichService = giaoDichService;
+        this.autoCategorizationService = autoCategorizationService;
+    }
+
+    /**
+     * Tìm kiếm nâng cao (Advanced Search) — phân trang + đa điều kiện.
+     */
+    @GetMapping("/tim-kiem")
+    public ResponseEntity<Page<GiaoDich>> timKiemNangCao(
+            @RequestParam UUID nguoiDungId,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String loai,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime tuNgay,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime denNgay,
+            @RequestParam(required = false) BigDecimal tuSoTien,
+            @RequestParam(required = false) BigDecimal denSoTien,
+            @RequestParam(required = false) Integer danhMucId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "ngayGiaoDich") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<GiaoDich> result = giaoDichService.timKiemNangCao(
+                nguoiDungId, keyword, loai, tuNgay, denNgay,
+                tuSoTien, denSoTien, danhMucId, pageable);
+
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/nguoi-dung/{nguoiDungId}")
@@ -56,4 +96,39 @@ public class GiaoDichController {
         giaoDichService.xoa(id);
         return ResponseEntity.noContent().build();
     }
+
+    // =============================================
+    // Auto-Categorization Endpoints
+    // =============================================
+
+    /**
+     * Gợi ý danh mục từ mô tả giao dịch (preview, chưa lưu).
+     * Dùng khi user đang nhập form và muốn AI phân loại trước.
+     */
+    @PostMapping("/goi-y-danh-muc")
+    public ResponseEntity<AutoCategorizeDTO.SuggestResponse> goiYDanhMuc(
+            @RequestParam UUID nguoiDungId,
+            @RequestBody AutoCategorizeDTO.SuggestRequest request) {
+
+        AutoCategorizeDTO.SuggestResponse response = autoCategorizationService.goiYDanhMuc(
+                request.getMoTa(), request.getLoai(), nguoiDungId);
+
+        if (response == null) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Tạo giao dịch mới với phân loại tự động bằng AI.
+     * AI sẽ gợi ý danh mục dựa trên mô tả giao dịch.
+     */
+    @PostMapping("/tao-tu-dong")
+    public ResponseEntity<GiaoDich> taoVoiAutoCategory(
+            @RequestParam UUID nguoiDungId,
+            @RequestParam UUID viId,
+            @RequestBody GiaoDich giaoDich) {
+        return ResponseEntity.ok(giaoDichService.taoVoiAutoCategory(nguoiDungId, viId, giaoDich));
+    }
 }
+

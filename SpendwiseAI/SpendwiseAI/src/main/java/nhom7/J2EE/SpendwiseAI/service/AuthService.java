@@ -22,17 +22,20 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
+    private final EmailService emailService;
 
     public AuthService(NguoiDungRepository nguoiDungRepository,
                        PasswordEncoder passwordEncoder,
                        AuthenticationManager authenticationManager,
                        JwtUtil jwtUtil,
-                       CustomUserDetailsService userDetailsService) {
+                       CustomUserDetailsService userDetailsService,
+                       EmailService emailService) {
         this.nguoiDungRepository = nguoiDungRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
+        this.emailService = emailService;
     }
 
     public AuthDTO.AuthResponse dangKy(AuthDTO.DangKyRequest request) {
@@ -63,6 +66,7 @@ public class AuthService {
         return AuthDTO.AuthResponse.builder()
                 .token(token)
                 .loai("Bearer")
+                .id(nguoiDung.getId())
                 .email(nguoiDung.getEmail())
                 .hoVaTen(nguoiDung.getHoVaTen())
                 .vaiTro(nguoiDung.getVaiTro())
@@ -88,9 +92,92 @@ public class AuthService {
         return AuthDTO.AuthResponse.builder()
                 .token(token)
                 .loai("Bearer")
+                .id(nguoiDung.getId())
                 .email(nguoiDung.getEmail())
                 .hoVaTen(nguoiDung.getHoVaTen())
                 .vaiTro(nguoiDung.getVaiTro())
                 .build();
+    }
+
+    public AuthDTO.NguoiDungResponse getMe(String email) {
+        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+
+        return AuthDTO.NguoiDungResponse.builder()
+                .id(nguoiDung.getId())
+                .email(nguoiDung.getEmail())
+                .hoVaTen(nguoiDung.getHoVaTen())
+                .dienThoai(nguoiDung.getDienThoai())
+                .vaiTro(nguoiDung.getVaiTro())
+                .anhDaiDien(nguoiDung.getAnhDaiDien())
+                .tienTe(nguoiDung.getTienTe())
+                .build();
+    }
+
+    public void doiMatKhau(String email, AuthDTO.DoiMatKhauRequest request) {
+        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+
+        // Kiểm tra mật khẩu cũ
+        if (!passwordEncoder.matches(request.getMatKhauCu(), nguoiDung.getMatKhauHash())) {
+            throw new RuntimeException("Mật khẩu cũ không đúng");
+        }
+
+        // Cập nhật mật khẩu mới
+        nguoiDung.setMatKhauHash(passwordEncoder.encode(request.getMatKhauMoi()));
+        nguoiDungRepository.save(nguoiDung);
+    }
+
+    public void quenMatKhau(AuthDTO.QuenMatKhauRequest request) {
+        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với email này"));
+
+        // Generate 6-digit OTP
+        String otp = String.format("%06d", new java.util.Random().nextInt(999999));
+        
+        // Cập nhật OTP vào DB (hết hạn sau 15 phút)
+        nguoiDung.setOtpCode(otp);
+        nguoiDung.setOtpExpiry(LocalDateTime.now().plusMinutes(15));
+        nguoiDungRepository.save(nguoiDung);
+
+        // Gửi mail
+        String subject = "Mã xác nhận quên mật khẩu";
+        String text = "Xin chào " + nguoiDung.getHoVaTen() + ",\n\n" +
+                      "Mã OTP để đặt lại mật khẩu của bạn là: " + otp + "\n" +
+                      "Mã này sẽ hết hạn sau 15 phút.\n\n" +
+                      "Trân trọng,\nĐội ngũ Spendwise AI";
+        emailService.guiEmail(nguoiDung.getEmail(), subject, text);
+    }
+
+    public void xacThucOtp(AuthDTO.XacThucOtpRequest request) {
+        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với email này"));
+
+        if (nguoiDung.getOtpCode() == null || !nguoiDung.getOtpCode().equals(request.getOtp())) {
+            throw new RuntimeException("Mã OTP không chính xác");
+        }
+
+        if (nguoiDung.getOtpExpiry() != null && nguoiDung.getOtpExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Mã OTP đã hết hạn");
+        }
+    }
+
+    public void datLaiMatKhau(AuthDTO.DatLaiMatKhauRequest request) {
+        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với email này"));
+
+        if (nguoiDung.getOtpCode() == null || !nguoiDung.getOtpCode().equals(request.getOtp())) {
+            throw new RuntimeException("Mã OTP không chính xác");
+        }
+
+        if (nguoiDung.getOtpExpiry() != null && nguoiDung.getOtpExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Mã OTP đã hết hạn");
+        }
+
+        // Cập nhật mật khẩu mới và xóa OTP
+        nguoiDung.setMatKhauHash(passwordEncoder.encode(request.getMatKhauMoi()));
+        nguoiDung.setOtpCode(null);
+        nguoiDung.setOtpExpiry(null);
+        nguoiDungRepository.save(nguoiDung);
     }
 }

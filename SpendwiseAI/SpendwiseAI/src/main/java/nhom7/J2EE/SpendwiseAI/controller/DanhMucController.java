@@ -1,6 +1,7 @@
 package nhom7.J2EE.SpendwiseAI.controller;
 
-import nhom7.J2EE.SpendwiseAI.entity.DanhMuc;
+import jakarta.validation.Valid;
+import nhom7.J2EE.SpendwiseAI.dto.DanhMucDTO;
 import nhom7.J2EE.SpendwiseAI.service.DanhMucService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,34 +20,38 @@ public class DanhMucController {
     }
 
     @GetMapping("/nguoi-dung/{nguoiDungId}")
-    public ResponseEntity<List<DanhMuc>> layTheoNguoiDung(@PathVariable UUID nguoiDungId) {
+    public ResponseEntity<List<DanhMucDTO.DanhMucResponse>> layTheoNguoiDung(@PathVariable UUID nguoiDungId) {
         return ResponseEntity.ok(danhMucService.layTheoNguoiDung(nguoiDungId));
     }
 
     @GetMapping("/nguoi-dung/{nguoiDungId}/loai/{loai}")
-    public ResponseEntity<List<DanhMuc>> layTheoLoai(@PathVariable UUID nguoiDungId,
-                                                      @PathVariable String loai) {
+    public ResponseEntity<List<DanhMucDTO.DanhMucResponse>> layTheoLoai(@PathVariable UUID nguoiDungId,
+                                                                      @PathVariable String loai) {
         return ResponseEntity.ok(danhMucService.layTheoLoai(nguoiDungId, loai));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<DanhMuc> layTheoId(@PathVariable Integer id) {
-        return ResponseEntity.ok(danhMucService.layTheoId(id));
+    @GetMapping("/{id}/nguoi-dung/{nguoiDungId}")
+    public ResponseEntity<DanhMucDTO.DanhMucResponse> layTheoId(@PathVariable Integer id, @PathVariable UUID nguoiDungId) {
+        return ResponseEntity.ok(danhMucService.layTheoId(id, nguoiDungId));
     }
 
     @PostMapping("/nguoi-dung/{nguoiDungId}")
-    public ResponseEntity<DanhMuc> tao(@PathVariable UUID nguoiDungId, @RequestBody DanhMuc danhMuc) {
-        return ResponseEntity.ok(danhMucService.tao(nguoiDungId, danhMuc));
+    public ResponseEntity<DanhMucDTO.DanhMucResponse> tao(@PathVariable UUID nguoiDungId, 
+                                                         @Valid @RequestBody DanhMucDTO.DanhMucRequest request) {
+        return ResponseEntity.ok(danhMucService.tao(nguoiDungId, request));
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<DanhMuc> capNhat(@PathVariable Integer id, @RequestBody DanhMuc danhMuc) {
-        return ResponseEntity.ok(danhMucService.capNhat(id, danhMuc));
+    @PutMapping("/{id}/nguoi-dung/{nguoiDungId}")
+    public ResponseEntity<DanhMucDTO.DanhMucResponse> capNhat(@PathVariable Integer id, 
+                                                            @PathVariable UUID nguoiDungId,
+                                                            @Valid @RequestBody DanhMucDTO.DanhMucRequest request) {
+        return ResponseEntity.ok(danhMucService.capNhat(id, nguoiDungId, request));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> xoa(@PathVariable Integer id) {
-        danhMucService.xoa(id);
+    @DeleteMapping("/{id}/nguoi-dung/{nguoiDungId}")
+    public ResponseEntity<Void> xoa(@PathVariable Integer id, @PathVariable UUID nguoiDungId) {
+        danhMucService.xoa(id, nguoiDungId);
         return ResponseEntity.noContent().build();
     }
 }
+

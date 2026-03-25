@@ -16,25 +16,29 @@ import {
   Wallet,
   PieChart,
   Goal,
-  Settings,
   BarChart3,
   ChevronDown,
-  CreditCard,
   TrendingUp,
-  Shield,
-  HelpCircle,
   ScanLine,
+  LayoutGrid,
 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { useState } from "react"
 
-const mainMenuItems = [
+interface MenuItem {
+  title: string
+  url?: string
+  icon: any
+  subItems?: { title: string; url: string }[]
+}
+
+const mainMenuItems: MenuItem[] = [
   {
     title: "Dashboard",
     icon: Home,
     subItems: [
       { title: "Tổng quan", url: "/" },
-      { title: "Phân tích", url: "/analytics" },
+      { title: "Smart Dashboard", url: "/smart-dashboard" },
     ],
   },
   {
@@ -46,6 +50,11 @@ const mainMenuItems = [
     title: "Quét hóa đơn",
     url: "/receipt-scanner",
     icon: ScanLine,
+  },
+  {
+    title: "Danh mục & Thẻ",
+    url: "/categories",
+    icon: LayoutGrid,
   },
   {
     title: "Ngân sách",
@@ -63,32 +72,9 @@ const mainMenuItems = [
     icon: BarChart3,
   },
   {
-    title: "Thanh toán",
-    url: "/payments",
-    icon: CreditCard,
-  },
-]
-
-const moreMenuItems = [
-  {
-    title: "Cài đặt",
-    url: "/settings",
-    icon: Settings,
-  },
-  {
     title: "Đầu tư",
     url: "/investments",
     icon: TrendingUp,
-  },
-  {
-    title: "Bảo mật",
-    url: "/security",
-    icon: Shield,
-  },
-  {
-    title: "Trợ giúp",
-    url: "/help",
-    icon: HelpCircle,
   },
 ]
 
@@ -105,14 +91,14 @@ export function AppSidebar() {
     return location.pathname === url
   }
 
-  const isGroupActive = (item: (typeof mainMenuItems)[0]) => {
+  const isGroupActive = (item: MenuItem) => {
     if (item.subItems) {
       return item.subItems.some((sub) => location.pathname === sub.url)
     }
     return location.pathname === item.url
   }
 
-  const renderMenuItem = (item: (typeof mainMenuItems)[0]) => {
+  const renderMenuItem = (item: MenuItem) => {
     const active = isGroupActive(item)
 
     if (item.subItems) {
@@ -142,20 +128,16 @@ export function AppSidebar() {
             <SidebarMenuSub className="ml-6 mt-1 border-l border-slate-200 pl-0">
               {item.subItems.map((sub) => (
                 <SidebarMenuSubItem key={sub.title}>
-                  <SidebarMenuSubButton asChild>
-                    <Link
-                      to={sub.url}
-                      className={`
-                        block px-3 py-1.5 text-sm rounded-md transition-colors
-                        ${isActive(sub.url)
-                          ? "text-violet-600 font-medium"
-                          : "text-slate-500 hover:text-violet-600"
-                        }
-                      `}
+                  <Link
+                    to={sub.url}
+                    className="block w-full"
+                  >
+                    <SidebarMenuSubButton
+                      isActive={isActive(sub.url)}
                     >
                       {sub.title}
-                    </Link>
-                  </SidebarMenuSubButton>
+                    </SidebarMenuSubButton>
+                  </Link>
                 </SidebarMenuSubItem>
               ))}
             </SidebarMenuSub>
@@ -164,11 +146,14 @@ export function AppSidebar() {
       )
     }
 
+    if (!item.url) return null
+
     return (
       <SidebarMenuItem key={item.title}>
-        <Link to={item.url!} className="w-full">
+        <Link to={item.url} className="w-full">
           <SidebarMenuButton
             tooltip={item.title}
+            isActive={active}
             className={`
               flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors
               ${active
@@ -208,17 +193,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* More Section */}
-        <SidebarGroup className="mt-4">
-          <SidebarGroupLabel className="px-4 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-            Thêm
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-0.5 px-2">
-              {moreMenuItems.map((item) => renderMenuItem(item))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+
       </SidebarContent>
     </Sidebar>
   )
