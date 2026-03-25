@@ -16,6 +16,7 @@ import {
   AlertCircle
 } from "lucide-react"
 import { format } from "date-fns"
+import api from "@/services/api"
 
 export default function Reports() {
   const [startDate, setStartDate] = useState<string>(
@@ -38,25 +39,15 @@ export default function Reports() {
     setMessage({ text: '', type: null })
 
     try {
-      const token = localStorage.getItem("token")
       const startDateTime = `${startDate}T00:00:00`
       const endDateTime = `${endDate}T23:59:59`
       
-      const response = await fetch(
-        `http://localhost:8080/api/reports/export/${formatType}?start=${startDateTime}&end=${endDateTime}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
+      const response = await api.get(
+        `/reports/export/${formatType}?start=${startDateTime}&end=${endDateTime}`,
+        { responseType: 'blob' }
       )
 
-      if (!response.ok) {
-        throw new Error(`Lỗi khi xuất báo cáo: ${response.statusText}`)
-      }
-
-      const blob = await response.blob()
+      const blob = response.data;
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url

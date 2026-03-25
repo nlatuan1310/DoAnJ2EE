@@ -28,6 +28,7 @@ interface TaiSanCrypto {
   id: number;
   kyHieu: string;
   ten: string;
+  giaMuaTrungBinh?: number;
 }
 
 interface DanhMucCrypto {
@@ -46,9 +47,9 @@ interface GiaoDichCrypto {
   ngayGiaoDich: string;
 }
 
-const API_BASE = "http://localhost:8080/api";
 
-import { getCurrentUserId } from "@/services/api";
+
+import api, { getCurrentUserId } from "@/services/api";
 
 const CRYPTO_COLORS: Record<string, string> = {
   BTC: "from-orange-400 to-amber-500",
@@ -118,13 +119,11 @@ export default function Investments() {
     setError(null);
     try {
       const [portfolioRes, assetsRes] = await Promise.all([
-        fetch(`${API_BASE}/crypto/danh-muc/nguoi-dung/${getCurrentUserId()}`),
-        fetch(`${API_BASE}/tai-san-crypto`),
+        api.get(`/crypto/danh-muc/nguoi-dung/${getCurrentUserId()}`),
+        api.get(`/tai-san-crypto`),
       ]);
-      if (!portfolioRes.ok) throw new Error("Không thể tải danh mục crypto.");
-      if (!assetsRes.ok) throw new Error("Không thể tải danh sách tài sản.");
-      const portfolioData = await portfolioRes.json();
-      const assetsData = await assetsRes.json();
+      const portfolioData = portfolioRes.data;
+      const assetsData = assetsRes.data;
       setPortfolio(portfolioData);
       setAvailableAssets(assetsData);
       if (assetsData.length > 0 && !addCoinForm.taiSanId) {
@@ -162,17 +161,17 @@ export default function Investments() {
     }
   };
 
-  // Tự động điền giá khi chọn coin ở Modal Thêm Mới
+  // Tự động điền giá mua trung bình từ Database khi chọn coin ở Modal Thêm Mới
   useEffect(() => {
     if (!addCoinForm.taiSanId || !isAddCoinOpen) return;
     const coin = availableAssets.find(c => c.id.toString() === addCoinForm.taiSanId);
     if (!coin) return;
 
-    fetchLivePrice(coin.kyHieu).then(price => {
-      if (price > 0) {
-        setAddCoinForm(prev => ({ ...prev, giaMuaTrungBinh: formatVnCurrencyInput(price.toString()) }));
-      }
-    });
+    if (coin.giaMuaTrungBinh) {
+      setAddCoinForm(prev => ({ ...prev, giaMuaTrungBinh: formatVnCurrencyInput(coin.giaMuaTrungBinh!.toString()) }));
+    } else {
+      setAddCoinForm(prev => ({ ...prev, giaMuaTrungBinh: "0" }));
+    }
   }, [addCoinForm.taiSanId, isAddCoinOpen, availableAssets]);
 
   // Tự động điền giá hiện tại khi mở Modal Ghi Lệnh
@@ -193,19 +192,14 @@ export default function Investments() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(
-        `${API_BASE}/crypto/danh-muc?nguoiDungId=${getCurrentUserId()}&taiSanId=${addCoinForm.taiSanId}`,
+      await api.post(
+        `/crypto/danh-muc?nguoiDungId=${getCurrentUserId()}&taiSanId=${addCoinForm.taiSanId}`,
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            soLuong: parseFloat(addCoinForm.soLuong) || 0,
-            giaMuaTrungBinh: parseVnCurrency(addCoinForm.giaMuaTrungBinh),
-            diaChiVi: addCoinForm.diaChiVi || "",
-          }),
+          soLuong: parseFloat(addCoinForm.soLuong) || 0,
+          giaMuaTrungBinh: parseVnCurrency(addCoinForm.giaMuaTrungBinh),
+          diaChiVi: addCoinForm.diaChiVi || "",
         }
       );
-      if (!res.ok) throw new Error("Không thể thêm coin.");
       showSuccess("Đã thêm coin vào danh mục!");
       setIsAddCoinOpen(false);
       setAddCoinForm({ taiSanId: availableAssets[0]?.id.toString() || "", soLuong: "", giaMuaTrungBinh: "", diaChiVi: "" });
@@ -220,8 +214,7 @@ export default function Investments() {
   const handleDeleteCoin = async (id: string) => {
     if (!confirm("Xóa coin này khỏi danh mục? Toàn bộ lịch sử giao dịch sẽ bị xóa.")) return;
     try {
-      const res = await fetch(`${API_BASE}/crypto/danh-muc/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Không thể xóa.");
+      await api.delete(`/crypto/danh-muc/${id}`);
       showSuccess("Đã xóa coin.");
       fetchPortfolio();
     } catch (e: any) {
@@ -237,9 +230,8 @@ export default function Investments() {
     setIsTxModalOpen(true);
     setTxLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/crypto/giao-dich/danh-muc/${coin.id}`);
-      if (!res.ok) throw new Error("Không thể tải giao dịch.");
-      setTransactions(await res.json());
+      const res = await api.get(`/crypto/giao-dich/danh-muc/${coin.id}`);
+      setTransactions(res.data);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -252,30 +244,20 @@ export default function Investments() {
     setTxLoading(true);
     setError(null);
     try {
-      const res = await fetch(
-        `${API_BASE}/crypto/giao-dich?danhMucId=${selectedCoin.id}`,
+      await api.post(
+        `/crypto/giao-dich?danhMucId=${selectedCoin.id}`,
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            loai: txForm.loai,
-            soLuong: parseFloat(txForm.soLuong),
-            gia: parseVnCurrency(txForm.gia),
-            ngayGiaoDich: txForm.ngayGiaoDich + ":00",
-          }),
+          loai: txForm.loai,
+          soLuong: parseFloat(txForm.soLuong),
+          gia: parseVnCurrency(txForm.gia),
+          ngayGiaoDich: txForm.ngayGiaoDich + ":00",
         }
       );
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(errText || "Không thể ghi giao dịch.");
-      }
       showSuccess(`Đã ghi nhận lệnh ${txForm.loai === "buy" ? "Mua" : "Bán"}!`);
       setTxForm({ loai: "buy", soLuong: "", gia: "", ngayGiaoDich: new Date().toISOString().slice(0, 16) });
       // Reload transactions and portfolio
-      const [txRes] = await Promise.all([
-        fetch(`${API_BASE}/crypto/giao-dich/danh-muc/${selectedCoin.id}`),
-      ]);
-      setTransactions(await txRes.json());
+      const txRes = await api.get(`/crypto/giao-dich/danh-muc/${selectedCoin.id}`);
+      setTransactions(txRes.data);
       fetchPortfolio();
     } catch (e: any) {
       setError(e.message);
@@ -287,11 +269,11 @@ export default function Investments() {
   const handleDeleteTransaction = async (txId: string) => {
     if (!confirm("Xóa giao dịch này?")) return;
     try {
-      await fetch(`${API_BASE}/crypto/giao-dich/${txId}`, { method: "DELETE" });
+      await api.delete(`/crypto/giao-dich/${txId}`);
       showSuccess("Đã xóa giao dịch.");
       if (selectedCoin) {
-        const res = await fetch(`${API_BASE}/crypto/giao-dich/danh-muc/${selectedCoin.id}`);
-        setTransactions(await res.json());
+        const res = await api.get(`/crypto/giao-dich/danh-muc/${selectedCoin.id}`);
+        setTransactions(res.data);
       }
       fetchPortfolio();
     } catch (e: any) {

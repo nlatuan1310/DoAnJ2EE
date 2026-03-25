@@ -19,6 +19,7 @@ import {
   Legend,
 } from "recharts"
 import { AlertTriangle, TrendingUp, Wallet, Target, CalendarDays, AlertOctagon, BellRing } from "lucide-react"
+import api from "@/services/api"
 
 // --- Types ---
 interface ForecastData {
@@ -65,22 +66,19 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/smart/forecast")
-      .then((r) => r.json())
-      .then((d) => setData(d))
+    api.get("/smart/forecast")
+      .then((res) => setData(res.data))
       .catch(() => {
         // Dùng dữ liệu mẫu nếu backend chưa chạy
       })
       .finally(() => setLoading(false))
 
-    fetch("http://localhost:8080/api/smart/subscriptions")
-      .then(res => res.json())
-      .then(data => setSubs(data))
+    api.get("/smart/subscriptions")
+      .then(res => setSubs(res.data))
       .catch(() => { })
 
-    fetch("http://localhost:8080/api/smart/alerts")
-      .then(res => res.json())
-      .then(data => setAlerts(data))
+    api.get("/smart/alerts")
+      .then(res => setAlerts(res.data))
       .catch(() => { })
   }, [])
 

@@ -3,8 +3,10 @@ import {
   Plus, 
   Edit2, 
   Trash2, 
-  Info,
-  X
+  X,
+  Wallet,
+  ChevronRight,
+  Info
 } from "lucide-react";
 import { 
   Card, 
@@ -13,7 +15,6 @@ import {
   CardTitle
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 
 // --- Types ---
@@ -42,9 +43,7 @@ interface NganSach {
   spent?: number;
 }
 
-const API_BASE = "http://localhost:8080/api";
-
-import { getCurrentUserId } from "@/services/api";
+import api, { getCurrentUserId } from "@/services/api";
 
 export default function Budgets() {
   const [budgets, setBudgets] = useState<NganSach[]>([]);
@@ -66,6 +65,11 @@ export default function Budgets() {
     ngayKetThuc: "",
   });
 
+  // Create Category Modal State
+  const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
+
   useEffect(() => {
     fetchInitialData();
   }, []);
@@ -78,7 +82,7 @@ export default function Budgets() {
         end.setDate(start.getDate() + 6); // 7 days inclusive
       } else if (formData.chuKy === 'monthly') {
         end.setMonth(start.getMonth() + 1);
-        end.setDate(0); // Last day of the month
+        end.setDate(start.getDate() - 1); // 1 month - 1 day (inclusive)
       }
       setFormData(prev => ({ ...prev, ngayKetThuc: end.toISOString().split('T')[0] }));
     }
@@ -88,18 +92,16 @@ export default function Budgets() {
     setLoading(true);
     try {
       const [budgetsRes, catsRes, walletsRes, txRes] = await Promise.all([
-        fetch(`${API_BASE}/ngan-sach/nguoi-dung/${getCurrentUserId()}`),
-        fetch(`${API_BASE}/danh-muc/nguoi-dung/${getCurrentUserId()}/loai/expense`),
-        fetch(`${API_BASE}/vi-tien/nguoi-dung/${getCurrentUserId()}`),
-        fetch(`${API_BASE}/giao-dich/nguoi-dung/${getCurrentUserId()}`)
+        api.get(`/ngan-sach/nguoi-dung/${getCurrentUserId()}`),
+        api.get(`/danh-muc/nguoi-dung/${getCurrentUserId()}/loai/expense`),
+        api.get(`/vi-tien/nguoi-dung/${getCurrentUserId()}`),
+        api.get(`/giao-dich/nguoi-dung/${getCurrentUserId()}`)
       ]);
 
-      if (!budgetsRes.ok || !catsRes.ok || !walletsRes.ok) throw new Error("Không thể tải dữ liệu.");
-
-      const budgetsData = await budgetsRes.json();
-      const catsData = await catsRes.json();
-      const walletsData = await walletsRes.json();
-      const txData = await txRes.json();
+      const budgetsData = budgetsRes.data;
+      const catsData = catsRes.data;
+      const walletsData = walletsRes.data;
+      const txData = txRes.data;
 
       const enrichedBudgets = budgetsData.map((b: NganSach) => {
         const spent = txData
@@ -135,10 +137,9 @@ export default function Budgets() {
     try {
       const isEditing = !!editingBudget;
       const url = isEditing 
-        ? `${API_BASE}/ngan-sach/${editingBudget.id}` 
-        : `${API_BASE}/ngan-sach?nguoiDungId=${getCurrentUserId()}&viId=${formData.viId}&danhMucId=${formData.danhMucId}`;
+        ? `/ngan-sach/${editingBudget.id}` 
+        : `/ngan-sach?nguoiDungId=${getCurrentUserId()}&viId=${formData.viId}&danhMucId=${formData.danhMucId}`;
       
-      const method = isEditing ? "PUT" : "POST";
       const body = {
         gioiHanTien: parseFloat(formData.gioiHanTien),
         chuKy: formData.chuKy,
@@ -146,13 +147,11 @@ export default function Budgets() {
         ngayKetThuc: formData.ngayKetThuc
       };
 
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
-
-      if (!res.ok) throw new Error("Lỗi khi lưu dữ liệu.");
+      if (isEditing) {
+        await api.put(url, body);
+      } else {
+        await api.post(url, body);
+      }
 
       setSuccess(isEditing ? "Đã cập nhật!" : "Đã tạo mới!");
       setIsModalOpen(false);
@@ -166,10 +165,36 @@ export default function Budgets() {
     }
   };
 
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    setCreatingCategory(true);
+    try {
+      const res = await api.post(`/danh-muc/nguoi-dung/${getCurrentUserId()}`, {
+        tenDanhMuc: newCategoryName.trim(),
+        loai: "expense",
+        icon: "",
+        mauSac: ""
+      });
+      const newCat = res.data;
+      
+      setCategories(prev => [...prev, newCat]);
+      setFormData(prev => ({ ...prev, danhMucId: newCat.id.toString() }));
+      
+      setSuccess("Đã tạo danh mục mới!");
+      setIsCreateCategoryOpen(false);
+      setNewCategoryName("");
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm("Xác nhận xóa?")) return;
     try {
-      await fetch(`${API_BASE}/ngan-sach/${id}`, { method: "DELETE" });
+      await api.delete(`/ngan-sach/${id}`);
       setSuccess("Đã xóa.");
       fetchInitialData();
       setTimeout(() => setSuccess(null), 3000);
@@ -331,118 +356,218 @@ export default function Budgets() {
         )}
       </div>
 
-      {/* COMPACT CENTERED MODAL */}
+      {/* PREMIUM CENTERED MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+          {/* Glassmorphism Backdrop */}
+          <div 
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-md transition-all" 
+            onClick={() => setIsModalOpen(false)} 
+          />
           
-          <div className="relative bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            {/* Modal Header - Compact */}
-            <div className="bg-indigo-600 p-6 text-white flex items-center justify-between">
-               <h2 className="text-xl font-black tracking-tight">{editingBudget ? "Sửa" : "Tạo"} Ngân sách</h2>
-               <button onClick={() => setIsModalOpen(false)} className="text-white/60 hover:text-white transition-colors">
-                 <X className="w-6 h-6" />
-               </button>
+          <div className="relative bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 border border-white/20">
+            {/* Elegant Header with Gradient */}
+            <div className="relative p-8 text-white overflow-hidden"
+                 style={{ background: "linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)" }}>
+               <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+               <div className="absolute bottom-0 left-0 -ml-12 -mb-12 w-32 h-32 bg-black/10 rounded-full blur-2xl pointer-events-none" />
+               
+               <div className="relative flex items-center justify-between">
+                 <div className="flex items-center gap-4">
+                   <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-inner">
+                     <Plus className="w-6 h-6 text-white" />
+                   </div>
+                   <div>
+                     <h2 className="text-2xl font-black tracking-tight leading-none">
+                       {editingBudget ? "Sửa Ngân sách" : "Tạo Ngân sách"}
+                     </h2>
+                     <p className="text-indigo-200/80 text-[10px] font-bold uppercase tracking-[0.2em] mt-2">
+                       Thiết lập mục tiêu chi tiêu
+                     </p>
+                   </div>
+                 </div>
+                 <button 
+                   onClick={() => setIsModalOpen(false)} 
+                   className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-all hover:rotate-90 duration-300"
+                 >
+                   <X className="w-5 h-5" />
+                 </button>
+               </div>
             </div>
 
-            {/* Modal Body - Compact */}
-            <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Danh mục</label>
-                  <select 
-                    value={formData.danhMucId}
-                    onChange={(e) => setFormData({...formData, danhMucId: e.target.value})}
-                    disabled={!!editingBudget}
-                    className="w-full h-11 pl-4 pr-8 rounded-xl bg-slate-50 border-none font-bold text-slate-800 text-sm focus:ring-2 focus:ring-indigo-100 appearance-none disabled:opacity-50"
-                  >
-                    {categories.map(c => <option key={c.id} value={c.id}>{c.bieuTuong} {c.ten}</option>)}
-                  </select>
+            {/* Modal Body - Premium Experience */}
+            <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar bg-white/50 backdrop-blur-sm">
+              
+              {/* Category & Wallet Row */}
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Danh mục</label>
+                    <button 
+                      type="button" 
+                      onClick={() => setIsCreateCategoryOpen(true)} 
+                      className="text-[10px] font-black text-indigo-600 hover:text-indigo-700 transition-colors uppercase tracking-widest flex items-center gap-1"
+                    >
+                      <Plus className="w-3 h-3" /> Tạo mới
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <select 
+                      value={formData.danhMucId}
+                      onChange={(e) => setFormData({...formData, danhMucId: e.target.value})}
+                      disabled={!!editingBudget}
+                      className="w-full h-12 pl-4 pr-10 rounded-2xl bg-slate-50/80 border border-slate-100 font-bold text-slate-700 text-sm focus:ring-4 focus:ring-indigo-50 focus:bg-white outline-none appearance-none transition-all disabled:opacity-50"
+                    >
+                      {categories.map(c => <option key={c.id} value={c.id}>{c.ten}</option>)}
+                    </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                      <Info className="w-4 h-4" />
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1 flex items-center gap-1.5">
-                    Ví tiền <Info className="w-3 h-3 text-indigo-300" />
-                  </label>
-                  <select 
-                    value={formData.viId}
-                    onChange={(e) => setFormData({...formData, viId: e.target.value})}
-                    disabled={!!editingBudget}
-                    className="w-full h-11 pl-4 pr-8 rounded-xl bg-slate-50 border-none font-bold text-slate-800 text-sm focus:ring-2 focus:ring-indigo-100 appearance-none disabled:opacity-50"
-                  >
-                    {wallets.map(w => <option key={w.id} value={w.id}>{w.tenVi}</option>)}
-                  </select>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Nguồn tiền (Ví)</label>
+                  <div className="relative">
+                    <select 
+                      value={formData.viId}
+                      onChange={(e) => setFormData({...formData, viId: e.target.value})}
+                      disabled={!!editingBudget}
+                      className="w-full h-12 pl-4 pr-10 rounded-2xl bg-slate-50/80 border border-slate-100 font-bold text-slate-700 text-sm focus:ring-4 focus:ring-indigo-50 focus:bg-white outline-none appearance-none transition-all disabled:opacity-50"
+                    >
+                      {wallets.map(w => <option key={w.id} value={w.id}>{w.tenVi}</option>)}
+                    </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                      <Wallet className="w-4 h-4" />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Giới hạn (VNĐ)</label>
-                <div className="relative group">
-                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-black text-indigo-400 opacity-30">₫</div>
-                   <Input 
+              {/* Amount Section - The "Hero" Input */}
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Hạn mức tối đa</label>
+                <div className="group relative">
+                   <div className="absolute left-6 top-1/2 -translate-y-1/2 text-3xl font-black text-indigo-500/20 group-focus-within:text-indigo-500/40 transition-colors italic">₫</div>
+                   <input 
                      type="number" 
                      value={formData.gioiHanTien}
                      onChange={(e) => setFormData({...formData, gioiHanTien: e.target.value})}
-                     className="h-16 pl-10 pr-6 font-black text-3xl text-slate-800 rounded-2xl border-none bg-slate-50 focus:ring-4 focus:ring-indigo-50 transition-all placeholder:text-slate-100"
+                     className="w-full h-24 pl-14 pr-8 font-black text-5xl text-slate-800 rounded-[2rem] border-2 border-slate-50 bg-slate-50/50 focus:ring-8 focus:ring-indigo-50/50 focus:bg-white focus:border-indigo-100 transition-all placeholder:text-slate-200 outline-none"
                      placeholder="0"
                    />
+                   <div className="absolute right-8 top-1/2 -translate-y-1/2 font-black text-slate-300 uppercase tracking-tighter">VNĐ</div>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Kỳ hạn</label>
-                <div className="grid grid-cols-3 gap-2">
+              {/* Period Selection - Modern Segmented Control */}
+              <div className="space-y-4 pt-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Kỳ hạn ngân sách</label>
+                <div className="grid grid-cols-3 gap-3 p-1.5 bg-slate-50/80 rounded-[1.5rem] border border-slate-100">
                   {['weekly', 'monthly', 'custom'].map(id => (
                     <button
                       key={id}
                       onClick={() => setFormData({...formData, chuKy: id})}
-                      className={`h-11 rounded-xl font-bold text-xs transition-all border-2
-                        ${formData.chuKy === id ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-white border-slate-50 text-slate-500 hover:border-indigo-50'}`}
+                      className={`h-12 rounded-2xl font-black text-xs transition-all duration-300
+                        ${formData.chuKy === id 
+                          ? 'bg-white text-indigo-700 shadow-xl shadow-indigo-100/50 scale-[1.02]' 
+                          : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'}`}
                     >
-                      {id === 'weekly' ? '7 Ngày' : id === 'monthly' ? '1 Tháng' : 'Tùy chọn'}
+                      {id === 'weekly' ? 'Hàng Tuần' : id === 'monthly' ? 'Hàng Tháng' : 'Tùy chỉnh'}
                     </button>
                   ))}
                 </div>
 
-                <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 flex gap-4">
-                  <div className="flex-1 space-y-1.5">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-1">Từ ngày</label>
-                    <Input 
+                {/* Date Selection Box */}
+                <div className="p-6 bg-indigo-50/30 rounded-[2rem] border border-indigo-100/50 flex gap-6 items-center">
+                  <div className="flex-1 space-y-2">
+                    <label className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.15em] px-1">Ngày bắt đầu</label>
+                    <input 
                       type="date" 
                       value={formData.ngayBatDau}
                       onChange={(e) => setFormData({...formData, ngayBatDau: e.target.value})}
-                      className="h-10 bg-white rounded-lg border-none font-bold text-xs text-slate-800"
+                      className="w-full h-11 bg-white rounded-xl border border-indigo-100 px-4 font-bold text-sm text-slate-700 outline-none focus:ring-2 focus:ring-indigo-200/50"
                     />
                   </div>
-                  <div className="flex-1 space-y-1.5">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-1">Đến ngày</label>
-                    <Input 
+                  <div className="w-8 h-8 rounded-full bg-indigo-100/50 flex items-center justify-center shrink-0 mt-6">
+                    <ChevronRight className="w-4 h-4 text-indigo-400" />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <label className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.15em] px-1">Ngày kết thúc</label>
+                    <input 
                       type="date" 
                       value={formData.ngayKetThuc}
                       onChange={(e) => setFormData({...formData, ngayKetThuc: e.target.value})}
                       disabled={formData.chuKy !== 'custom'}
-                      className="h-10 bg-white rounded-lg border-none font-bold text-xs text-slate-800 disabled:opacity-40"
+                      className="w-full h-11 bg-white rounded-xl border border-indigo-100 px-4 font-bold text-sm text-slate-700 outline-none focus:ring-2 focus:ring-indigo-200/50 disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-100 transition-all font-mono"
                     />
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Modal Footer - Compact */}
-            <div className="p-6 border-t border-slate-50 bg-slate-50/50 flex gap-3">
-              <Button 
-                variant="ghost" 
+            {/* Premium Footer - Large and Confident */}
+            <div className="p-8 border-t border-slate-50 bg-slate-50/20 flex gap-4">
+              <button 
                 onClick={() => setIsModalOpen(false)}
-                className="flex-1 h-12 rounded-xl font-bold text-xs text-slate-400 hover:bg-slate-100"
+                className="flex-1 h-14 rounded-2xl font-black text-xs text-slate-400 hover:bg-slate-100 transition-all uppercase tracking-widest"
               >
                 Hủy bỏ
-              </Button>
-              <Button 
+              </button>
+              <button 
                 onClick={handleCreateOrUpdate} 
                 disabled={loading || !formData.gioiHanTien || !formData.ngayKetThuc}
-                className="flex-2 h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-100 px-10"
+                className="flex-[2] h-14 bg-indigo-600 hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 text-white rounded-2xl font-black text-sm shadow-2xl shadow-indigo-100 transition-all px-8 disabled:opacity-50 disabled:grayscale disabled:scale-100"
               >
-                {loading ? "..." : editingBudget ? "Cập nhật" : "Xác nhận"}
-              </Button>
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
+                ) : (
+                  editingBudget ? "Lưu thay đổi" : "Kích hoạt Ngân sách"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PREMIUM MODAL: TẠO DANH MỤC */}
+      {isCreateCategoryOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsCreateCategoryOpen(false)} />
+          <div className="relative bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 text-white flex items-center justify-between"
+                 style={{ background: "linear-gradient(135deg, #4f46e5, #3730a3)" }}>
+               <h2 className="text-xl font-black tracking-tight">Tạo Danh mục</h2>
+               <button onClick={() => setIsCreateCategoryOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
+                 <X className="w-4 h-4" />
+               </button>
+            </div>
+            <div className="p-8 space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Tên danh mục mới</label>
+                <input 
+                  placeholder="Ăn uống, Di chuyển..." 
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  className="w-full h-12 px-5 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-slate-800 focus:ring-4 focus:ring-indigo-50 outline-none transition-all"
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="p-6 border-t border-slate-50 bg-slate-50/50 flex gap-3 text-center">
+              <button 
+                onClick={() => setIsCreateCategoryOpen(false)}
+                className="flex-1 h-12 rounded-xl font-bold text-xs text-slate-400 hover:bg-slate-100 transition-all"
+              >
+                Hủy
+              </button>
+              <button 
+                onClick={handleCreateCategory} 
+                disabled={creatingCategory || !newCategoryName.trim()}
+                className="flex-1 h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-100 transition-all disabled:opacity-50"
+              >
+                {creatingCategory ? "..." : "Tạo ngay"}
+              </button>
             </div>
           </div>
         </div>

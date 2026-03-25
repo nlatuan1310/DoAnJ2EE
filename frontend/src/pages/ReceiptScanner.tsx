@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { UploadCloud, CheckCircle2, AlertCircle, ScanLine, Save, FileText, Camera } from "lucide-react";
+import api from "@/services/api";
 
 export default function ReceiptScanner() {
   const [file, setFile] = useState<File | null>(null);
@@ -38,16 +39,11 @@ export default function ReceiptScanner() {
     d.append("file", file);
 
     try {
-      const response = await fetch("http://localhost:8080/api/ai/receipt/scan", {
-        method: "POST",
-        body: d,
+      const response = await api.post("/ai/receipt/scan", d, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
-      if (!response.ok) {
-        throw new Error("Lỗi khi kết nối với máy chủ AI. Vui lòng kiểm tra lại Spring Boot.");
-      }
-
-      const data = await response.json();
+      const data = response.data;
       setResult(data);
       setFormData({
         tenCuaHang: data.tenCuaHang || "",

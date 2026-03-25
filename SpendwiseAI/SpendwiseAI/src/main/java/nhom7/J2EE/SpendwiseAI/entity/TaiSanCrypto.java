@@ -20,4 +20,7 @@ public class TaiSanCrypto {
 
     @Column(name = "ten")
     private String ten;
+
+    @Column(name = "gia_mua_trung_binh")
+    private Double giaMuaTrungBinh;
 }
