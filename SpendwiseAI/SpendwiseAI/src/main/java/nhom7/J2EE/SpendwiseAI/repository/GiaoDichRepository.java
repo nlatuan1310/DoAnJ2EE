@@ -21,4 +21,15 @@ public interface GiaoDichRepository extends JpaRepository<GiaoDich, UUID> {
             UUID nguoiDungId, LocalDateTime tuNgay, LocalDateTime denNgay);
 
     List<GiaoDich> findByNguoiDungIdAndDanhMucId(UUID nguoiDungId, Integer danhMucId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT SUM(g.soTien) FROM GiaoDich g")
+    java.math.BigDecimal tinhTongTienGiaoDich();
+
+    long countByNgayGiaoDichBetween(LocalDateTime tuNgay, LocalDateTime denNgay);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(DISTINCT g.nguoiDung.id) FROM GiaoDich g WHERE g.ngayGiaoDich >= :tuNgay AND g.ngayGiaoDich <= :denNgay")
+    long countActiveUsers(@org.springframework.data.repository.query.Param("tuNgay") LocalDateTime tuNgay, @org.springframework.data.repository.query.Param("denNgay") LocalDateTime denNgay);
+
+    @org.springframework.data.jpa.repository.Query("SELECT SUM(g.soTien) FROM GiaoDich g WHERE g.ngayGiaoDich >= :tuNgay AND g.ngayGiaoDich <= :denNgay")
+    java.math.BigDecimal tinhTongTienGiaoDichKhoang(@org.springframework.data.repository.query.Param("tuNgay") LocalDateTime tuNgay, @org.springframework.data.repository.query.Param("denNgay") LocalDateTime denNgay);
 }

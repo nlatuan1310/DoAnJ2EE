@@ -38,8 +38,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/ai/**").permitAll() // Tạm thời mở để test giao diện
                         .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
-                        // Admin endpoints
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // Admin endpoints (Yêu cầu xác thực JWT)
+                        .requestMatchers("/api/admin/**").authenticated()
+                        .requestMatchers("/api/nguoi-dung/**").authenticated()
                         // Tất cả request khác cần xác thực
                         .anyRequest().authenticated()
                 )
@@ -57,5 +58,20 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
+        org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
+        // Cho phép tất cả các nguồn (cần thu hẹp lại khi deploy thực tế, vd: "http://localhost:5173")
+        configuration.setAllowedOrigins(java.util.List.of("http://localhost:5173", "http://127.0.0.1:5173"));
+        configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type", "Accept"));
+        configuration.setAllowCredentials(true);
+        
+        org.springframework.web.cors.UrlBasedCorsConfigurationSource source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
+        // Áp dụng cấu hình cho toàn bộ đường dẫn API
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }
