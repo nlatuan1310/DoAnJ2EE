@@ -10,17 +10,6 @@ import { AuthProvider } from "./hooks/useAuth";
 
 function App() {
   return (
-<<<<<<< HEAD
-    <BrowserRouter>
-      <Routes>
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/investments" element={<Investments />} />
-          <Route path="/receipt-scanner" element={<ReceiptScanner />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
-=======
     <AuthProvider>
       <BrowserRouter>
         <Routes>
@@ -34,7 +23,6 @@ function App() {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
->>>>>>> develop
   )
 }
 
