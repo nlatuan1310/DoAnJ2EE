@@ -132,7 +132,7 @@ public class PdfExportService {
         Map<String, Double> categoryData = giaoDichs.stream()
                 .filter(g -> "expense".equalsIgnoreCase(g.getLoai()))
                 .collect(Collectors.groupingBy(
-                        g -> g.getDanhMuc() != null ? g.getDanhMuc().getTen() : "Khac",
+                        g -> g.getDanhMuc() != null ? g.getDanhMuc().getTenDanhMuc() : "Khac",
                         Collectors.summingDouble(g -> g.getSoTien().doubleValue())
                 ));
 

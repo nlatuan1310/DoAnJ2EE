@@ -26,6 +26,7 @@ export default function Login() {
 
       if (response.ok) {
         login(data.token, {
+          id: data.id,
           email: data.email,
           hoVaTen: data.hoVaTen,
           vaiTro: data.vaiTro

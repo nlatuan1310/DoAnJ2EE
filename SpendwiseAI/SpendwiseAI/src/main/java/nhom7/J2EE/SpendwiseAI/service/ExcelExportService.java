@@ -77,7 +77,7 @@ public class ExcelExportService {
                 row.createCell(2).setCellValue(gd.getLoai().equalsIgnoreCase("income") ? "Thu nhập" : "Chi tiêu");
                 row.getCell(2).setCellStyle(textCellStyle);
 
-                row.createCell(3).setCellValue(gd.getDanhMuc() != null ? gd.getDanhMuc().getTen() : "Không có");
+                row.createCell(3).setCellValue(gd.getDanhMuc() != null ? gd.getDanhMuc().getTenDanhMuc() : "Không có");
                 row.getCell(3).setCellStyle(textCellStyle);
 
                 Cell amountCell = row.createCell(4);

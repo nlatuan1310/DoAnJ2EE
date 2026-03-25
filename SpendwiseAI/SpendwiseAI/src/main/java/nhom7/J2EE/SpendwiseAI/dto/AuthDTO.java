@@ -99,6 +99,7 @@ public class AuthDTO {
     public static class AuthResponse {
         private String token;
         private String loai; // Bearer
+        private UUID id;
         private String email;
         private String hoVaTen;
         private String vaiTro;
