@@ -35,6 +35,7 @@ const mainMenuItems = [
     subItems: [
       { title: "Tổng quan", url: "/" },
       { title: "Phân tích", url: "/analytics" },
+      { title: "Smart Dashboard", url: "/smart-dashboard" },
     ],
   },
   {

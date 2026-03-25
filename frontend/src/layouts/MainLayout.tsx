@@ -1,9 +1,19 @@
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
-import { Outlet } from "react-router-dom"
-import { Search, Bell, Info, Sun } from "lucide-react"
+import { Outlet, useNavigate } from "react-router-dom"
+import { Search, Bell, Info, Sun, LogOut, User } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function MainLayout() {
+  const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleProfileClick = () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+    }
+  };
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -38,18 +48,41 @@ export default function MainLayout() {
             {/* Divider */}
             <div className="w-px h-6 bg-slate-200 mx-1"></div>
 
-            {/* Profile */}
-            <button className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-50 transition-colors">
-              <img 
-                src="https://github.com/shadcn.png" 
-                alt="User" 
-                className="w-8 h-8 rounded-full" 
-              />
-              <span className="text-sm font-medium text-slate-700 hidden sm:block">Acme Inc.</span>
-              <svg className="w-3 h-3 text-slate-400 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+            {/* Profile / Auth Section */}
+            {isAuthenticated ? (
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={handleProfileClick}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-50 transition-colors"
+                >
+                  <img 
+                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.hoVaTen || 'User')}&background=10b981&color=fff`} 
+                    alt="User" 
+                    className="w-8 h-8 rounded-full border border-slate-200" 
+                  />
+                  <div className="text-left hidden sm:block">
+                    <p className="text-sm font-semibold text-slate-700 leading-tight">{user?.hoVaTen}</p>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wider">{user?.vaiTro}</p>
+                  </div>
+                </button>
+                
+                <button 
+                  onClick={logout}
+                  title="Đăng xuất"
+                  className="p-2 rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={handleProfileClick}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+              >
+                <User className="w-4 h-4" />
+                <span className="text-sm font-medium">Đăng nhập</span>
+              </button>
+            )}
           </div>
         </header>
 
