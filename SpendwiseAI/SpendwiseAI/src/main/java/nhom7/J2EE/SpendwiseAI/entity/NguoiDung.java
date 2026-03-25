@@ -41,6 +41,12 @@ public class NguoiDung {
     @Column(name = "ngay_tao")
     private LocalDateTime ngayTao;
 
+    @Column(name = "otp_code")
+    private String otpCode;
+
+    @Column(name = "otp_expiry")
+    private LocalDateTime otpExpiry;
+
     @PrePersist
     protected void onCreate() {
         ngayTao = LocalDateTime.now();

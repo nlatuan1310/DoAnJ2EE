@@ -28,8 +28,3 @@ api.interceptors.response.use(
 );
 
 export default api;
-
-// Helper: lấy userId hiện tại (test bypass = UUID 0)
-export function getCurrentUserId(): string {
-  return localStorage.getItem("userId") || "00000000-0000-0000-0000-000000000000";
-}
