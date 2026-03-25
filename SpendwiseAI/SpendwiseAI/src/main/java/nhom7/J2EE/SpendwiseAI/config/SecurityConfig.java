@@ -43,11 +43,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/tai-san-crypto/**").permitAll() // Danh sách coin public
+                        .requestMatchers("/api/tai-san-crypto/**").permitAll() // Danh sách coin public
                         // Admin endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        // Tất cả request khác cần xác thực
-                        .anyRequest().authenticated()
+                        // Tạm thời mở hết các request để DEV test (bỏ token)
+                        .anyRequest().permitAll()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 

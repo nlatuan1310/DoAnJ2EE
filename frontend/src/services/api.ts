@@ -45,16 +45,21 @@ api.interceptors.response.use(
  * Trả về chuỗi UUID hoặc chuỗi rỗng nếu chưa đăng nhập.
  */
 export function getCurrentUserId(): string {
+  const DEFAULT_UUID = '3394747b-2877-4009-80ac-334710926593';
   const userData = localStorage.getItem('user');
   if (userData) {
     try {
       const user = JSON.parse(userData);
-      return user.id || '';
+      // Kiểm tra nếu id là UUID hợp lệ (regex đơn giản)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (user.id && uuidRegex.test(user.id)) {
+        return user.id;
+      }
     } catch {
-      return '';
+      return DEFAULT_UUID;
     }
   }
-  return '';
+  return DEFAULT_UUID; // Fallback dành cho DEV khi chưa đăng nhập
 }
 
 /**

@@ -58,9 +58,7 @@ interface NganSach {
   spent?: number;
 }
 
-const API_BASE = "http://localhost:8080/api";
-
-import { getCurrentUserId } from "@/services/api";
+import api, { getCurrentUserId } from "@/services/api";
 
 export default function Budgets() {
   const [budgets, setBudgets] = useState<NganSach[]>([]);
@@ -104,18 +102,16 @@ export default function Budgets() {
     setLoading(true);
     try {
       const [budgetsRes, catsRes, walletsRes, txRes] = await Promise.all([
-        fetch(`${API_BASE}/ngan-sach/nguoi-dung/${getCurrentUserId()}`),
-        fetch(`${API_BASE}/danh-muc/nguoi-dung/${getCurrentUserId()}/loai/expense`),
-        fetch(`${API_BASE}/vi-tien/nguoi-dung/${getCurrentUserId()}`),
-        fetch(`${API_BASE}/giao-dich/nguoi-dung/${getCurrentUserId()}`)
+        api.get(`/ngan-sach/nguoi-dung/${getCurrentUserId()}`),
+        api.get(`/danh-muc/nguoi-dung/${getCurrentUserId()}/loai/expense`),
+        api.get(`/vi-tien/nguoi-dung/${getCurrentUserId()}`),
+        api.get(`/giao-dich/nguoi-dung/${getCurrentUserId()}`)
       ]);
 
-      if (!budgetsRes.ok || !catsRes.ok || !walletsRes.ok) throw new Error("Không thể tải dữ liệu.");
-
-      const budgetsData = await budgetsRes.json();
-      const catsData = await catsRes.json();
-      const walletsData = await walletsRes.json();
-      const txData = await txRes.json();
+      const budgetsData = budgetsRes.data;
+      const catsData = catsRes.data;
+      const walletsData = walletsRes.data;
+      const txData = txRes.data;
 
       const enrichedBudgets = budgetsData.map((b: NganSach) => {
         const spent = txData
@@ -149,10 +145,9 @@ export default function Budgets() {
     try {
       const isEditing = !!editingBudget;
       const url = isEditing 
-        ? `${API_BASE}/ngan-sach/${editingBudget.id}` 
-        : `${API_BASE}/ngan-sach?nguoiDungId=${getCurrentUserId()}&viId=${formData.viId}&danhMucId=${formData.danhMucId}`;
+        ? `/ngan-sach/${editingBudget.id}` 
+        : `/ngan-sach?nguoiDungId=${getCurrentUserId()}&viId=${formData.viId}&danhMucId=${formData.danhMucId}`;
       
-      const method = isEditing ? "PUT" : "POST";
       const body = {
         gioiHanTien: parseFloat(formData.gioiHanTien),
         chuKy: formData.chuKy,
@@ -160,13 +155,11 @@ export default function Budgets() {
         ngayKetThuc: formData.ngayKetThuc
       };
 
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
-
-      if (!res.ok) throw new Error("Lỗi khi lưu dữ liệu.");
+      if (isEditing) {
+        await api.put(url, body);
+      } else {
+        await api.post(url, body);
+      }
 
       setSuccess(isEditing ? "Đã cập nhật!" : "Đã tạo mới!");
       setIsModalOpen(false);
@@ -183,7 +176,7 @@ export default function Budgets() {
   const handleDelete = async (id: string) => {
     if (!confirm("Xác nhận xóa?")) return;
     try {
-      await fetch(`${API_BASE}/ngan-sach/${id}`, { method: "DELETE" });
+      await api.delete(`/ngan-sach/${id}`);
       setSuccess("Đã xóa.");
       fetchInitialData();
       setTimeout(() => setSuccess(null), 3000);

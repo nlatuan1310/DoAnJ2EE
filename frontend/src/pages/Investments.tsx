@@ -46,9 +46,7 @@ interface GiaoDichCrypto {
   ngayGiaoDich: string;
 }
 
-const API_BASE = "http://localhost:8080/api";
-
-import { getCurrentUserId } from "@/services/api";
+import api, { getCurrentUserId } from "@/services/api";
 
 const CRYPTO_COLORS: Record<string, string> = {
   BTC: "from-orange-400 to-amber-500",
@@ -66,10 +64,10 @@ const CRYPTO_COLORS: Record<string, string> = {
 const getCryptoGradient = (kyHieu: string) =>
   CRYPTO_COLORS[kyHieu?.toUpperCase()] ?? "from-slate-400 to-slate-600";
 
-const formatNumber = (n: number, decimals = 2) =>
+const formatNumber = (n: number, maxDecimals = 2, minDecimals = 0) =>
   new Intl.NumberFormat("vi-VN", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
+    minimumFractionDigits: minDecimals,
+    maximumFractionDigits: maxDecimals,
   }).format(n);
 
 const formatCurrency = (n: number) =>
@@ -96,6 +94,9 @@ export default function Investments() {
   const [isAddCoinOpen, setIsAddCoinOpen] = useState(false);
   const [addCoinForm, setAddCoinForm] = useState({
     taiSanId: "",
+    isNewAsset: false,
+    newAssetKyHieu: "",
+    newAssetTen: "",
     soLuong: "",
     giaMuaTrungBinh: "",
     diaChiVi: "",
@@ -117,18 +118,28 @@ export default function Investments() {
     setLoading(true);
     setError(null);
     try {
-      const [portfolioRes, assetsRes] = await Promise.all([
-        fetch(`${API_BASE}/crypto/danh-muc/nguoi-dung/${getCurrentUserId()}`),
-        fetch(`${API_BASE}/tai-san-crypto`),
+      // Fetch concurrently but handle separately to avoid one failing the other
+      const [portfolioRes, assetsRes] = await Promise.allSettled([
+        api.get(`/crypto/danh-muc/nguoi-dung/${getCurrentUserId()}`),
+        api.get(`/tai-san-crypto`),
       ]);
-      if (!portfolioRes.ok) throw new Error("Không thể tải danh mục crypto.");
-      if (!assetsRes.ok) throw new Error("Không thể tải danh sách tài sản.");
-      const portfolioData = await portfolioRes.json();
-      const assetsData = await assetsRes.json();
-      setPortfolio(portfolioData);
-      setAvailableAssets(assetsData);
-      if (assetsData.length > 0 && !addCoinForm.taiSanId) {
-        setAddCoinForm((p) => ({ ...p, taiSanId: assetsData[0].id.toString() }));
+
+      if (portfolioRes.status === "fulfilled") {
+        setPortfolio(portfolioRes.value.data);
+      } else {
+        console.error("Portfolio fetch failed:", portfolioRes.reason);
+        setError("Không thể tải danh mục: " + (portfolioRes.reason.response?.data?.message || portfolioRes.reason.message));
+      }
+
+      if (assetsRes.status === "fulfilled") {
+        const assetsData = assetsRes.value.data;
+        setAvailableAssets(assetsData);
+        if (assetsData.length > 0 && !addCoinForm.taiSanId) {
+          setAddCoinForm((p) => ({ ...p, taiSanId: assetsData[0].id.toString() }));
+        }
+      } else {
+        console.error("Assets fetch failed:", assetsRes.reason);
+        setError("Không thể tải danh sách coin: " + (assetsRes.reason.response?.data?.message || assetsRes.reason.message));
       }
     } catch (e: any) {
       setError(e.message);
@@ -162,18 +173,20 @@ export default function Investments() {
     }
   };
 
-  // Tự động điền giá khi chọn coin ở Modal Thêm Mới
+  // Tự động điền giá mua trung bình từ database khi chọn coin
   useEffect(() => {
     if (!addCoinForm.taiSanId || !isAddCoinOpen) return;
-    const coin = availableAssets.find(c => c.id.toString() === addCoinForm.taiSanId);
-    if (!coin) return;
-
-    fetchLivePrice(coin.kyHieu).then(price => {
-      if (price > 0) {
-        setAddCoinForm(prev => ({ ...prev, giaMuaTrungBinh: formatVnCurrencyInput(price.toString()) }));
-      }
-    });
-  }, [addCoinForm.taiSanId, isAddCoinOpen, availableAssets]);
+    const existingCoin = portfolio.find(c => c.taiSan?.id.toString() === addCoinForm.taiSanId);
+    
+    if (existingCoin && existingCoin.giaMuaTrungBinh > 0) {
+      setAddCoinForm(prev => ({ 
+        ...prev, 
+        giaMuaTrungBinh: formatVnCurrencyInput(Math.round(existingCoin.giaMuaTrungBinh).toString()) 
+      }));
+    } else {
+      setAddCoinForm(prev => ({ ...prev, giaMuaTrungBinh: "" })); // Để trống để user tự nhập
+    }
+  }, [addCoinForm.taiSanId, isAddCoinOpen, portfolio]);
 
   // Tự động điền giá hiện tại khi mở Modal Ghi Lệnh
   useEffect(() => {
@@ -189,29 +202,42 @@ export default function Investments() {
   //  ADD COIN TO PORTFOLIO
   // ========================
   const handleAddCoin = async () => {
-    if (!addCoinForm.taiSanId) return;
+    if (!addCoinForm.isNewAsset && !addCoinForm.taiSanId) return;
+    if (addCoinForm.isNewAsset && (!addCoinForm.newAssetKyHieu || !addCoinForm.newAssetTen)) return;
+
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(
-        `${API_BASE}/crypto/danh-muc?nguoiDungId=${getCurrentUserId()}&taiSanId=${addCoinForm.taiSanId}`,
+      let finalTaiSanId = addCoinForm.taiSanId;
+
+      // Nếu là coin mới, tạo tài sản crypto trước
+      if (addCoinForm.isNewAsset) {
+        const newAssetRes = await api.post("/tai-san-crypto", {
+          kyHieu: addCoinForm.newAssetKyHieu.toUpperCase(),
+          ten: addCoinForm.newAssetTen,
+        });
+        finalTaiSanId = newAssetRes.data.id.toString();
+      }
+
+      await api.post(
+        `/crypto/danh-muc?nguoiDungId=${getCurrentUserId()}&taiSanId=${finalTaiSanId}`,
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            soLuong: parseFloat(addCoinForm.soLuong) || 0,
-            giaMuaTrungBinh: parseVnCurrency(addCoinForm.giaMuaTrungBinh),
-            diaChiVi: addCoinForm.diaChiVi || "",
-          }),
+          soLuong: parseFloat(addCoinForm.soLuong) || 0,
+          giaMuaTrungBinh: parseVnCurrency(addCoinForm.giaMuaTrungBinh),
+          diaChiVi: addCoinForm.diaChiVi || "",
         }
       );
-      if (!res.ok) throw new Error("Không thể thêm coin.");
+
       showSuccess("Đã thêm coin vào danh mục!");
       setIsAddCoinOpen(false);
-      setAddCoinForm({ taiSanId: availableAssets[0]?.id.toString() || "", soLuong: "", giaMuaTrungBinh: "", diaChiVi: "" });
+      setAddCoinForm({ 
+        taiSanId: "", isNewAsset: false, newAssetKyHieu: "", newAssetTen: "", 
+        soLuong: "", giaMuaTrungBinh: "", diaChiVi: "" 
+      });
       fetchPortfolio();
     } catch (e: any) {
-      setError(e.message);
+      console.error("Add coin error:", e);
+      setError("Lỗi khi thêm coin: " + (e.response?.data?.message || e.message));
     } finally {
       setLoading(false);
     }
@@ -220,8 +246,7 @@ export default function Investments() {
   const handleDeleteCoin = async (id: string) => {
     if (!confirm("Xóa coin này khỏi danh mục? Toàn bộ lịch sử giao dịch sẽ bị xóa.")) return;
     try {
-      const res = await fetch(`${API_BASE}/crypto/danh-muc/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Không thể xóa.");
+      await api.delete(`/crypto/danh-muc/${id}`);
       showSuccess("Đã xóa coin.");
       fetchPortfolio();
     } catch (e: any) {
@@ -237,9 +262,8 @@ export default function Investments() {
     setIsTxModalOpen(true);
     setTxLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/crypto/giao-dich/danh-muc/${coin.id}`);
-      if (!res.ok) throw new Error("Không thể tải giao dịch.");
-      setTransactions(await res.json());
+      const res = await api.get(`/crypto/giao-dich/danh-muc/${coin.id}`);
+      setTransactions(res.data);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -252,30 +276,20 @@ export default function Investments() {
     setTxLoading(true);
     setError(null);
     try {
-      const res = await fetch(
-        `${API_BASE}/crypto/giao-dich?danhMucId=${selectedCoin.id}`,
+      await api.post(
+        `/crypto/giao-dich?danhMucId=${selectedCoin.id}`,
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            loai: txForm.loai,
-            soLuong: parseFloat(txForm.soLuong),
-            gia: parseVnCurrency(txForm.gia),
-            ngayGiaoDich: txForm.ngayGiaoDich + ":00",
-          }),
+          loai: txForm.loai,
+          soLuong: parseFloat(txForm.soLuong),
+          gia: parseVnCurrency(txForm.gia),
+          ngayGiaoDich: txForm.ngayGiaoDich + ":00",
         }
       );
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(errText || "Không thể ghi giao dịch.");
-      }
       showSuccess(`Đã ghi nhận lệnh ${txForm.loai === "buy" ? "Mua" : "Bán"}!`);
       setTxForm({ loai: "buy", soLuong: "", gia: "", ngayGiaoDich: new Date().toISOString().slice(0, 16) });
       // Reload transactions and portfolio
-      const [txRes] = await Promise.all([
-        fetch(`${API_BASE}/crypto/giao-dich/danh-muc/${selectedCoin.id}`),
-      ]);
-      setTransactions(await txRes.json());
+      const txRes = await api.get(`/crypto/giao-dich/danh-muc/${selectedCoin.id}`);
+      setTransactions(txRes.data);
       fetchPortfolio();
     } catch (e: any) {
       setError(e.message);
@@ -287,11 +301,11 @@ export default function Investments() {
   const handleDeleteTransaction = async (txId: string) => {
     if (!confirm("Xóa giao dịch này?")) return;
     try {
-      await fetch(`${API_BASE}/crypto/giao-dich/${txId}`, { method: "DELETE" });
+      await api.delete(`/crypto/giao-dich/${txId}`);
       showSuccess("Đã xóa giao dịch.");
       if (selectedCoin) {
-        const res = await fetch(`${API_BASE}/crypto/giao-dich/danh-muc/${selectedCoin.id}`);
-        setTransactions(await res.json());
+        const res = await api.get(`/crypto/giao-dich/danh-muc/${selectedCoin.id}`);
+        setTransactions(res.data);
       }
       fetchPortfolio();
     } catch (e: any) {
@@ -426,7 +440,9 @@ export default function Investments() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="bg-slate-50 rounded-xl p-3">
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Số lượng</p>
-                        <p className="font-black text-slate-800 text-base">{formatNumber(coin.soLuong || 0, 6)}</p>
+                        <p className="font-black text-slate-800 text-base">
+                          {formatNumber(coin.soLuong || 0, 8)} <span className="text-[10px] text-slate-400 font-bold ml-0.5">{coin.taiSan?.kyHieu}</span>
+                        </p>
                       </div>
                       <div className="bg-slate-50 rounded-xl p-3">
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Giá TB mua</p>
@@ -472,18 +488,51 @@ export default function Investments() {
               </button>
             </div>
             <div className="p-6 space-y-5">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Chọn Coin</label>
-                <select
-                  value={addCoinForm.taiSanId}
-                  onChange={(e) => setAddCoinForm({ ...addCoinForm, taiSanId: e.target.value })}
-                  className="w-full h-11 pl-4 pr-8 rounded-xl bg-slate-50 border-none font-bold text-slate-800 text-sm focus:ring-2 focus:ring-amber-100 appearance-none"
+              <div className="flex items-center justify-between px-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chọn Coin</label>
+                <button 
+                  onClick={() => setAddCoinForm(p => ({ ...p, isNewAsset: !p.isNewAsset }))}
+                  className="text-[10px] font-bold text-amber-600 hover:text-amber-700 underline"
                 >
-                  {availableAssets.map((a) => (
-                    <option key={a.id} value={a.id}>{a.kyHieu} – {a.ten}</option>
-                  ))}
-                </select>
+                  {addCoinForm.isNewAsset ? "← Chọn từ danh sách" : "+ Thêm coin mới vào hệ thống"}
+                </button>
               </div>
+
+              {!addCoinForm.isNewAsset ? (
+                <div className="space-y-1.5">
+                  <select
+                    value={addCoinForm.taiSanId}
+                    onChange={(e) => setAddCoinForm({ ...addCoinForm, taiSanId: e.target.value })}
+                    className="w-full h-11 pl-4 pr-8 rounded-xl bg-slate-50 border-none font-bold text-slate-800 text-sm focus:ring-2 focus:ring-amber-100 appearance-none"
+                  >
+                    {availableAssets.length === 0 && <option value="">(Không có dữ liệu coin)</option>}
+                    {availableAssets.map((a) => (
+                      <option key={a.id} value={a.id}>{a.kyHieu} – {a.ten}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Ký hiệu (BTC, ETH...)</label>
+                    <Input
+                      placeholder="BTC"
+                      value={addCoinForm.newAssetKyHieu}
+                      onChange={(e) => setAddCoinForm({ ...addCoinForm, newAssetKyHieu: e.target.value.toUpperCase() })}
+                      className="h-11 rounded-xl bg-amber-50/50 border-amber-100 font-bold text-slate-800 placeholder:text-slate-300"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Tên coin</label>
+                    <Input
+                      placeholder="Bitcoin"
+                      value={addCoinForm.newAssetTen}
+                      onChange={(e) => setAddCoinForm({ ...addCoinForm, newAssetTen: e.target.value })}
+                      className="h-11 rounded-xl bg-amber-50/50 border-amber-100 font-bold text-slate-800 placeholder:text-slate-300"
+                    />
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Số lượng ban đầu</label>
@@ -496,7 +545,12 @@ export default function Investments() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Giá mua TB (VNĐ)</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1 flex items-center justify-between">
+                    <span>Giá mua TB (VNĐ)</span>
+                    <span className={`text-[9px] normal-case tracking-normal ${portfolio.some(c => c.taiSan?.id.toString() === addCoinForm.taiSanId) ? "text-emerald-500" : "text-amber-500"}`}>
+                      {portfolio.some(c => c.taiSan?.id.toString() === addCoinForm.taiSanId) ? "📦 Lấy từ danh mục" : "✍️ Nhập tay"}
+                    </span>
+                  </label>
                   <Input
                     type="text"
                     placeholder="0"
@@ -523,7 +577,7 @@ export default function Investments() {
               </Button>
               <Button
                 onClick={handleAddCoin}
-                disabled={loading || !addCoinForm.taiSanId}
+                disabled={loading || (!addCoinForm.isNewAsset && !addCoinForm.taiSanId) || (addCoinForm.isNewAsset && !addCoinForm.newAssetKyHieu)}
                 className="flex-1 h-12 text-white font-bold text-sm rounded-xl shadow-lg px-8"
                 style={{ background: "linear-gradient(135deg, #f59e0b, #b45309)" }}
               >
@@ -548,7 +602,7 @@ export default function Investments() {
                   {selectedCoin.taiSan?.kyHieu} – Lịch sử Giao dịch
                 </h2>
                 <p className="text-white/70 text-xs font-semibold mt-0.5">
-                  Đang nắm: {formatNumber(selectedCoin.soLuong || 0, 6)} • Giá TB: {formatNumber(selectedCoin.giaMuaTrungBinh || 0, 0)} VNĐ
+                  Đang nắm: {formatNumber(selectedCoin.soLuong || 0, 8)} {selectedCoin.taiSan?.kyHieu} • Giá TB: {formatNumber(selectedCoin.giaMuaTrungBinh || 0, 0, 0)} VNĐ
                 </p>
               </div>
               <button onClick={() => setIsTxModalOpen(false)} className="text-white/60 hover:text-white transition-colors">
@@ -642,7 +696,7 @@ export default function Investments() {
                           </div>
                           <div>
                             <p className="font-black text-slate-800 text-sm">
-                              {tx.loai === "buy" ? "Mua" : "Bán"} {formatNumber(tx.soLuong, 6)} {selectedCoin.taiSan?.kyHieu}
+                              {tx.loai === "buy" ? "Mua" : "Bán"} {formatNumber(tx.soLuong, 8)} {selectedCoin.taiSan?.kyHieu}
                             </p>
                             <p className="text-xs text-slate-400 font-medium">
                               @ {formatNumber(tx.gia, 0)} VNĐ • {new Date(tx.ngayGiaoDich).toLocaleDateString("vi-VN")}
