@@ -79,11 +79,33 @@ public class AuthService {
                         request.getEmail(), request.getMatKhau()));
 
         // Lấy thông tin user
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         NguoiDung nguoiDung = nguoiDungRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
 
-        // Tạo token
+        // Kiểm tra 2FA
+        if (nguoiDung.is2faEnabled()) {
+            // Tạo 6-digit OTP
+            String otp = String.format("%06d", new java.util.Random().nextInt(999999));
+            nguoiDung.setOtpCode(otp);
+            nguoiDung.setOtpExpiry(LocalDateTime.now().plusMinutes(15));
+            nguoiDungRepository.save(nguoiDung);
+
+            // Gửi mail
+            String subject = "Mã xác nhận bảo mật 2 lớp (2FA)";
+            String text = "Xin chào " + nguoiDung.getHoVaTen() + ",\n\n" +
+                          "Mã OTP để đăng nhập vào tài khoản của bạn là: " + otp + "\n" +
+                          "Mã này sẽ hết hạn sau 15 phút.\n\n" +
+                          "Trân trọng,\nĐội ngũ Spendwise AI";
+            emailService.guiEmail(nguoiDung.getEmail(), subject, text);
+
+            return AuthDTO.AuthResponse.builder()
+                    .email(nguoiDung.getEmail())
+                    .requires2FA(true)
+                    .build();
+        }
+
+        // Tạo token nếu không yêu cầu 2FA
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         Map<String, Object> claims = new HashMap<>();
         claims.put("vaiTro", nguoiDung.getVaiTro());
         String token = jwtUtil.generateToken(userDetails, claims);
@@ -94,6 +116,7 @@ public class AuthService {
                 .email(nguoiDung.getEmail())
                 .hoVaTen(nguoiDung.getHoVaTen())
                 .vaiTro(nguoiDung.getVaiTro())
+                .requires2FA(false)
                 .build();
     }
 
@@ -109,6 +132,7 @@ public class AuthService {
                 .vaiTro(nguoiDung.getVaiTro())
                 .anhDaiDien(nguoiDung.getAnhDaiDien())
                 .tienTe(nguoiDung.getTienTe())
+                .is2faEnabled(nguoiDung.is2faEnabled())
                 .build();
     }
 
@@ -176,6 +200,47 @@ public class AuthService {
         nguoiDung.setMatKhauHash(passwordEncoder.encode(request.getMatKhauMoi()));
         nguoiDung.setOtpCode(null);
         nguoiDung.setOtpExpiry(null);
+        nguoiDungRepository.save(nguoiDung);
+    }
+
+    public AuthDTO.AuthResponse xacThuc2FA(AuthDTO.XacThuc2FARequest request) {
+        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+
+        // Kiểm tra OTP
+        if (nguoiDung.getOtpCode() == null || !nguoiDung.getOtpCode().equals(request.getOtp())) {
+            throw new RuntimeException("Mã OTP không chính xác");
+        }
+
+        if (nguoiDung.getOtpExpiry() != null && nguoiDung.getOtpExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Mã OTP đã hết hạn");
+        }
+
+        // Xóa OTP sau khi xác thực thành công
+        nguoiDung.setOtpCode(null);
+        nguoiDung.setOtpExpiry(null);
+        nguoiDungRepository.save(nguoiDung);
+
+        // Tạo token
+        UserDetails userDetails = userDetailsService.loadUserByUsername(nguoiDung.getEmail());
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("vaiTro", nguoiDung.getVaiTro());
+        String token = jwtUtil.generateToken(userDetails, claims);
+
+        return AuthDTO.AuthResponse.builder()
+                .token(token)
+                .loai("Bearer")
+                .email(nguoiDung.getEmail())
+                .hoVaTen(nguoiDung.getHoVaTen())
+                .vaiTro(nguoiDung.getVaiTro())
+                .requires2FA(false)
+                .build();
+    }
+
+    public void toggle2FA(String email, boolean enable) {
+        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+        nguoiDung.set2faEnabled(enable);
         nguoiDungRepository.save(nguoiDung);
     }
 }

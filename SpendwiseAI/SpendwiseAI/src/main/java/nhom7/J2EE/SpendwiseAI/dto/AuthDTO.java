@@ -90,6 +90,24 @@ public class AuthDTO {
         private String matKhauMoi;
     }
 
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class XacThuc2FARequest {
+        @NotBlank(message = "Email không được để trống")
+        private String email;
+
+        @NotBlank(message = "Mã OTP không được để trống")
+        private String otp;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Toggle2FARequest {
+        private boolean enable;
+    }
+
     // ===== RESPONSE =====
 
     @Data
@@ -102,6 +120,7 @@ public class AuthDTO {
         private String email;
         private String hoVaTen;
         private String vaiTro;
+        private boolean requires2FA;
     }
 
     @Data
@@ -116,5 +135,6 @@ public class AuthDTO {
         private String vaiTro;
         private String anhDaiDien;
         private String tienTe;
+        private boolean is2faEnabled;
     }
 }

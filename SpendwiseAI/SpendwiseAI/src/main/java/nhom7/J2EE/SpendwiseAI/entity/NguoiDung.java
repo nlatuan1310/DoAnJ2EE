@@ -41,6 +41,9 @@ public class NguoiDung {
     @Column(name = "ngay_tao")
     private LocalDateTime ngayTao;
 
+    @Column(name = "is_2fa_enabled")
+    private boolean is2faEnabled = false;
+
     @Column(name = "otp_code")
     private String otpCode;
 
