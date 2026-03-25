@@ -152,8 +152,6 @@
 	</build>
 
 
-</project>
-=======
 	<repositories>
 		<repository>
 			<id>spring-milestones</id>
