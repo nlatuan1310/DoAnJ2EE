@@ -38,7 +38,7 @@ interface GiaoDich {
   viTien?: { id: string; tenVi: string };
 }
 
-import { getCurrentUserId } from "../services/api";
+import api, { getCurrentUserId } from "../services/api";
 
 /* ═══════ CONFIG ═══════ */
 const PAGE_SIZE = 10;
@@ -96,25 +96,15 @@ export default function Transactions() {
         // Song song fetch giao dịch + danh mục
         const currentUserId = getCurrentUserId();
         const [gdRes, dmRes] = await Promise.all([
-          fetch(`/api/giao-dich/nguoi-dung/${currentUserId}`),
-          fetch(`/api/danh-muc/nguoi-dung/${currentUserId}`),
+          api.get(`/giao-dich/nguoi-dung/${currentUserId}`),
+          api.get(`/danh-muc/nguoi-dung/${currentUserId}`),
         ]);
 
         // Xử lý giao dịch
-        if (gdRes.ok) {
-          const gdData = await gdRes.json();
-          setAllGiaoDich(Array.isArray(gdData) ? gdData : []);
-        } else {
-          setAllGiaoDich([]);
-        }
-
+        setAllGiaoDich(Array.isArray(gdRes.data) ? gdRes.data : []);
+        
         // Xử lý danh mục
-        if (dmRes.ok) {
-          const dmData = await dmRes.json();
-          setCategories(Array.isArray(dmData) ? dmData : []);
-        } else {
-          setCategories([]);
-        }
+        setCategories(Array.isArray(dmRes.data) ? dmRes.data : []);
       } catch (e) {
         console.error("Lỗi khi tải dữ liệu:", e);
         setError("Không thể kết nối đến Backend. Hãy kiểm tra server đang chạy.");
