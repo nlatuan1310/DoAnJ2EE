@@ -1,6 +1,8 @@
 package nhom7.J2EE.SpendwiseAI.controller;
 
+import nhom7.J2EE.SpendwiseAI.dto.ai.AutoCategorizeDTO;
 import nhom7.J2EE.SpendwiseAI.entity.GiaoDich;
+import nhom7.J2EE.SpendwiseAI.service.AutoCategorizationService;
 import nhom7.J2EE.SpendwiseAI.service.GiaoDichService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,9 +22,12 @@ import java.util.UUID;
 public class GiaoDichController {
 
     private final GiaoDichService giaoDichService;
+    private final AutoCategorizationService autoCategorizationService;
 
-    public GiaoDichController(GiaoDichService giaoDichService) {
+    public GiaoDichController(GiaoDichService giaoDichService,
+                              AutoCategorizationService autoCategorizationService) {
         this.giaoDichService = giaoDichService;
+        this.autoCategorizationService = autoCategorizationService;
     }
 
     /**
@@ -91,4 +96,39 @@ public class GiaoDichController {
         giaoDichService.xoa(id);
         return ResponseEntity.noContent().build();
     }
+
+    // =============================================
+    // Auto-Categorization Endpoints
+    // =============================================
+
+    /**
+     * Gợi ý danh mục từ mô tả giao dịch (preview, chưa lưu).
+     * Dùng khi user đang nhập form và muốn AI phân loại trước.
+     */
+    @PostMapping("/goi-y-danh-muc")
+    public ResponseEntity<AutoCategorizeDTO.SuggestResponse> goiYDanhMuc(
+            @RequestParam UUID nguoiDungId,
+            @RequestBody AutoCategorizeDTO.SuggestRequest request) {
+
+        AutoCategorizeDTO.SuggestResponse response = autoCategorizationService.goiYDanhMuc(
+                request.getMoTa(), request.getLoai(), nguoiDungId);
+
+        if (response == null) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Tạo giao dịch mới với phân loại tự động bằng AI.
+     * AI sẽ gợi ý danh mục dựa trên mô tả giao dịch.
+     */
+    @PostMapping("/tao-tu-dong")
+    public ResponseEntity<GiaoDich> taoVoiAutoCategory(
+            @RequestParam UUID nguoiDungId,
+            @RequestParam UUID viId,
+            @RequestBody GiaoDich giaoDich) {
+        return ResponseEntity.ok(giaoDichService.taoVoiAutoCategory(nguoiDungId, viId, giaoDich));
+    }
 }
+

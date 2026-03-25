@@ -131,4 +131,21 @@ export const theTagApi = {
   },
 };
 
+// ===== Auto-Categorization API (AI phân loại tự động) =====
+
+export const autoCategorizeApi = {
+  /** Gợi ý danh mục từ mô tả giao dịch (preview, chưa lưu) */
+  suggestCategory: (data: { moTa: string; loai: string }, nguoiDungId?: string) => {
+    const uid = nguoiDungId || getCurrentUserId();
+    return api.post(`/giao-dich/goi-y-danh-muc?nguoiDungId=${uid}`, data);
+  },
+
+  /** Tạo giao dịch mới với AI tự động phân loại danh mục */
+  createWithAutoCategory: (viId: string, data: any, nguoiDungId?: string) => {
+    const uid = nguoiDungId || getCurrentUserId();
+    return api.post(`/giao-dich/tao-tu-dong?nguoiDungId=${uid}&viId=${viId}`, data);
+  },
+};
+
 export default api;
+
