@@ -1,0 +1,594 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------------< nhom7.J2EE:SpendwiseAI >-----------------------
+[INFO] Building  0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.5.0:clean (default-clean) @ SpendwiseAI ---
+[INFO] Deleting C:\DoAnJ2EE\SpendwiseAI\SpendwiseAI\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ SpendwiseAI ---
+[INFO] Copying 2 resources from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ SpendwiseAI ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 79 source files with javac [debug parameters release 25] to target\classes
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/CustomUserDetailsService.java:[26,26] cannot find symbol
+  symbol:   method getEmail()
+  location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/CustomUserDetailsService.java:[27,26] cannot find symbol
+  symbol:   method getMatKhauHash()
+  location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/CustomUserDetailsService.java:[28,71] cannot find symbol
+  symbol:   method getVaiTro()
+  location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[40,54] cannot find symbol
+  symbol:   method getEmail()
+  location: variable request of type nhom7.J2EE.SpendwiseAI.dto.AuthDTO.DangKyRequest
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[41,75] cannot find symbol
+  symbol:   method getEmail()
+  location: variable request of type nhom7.J2EE.SpendwiseAI.dto.AuthDTO.DangKyRequest
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[45,40] cannot find symbol
+  symbol:   method builder()
+  location: class nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[46,31] cannot find symbol
+  symbol:   method getEmail()
+  location: variable request of type nhom7.J2EE.SpendwiseAI.dto.AuthDTO.DangKyRequest
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[47,60] cannot find symbol
+  symbol:   method getMatKhau()
+  location: variable request of type nhom7.J2EE.SpendwiseAI.dto.AuthDTO.DangKyRequest
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[48,33] cannot find symbol
+  symbol:   method getHoVaTen()
+  location: variable request of type nhom7.J2EE.SpendwiseAI.dto.AuthDTO.DangKyRequest
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[49,35] cannot find symbol
+  symbol:   method getDienThoai()
+  location: variable request of type nhom7.J2EE.SpendwiseAI.dto.AuthDTO.DangKyRequest
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[58,82] cannot find symbol
+  symbol:   method getEmail()
+  location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[60,39] cannot find symbol
+  symbol:   method getVaiTro()
+  location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[63,36] cannot find symbol
+  symbol:   method builder()
+  location: class nhom7.J2EE.SpendwiseAI.dto.AuthDTO.AuthResponse
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[66,33] cannot find symbol
+  symbol:   method getEmail()
+  location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[67,35] cannot find symbol
+  symbol:   method getHoVaTen()
+  location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[68,34] cannot find symbol
+  symbol:   method getVaiTro()
+  location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[76,32] cannot find symbol
+  symbol:   method getEmail()
+  location: variable request of type nhom7.J2EE.SpendwiseAI.dto.AuthDTO.DangNhapRequest
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[76,52] cannot find symbol
+  symbol:   method getMatKhau()
+  location: variable request of type nhom7.J2EE.SpendwiseAI.dto.AuthDTO.DangNhapRequest
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[80,70] cannot find symbol
+  symbol:   method getEmail()
+  location: variable request of type nhom7.J2EE.SpendwiseAI.dto.AuthDTO.DangNhapRequest
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[85,39] cannot find symbol
+  symbol:   method getVaiTro()
+  location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[88,36] cannot find symbol
+  symbol:   method builder()
+  location: class nhom7.J2EE.SpendwiseAI.dto.AuthDTO.AuthResponse
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[91,33] cannot find symbol
+  symbol:   method getEmail()
+  location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[92,35] cannot find symbol
+  symbol:   method getHoVaTen()
+  location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[93,34] cannot find symbol
+  symbol:   method getVaiTro()
+  location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[43,13] cannot find symbol
+  symbol:   method setNguoiDung(nhom7.J2EE.SpendwiseAI.entity.NguoiDung)
+  location: variable dkdv of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[45,13] cannot find symbol
+  symbol:   method setViTien(nhom7.J2EE.SpendwiseAI.entity.ViTien)
+  location: variable dkdv of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[47,13] cannot find symbol
+  symbol:   method setDanhMuc(nhom7.J2EE.SpendwiseAI.entity.DanhMuc)
+  location: variable dkdv of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[54,22] cannot find symbol
+  symbol:   method getTenDichVu()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[54,72] cannot find symbol
+  symbol:   method getTenDichVu()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[55,22] cannot find symbol
+  symbol:   method getSoTien()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[55,66] cannot find symbol
+  symbol:   method getSoTien()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[56,22] cannot find symbol
+  symbol:   method getChuKyThanhToan()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[56,82] cannot find symbol
+  symbol:   method getChuKyThanhToan()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[57,22] cannot find symbol
+  symbol:   method getNgayThanhToanTiep()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[57,88] cannot find symbol
+  symbol:   method getNgayThanhToanTiep()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DanhMucService.java:[39,16] cannot find symbol
+  symbol:   method setNguoiDung(nhom7.J2EE.SpendwiseAI.entity.NguoiDung)
+  location: variable danhMuc of type nhom7.J2EE.SpendwiseAI.entity.DanhMuc
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DanhMucService.java:[45,22] cannot find symbol
+  symbol:   method getTenDanhMuc()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DanhMuc
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DanhMucService.java:[45,74] cannot find symbol
+  symbol:   method getTenDanhMuc()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DanhMuc
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DanhMucService.java:[46,22] cannot find symbol
+  symbol:   method getLoai()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DanhMuc
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DanhMucService.java:[46,62] cannot find symbol
+  symbol:   method getLoai()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DanhMuc
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DanhMucService.java:[47,22] cannot find symbol
+  symbol:   method getIcon()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DanhMuc
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DanhMucService.java:[47,62] cannot find symbol
+  symbol:   method getIcon()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DanhMuc
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DanhMucService.java:[48,22] cannot find symbol
+  symbol:   method getMauSac()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DanhMuc
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DanhMucService.java:[48,66] cannot find symbol
+  symbol:   method getMauSac()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DanhMuc
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[60,17] cannot find symbol
+  symbol:   method setNguoiDung(nhom7.J2EE.SpendwiseAI.entity.NguoiDung)
+  location: variable giaoDich of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[61,17] cannot find symbol
+  symbol:   method setViTien(nhom7.J2EE.SpendwiseAI.entity.ViTien)
+  location: variable giaoDich of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[62,17] cannot find symbol
+  symbol:   method setDanhMuc(nhom7.J2EE.SpendwiseAI.entity.DanhMuc)
+  location: variable giaoDich of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[65,47] cannot find symbol
+  symbol:   method getLoai()
+  location: variable giaoDich of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[66,26] cannot find symbol
+  symbol:   method getSoDu()
+  location: variable vi of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[66,49] cannot find symbol
+  symbol:   method getSoTien()
+  location: variable giaoDich of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[67,55] cannot find symbol
+  symbol:   method getLoai()
+  location: variable giaoDich of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[68,26] cannot find symbol
+  symbol:   method getSoDu()
+  location: variable vi of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[68,54] cannot find symbol
+  symbol:   method getSoTien()
+  location: variable giaoDich of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[79,23] cannot find symbol
+  symbol:   method getViTien()
+  location: variable gd of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[80,41] cannot find symbol
+  symbol:   method getLoai()
+  location: variable gd of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[81,26] cannot find symbol
+  symbol:   method getSoDu()
+  location: variable vi of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[81,48] cannot find symbol
+  symbol:   method getSoTien()
+  location: variable gd of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[82,49] cannot find symbol
+  symbol:   method getLoai()
+  location: variable gd of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[83,26] cannot find symbol
+  symbol:   method getSoDu()
+  location: variable vi of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[83,43] cannot find symbol
+  symbol:   method getSoTien()
+  location: variable gd of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/MucTieuTietKiemService.java:[40,16] cannot find symbol
+  symbol:   method setNguoiDung(nhom7.J2EE.SpendwiseAI.entity.NguoiDung)
+  location: variable mucTieu of type nhom7.J2EE.SpendwiseAI.entity.MucTieuTietKiem
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/MucTieuTietKiemService.java:[42,16] cannot find symbol
+  symbol:   method setViTien(nhom7.J2EE.SpendwiseAI.entity.ViTien)
+  location: variable mucTieu of type nhom7.J2EE.SpendwiseAI.entity.MucTieuTietKiem
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/MucTieuTietKiemService.java:[44,20] cannot find symbol
+  symbol:   method getSoTienHienTai()
+  location: variable mucTieu of type nhom7.J2EE.SpendwiseAI.entity.MucTieuTietKiem
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/MucTieuTietKiemService.java:[44,56] cannot find symbol
+  symbol:   method setSoTienHienTai(java.math.BigDecimal)
+  location: variable mucTieu of type nhom7.J2EE.SpendwiseAI.entity.MucTieuTietKiem
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/MucTieuTietKiemService.java:[51,31] cannot find symbol
+  symbol:   method getSoTienHienTai()
+  location: variable mt of type nhom7.J2EE.SpendwiseAI.entity.MucTieuTietKiem
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/MucTieuTietKiemService.java:[54,50] cannot find symbol
+  symbol:   method builder()
+  location: class nhom7.J2EE.SpendwiseAI.entity.DongGopTietKiem
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[45,17] cannot find symbol
+  symbol:   method setNguoiDung(nhom7.J2EE.SpendwiseAI.entity.NguoiDung)
+  location: variable nganSach of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[46,17] cannot find symbol
+  symbol:   method setViTien(nhom7.J2EE.SpendwiseAI.entity.ViTien)
+  location: variable nganSach of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[47,17] cannot find symbol
+  symbol:   method setDanhMuc(nhom7.J2EE.SpendwiseAI.entity.DanhMuc)
+  location: variable nganSach of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[53,22] cannot find symbol
+  symbol:   method getGioiHanTien()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[53,76] cannot find symbol
+  symbol:   method getGioiHanTien()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[54,22] cannot find symbol
+  symbol:   method getChuKy()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[54,64] cannot find symbol
+  symbol:   method getChuKy()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[55,22] cannot find symbol
+  symbol:   method getNgayBatDau()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[55,74] cannot find symbol
+  symbol:   method getNgayBatDau()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[56,22] cannot find symbol
+  symbol:   method getNgayKetThuc()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[56,76] cannot find symbol
+  symbol:   method getNgayKetThuc()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NguoiDungService.java:[35,22] cannot find symbol
+  symbol:   method getHoVaTen()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NguoiDungService.java:[35,75] cannot find symbol
+  symbol:   method getHoVaTen()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NguoiDungService.java:[36,22] cannot find symbol
+  symbol:   method getDienThoai()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NguoiDungService.java:[36,79] cannot find symbol
+  symbol:   method getDienThoai()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NguoiDungService.java:[37,22] cannot find symbol
+  symbol:   method getAnhDaiDien()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NguoiDungService.java:[37,81] cannot find symbol
+  symbol:   method getAnhDaiDien()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NguoiDungService.java:[38,22] cannot find symbol
+  symbol:   method getTienTe()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NguoiDungService.java:[38,73] cannot find symbol
+  symbol:   method getTienTe()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/TheTagService.java:[27,12] cannot find symbol
+  symbol:   method setNguoiDung(nhom7.J2EE.SpendwiseAI.entity.NguoiDung)
+  location: variable tag of type nhom7.J2EE.SpendwiseAI.entity.TheTag
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/ViTienService.java:[36,15] cannot find symbol
+  symbol:   method setChuSoHuu(nhom7.J2EE.SpendwiseAI.entity.NguoiDung)
+  location: variable viTien of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/ViTienService.java:[37,19] cannot find symbol
+  symbol:   method getSoDu()
+  location: variable viTien of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/ViTienService.java:[37,45] cannot find symbol
+  symbol:   method setSoDu(java.math.BigDecimal)
+  location: variable viTien of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/ViTienService.java:[43,22] cannot find symbol
+  symbol:   method getTenVi()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/ViTienService.java:[43,64] cannot find symbol
+  symbol:   method getTenVi()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/ViTienService.java:[44,22] cannot find symbol
+  symbol:   method getTienTe()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/ViTienService.java:[44,66] cannot find symbol
+  symbol:   method getTienTe()
+  location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[INFO] 93 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  5.681 s
+[INFO] Finished at: 2026-03-24T15:03:34+07:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.14.1:compile (default-compile) on project SpendwiseAI: Compilation failure: Compilation failure: 
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/CustomUserDetailsService.java:[26,26] cannot find symbol
+[ERROR]   symbol:   method getEmail()
+[ERROR]   location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/CustomUserDetailsService.java:[27,26] cannot find symbol
+[ERROR]   symbol:   method getMatKhauHash()
+[ERROR]   location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/CustomUserDetailsService.java:[28,71] cannot find symbol
+[ERROR]   symbol:   method getVaiTro()
+[ERROR]   location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[40,54] cannot find symbol
+[ERROR]   symbol:   method getEmail()
+[ERROR]   location: variable request of type nhom7.J2EE.SpendwiseAI.dto.AuthDTO.DangKyRequest
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[41,75] cannot find symbol
+[ERROR]   symbol:   method getEmail()
+[ERROR]   location: variable request of type nhom7.J2EE.SpendwiseAI.dto.AuthDTO.DangKyRequest
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[45,40] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[46,31] cannot find symbol
+[ERROR]   symbol:   method getEmail()
+[ERROR]   location: variable request of type nhom7.J2EE.SpendwiseAI.dto.AuthDTO.DangKyRequest
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[47,60] cannot find symbol
+[ERROR]   symbol:   method getMatKhau()
+[ERROR]   location: variable request of type nhom7.J2EE.SpendwiseAI.dto.AuthDTO.DangKyRequest
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[48,33] cannot find symbol
+[ERROR]   symbol:   method getHoVaTen()
+[ERROR]   location: variable request of type nhom7.J2EE.SpendwiseAI.dto.AuthDTO.DangKyRequest
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[49,35] cannot find symbol
+[ERROR]   symbol:   method getDienThoai()
+[ERROR]   location: variable request of type nhom7.J2EE.SpendwiseAI.dto.AuthDTO.DangKyRequest
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[58,82] cannot find symbol
+[ERROR]   symbol:   method getEmail()
+[ERROR]   location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[60,39] cannot find symbol
+[ERROR]   symbol:   method getVaiTro()
+[ERROR]   location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[63,36] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class nhom7.J2EE.SpendwiseAI.dto.AuthDTO.AuthResponse
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[66,33] cannot find symbol
+[ERROR]   symbol:   method getEmail()
+[ERROR]   location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[67,35] cannot find symbol
+[ERROR]   symbol:   method getHoVaTen()
+[ERROR]   location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[68,34] cannot find symbol
+[ERROR]   symbol:   method getVaiTro()
+[ERROR]   location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[76,32] cannot find symbol
+[ERROR]   symbol:   method getEmail()
+[ERROR]   location: variable request of type nhom7.J2EE.SpendwiseAI.dto.AuthDTO.DangNhapRequest
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[76,52] cannot find symbol
+[ERROR]   symbol:   method getMatKhau()
+[ERROR]   location: variable request of type nhom7.J2EE.SpendwiseAI.dto.AuthDTO.DangNhapRequest
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[80,70] cannot find symbol
+[ERROR]   symbol:   method getEmail()
+[ERROR]   location: variable request of type nhom7.J2EE.SpendwiseAI.dto.AuthDTO.DangNhapRequest
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[85,39] cannot find symbol
+[ERROR]   symbol:   method getVaiTro()
+[ERROR]   location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[88,36] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class nhom7.J2EE.SpendwiseAI.dto.AuthDTO.AuthResponse
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[91,33] cannot find symbol
+[ERROR]   symbol:   method getEmail()
+[ERROR]   location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[92,35] cannot find symbol
+[ERROR]   symbol:   method getHoVaTen()
+[ERROR]   location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/AuthService.java:[93,34] cannot find symbol
+[ERROR]   symbol:   method getVaiTro()
+[ERROR]   location: variable nguoiDung of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[43,13] cannot find symbol
+[ERROR]   symbol:   method setNguoiDung(nhom7.J2EE.SpendwiseAI.entity.NguoiDung)
+[ERROR]   location: variable dkdv of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[45,13] cannot find symbol
+[ERROR]   symbol:   method setViTien(nhom7.J2EE.SpendwiseAI.entity.ViTien)
+[ERROR]   location: variable dkdv of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[47,13] cannot find symbol
+[ERROR]   symbol:   method setDanhMuc(nhom7.J2EE.SpendwiseAI.entity.DanhMuc)
+[ERROR]   location: variable dkdv of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[54,22] cannot find symbol
+[ERROR]   symbol:   method getTenDichVu()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[54,72] cannot find symbol
+[ERROR]   symbol:   method getTenDichVu()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[55,22] cannot find symbol
+[ERROR]   symbol:   method getSoTien()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[55,66] cannot find symbol
+[ERROR]   symbol:   method getSoTien()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[56,22] cannot find symbol
+[ERROR]   symbol:   method getChuKyThanhToan()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[56,82] cannot find symbol
+[ERROR]   symbol:   method getChuKyThanhToan()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[57,22] cannot find symbol
+[ERROR]   symbol:   method getNgayThanhToanTiep()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DangKyDichVuService.java:[57,88] cannot find symbol
+[ERROR]   symbol:   method getNgayThanhToanTiep()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DangKyDichVu
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DanhMucService.java:[39,16] cannot find symbol
+[ERROR]   symbol:   method setNguoiDung(nhom7.J2EE.SpendwiseAI.entity.NguoiDung)
+[ERROR]   location: variable danhMuc of type nhom7.J2EE.SpendwiseAI.entity.DanhMuc
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DanhMucService.java:[45,22] cannot find symbol
+[ERROR]   symbol:   method getTenDanhMuc()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DanhMuc
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DanhMucService.java:[45,74] cannot find symbol
+[ERROR]   symbol:   method getTenDanhMuc()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DanhMuc
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DanhMucService.java:[46,22] cannot find symbol
+[ERROR]   symbol:   method getLoai()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DanhMuc
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DanhMucService.java:[46,62] cannot find symbol
+[ERROR]   symbol:   method getLoai()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DanhMuc
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DanhMucService.java:[47,22] cannot find symbol
+[ERROR]   symbol:   method getIcon()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DanhMuc
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DanhMucService.java:[47,62] cannot find symbol
+[ERROR]   symbol:   method getIcon()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DanhMuc
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DanhMucService.java:[48,22] cannot find symbol
+[ERROR]   symbol:   method getMauSac()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DanhMuc
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/DanhMucService.java:[48,66] cannot find symbol
+[ERROR]   symbol:   method getMauSac()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.DanhMuc
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[60,17] cannot find symbol
+[ERROR]   symbol:   method setNguoiDung(nhom7.J2EE.SpendwiseAI.entity.NguoiDung)
+[ERROR]   location: variable giaoDich of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[61,17] cannot find symbol
+[ERROR]   symbol:   method setViTien(nhom7.J2EE.SpendwiseAI.entity.ViTien)
+[ERROR]   location: variable giaoDich of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[62,17] cannot find symbol
+[ERROR]   symbol:   method setDanhMuc(nhom7.J2EE.SpendwiseAI.entity.DanhMuc)
+[ERROR]   location: variable giaoDich of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[65,47] cannot find symbol
+[ERROR]   symbol:   method getLoai()
+[ERROR]   location: variable giaoDich of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[66,26] cannot find symbol
+[ERROR]   symbol:   method getSoDu()
+[ERROR]   location: variable vi of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[66,49] cannot find symbol
+[ERROR]   symbol:   method getSoTien()
+[ERROR]   location: variable giaoDich of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[67,55] cannot find symbol
+[ERROR]   symbol:   method getLoai()
+[ERROR]   location: variable giaoDich of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[68,26] cannot find symbol
+[ERROR]   symbol:   method getSoDu()
+[ERROR]   location: variable vi of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[68,54] cannot find symbol
+[ERROR]   symbol:   method getSoTien()
+[ERROR]   location: variable giaoDich of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[79,23] cannot find symbol
+[ERROR]   symbol:   method getViTien()
+[ERROR]   location: variable gd of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[80,41] cannot find symbol
+[ERROR]   symbol:   method getLoai()
+[ERROR]   location: variable gd of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[81,26] cannot find symbol
+[ERROR]   symbol:   method getSoDu()
+[ERROR]   location: variable vi of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[81,48] cannot find symbol
+[ERROR]   symbol:   method getSoTien()
+[ERROR]   location: variable gd of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[82,49] cannot find symbol
+[ERROR]   symbol:   method getLoai()
+[ERROR]   location: variable gd of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[83,26] cannot find symbol
+[ERROR]   symbol:   method getSoDu()
+[ERROR]   location: variable vi of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/GiaoDichService.java:[83,43] cannot find symbol
+[ERROR]   symbol:   method getSoTien()
+[ERROR]   location: variable gd of type nhom7.J2EE.SpendwiseAI.entity.GiaoDich
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/MucTieuTietKiemService.java:[40,16] cannot find symbol
+[ERROR]   symbol:   method setNguoiDung(nhom7.J2EE.SpendwiseAI.entity.NguoiDung)
+[ERROR]   location: variable mucTieu of type nhom7.J2EE.SpendwiseAI.entity.MucTieuTietKiem
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/MucTieuTietKiemService.java:[42,16] cannot find symbol
+[ERROR]   symbol:   method setViTien(nhom7.J2EE.SpendwiseAI.entity.ViTien)
+[ERROR]   location: variable mucTieu of type nhom7.J2EE.SpendwiseAI.entity.MucTieuTietKiem
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/MucTieuTietKiemService.java:[44,20] cannot find symbol
+[ERROR]   symbol:   method getSoTienHienTai()
+[ERROR]   location: variable mucTieu of type nhom7.J2EE.SpendwiseAI.entity.MucTieuTietKiem
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/MucTieuTietKiemService.java:[44,56] cannot find symbol
+[ERROR]   symbol:   method setSoTienHienTai(java.math.BigDecimal)
+[ERROR]   location: variable mucTieu of type nhom7.J2EE.SpendwiseAI.entity.MucTieuTietKiem
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/MucTieuTietKiemService.java:[51,31] cannot find symbol
+[ERROR]   symbol:   method getSoTienHienTai()
+[ERROR]   location: variable mt of type nhom7.J2EE.SpendwiseAI.entity.MucTieuTietKiem
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/MucTieuTietKiemService.java:[54,50] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class nhom7.J2EE.SpendwiseAI.entity.DongGopTietKiem
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[45,17] cannot find symbol
+[ERROR]   symbol:   method setNguoiDung(nhom7.J2EE.SpendwiseAI.entity.NguoiDung)
+[ERROR]   location: variable nganSach of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[46,17] cannot find symbol
+[ERROR]   symbol:   method setViTien(nhom7.J2EE.SpendwiseAI.entity.ViTien)
+[ERROR]   location: variable nganSach of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[47,17] cannot find symbol
+[ERROR]   symbol:   method setDanhMuc(nhom7.J2EE.SpendwiseAI.entity.DanhMuc)
+[ERROR]   location: variable nganSach of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[53,22] cannot find symbol
+[ERROR]   symbol:   method getGioiHanTien()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[53,76] cannot find symbol
+[ERROR]   symbol:   method getGioiHanTien()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[54,22] cannot find symbol
+[ERROR]   symbol:   method getChuKy()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[54,64] cannot find symbol
+[ERROR]   symbol:   method getChuKy()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[55,22] cannot find symbol
+[ERROR]   symbol:   method getNgayBatDau()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[55,74] cannot find symbol
+[ERROR]   symbol:   method getNgayBatDau()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[56,22] cannot find symbol
+[ERROR]   symbol:   method getNgayKetThuc()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NganSachService.java:[56,76] cannot find symbol
+[ERROR]   symbol:   method getNgayKetThuc()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NganSach
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NguoiDungService.java:[35,22] cannot find symbol
+[ERROR]   symbol:   method getHoVaTen()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NguoiDungService.java:[35,75] cannot find symbol
+[ERROR]   symbol:   method getHoVaTen()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NguoiDungService.java:[36,22] cannot find symbol
+[ERROR]   symbol:   method getDienThoai()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NguoiDungService.java:[36,79] cannot find symbol
+[ERROR]   symbol:   method getDienThoai()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NguoiDungService.java:[37,22] cannot find symbol
+[ERROR]   symbol:   method getAnhDaiDien()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NguoiDungService.java:[37,81] cannot find symbol
+[ERROR]   symbol:   method getAnhDaiDien()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NguoiDungService.java:[38,22] cannot find symbol
+[ERROR]   symbol:   method getTienTe()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/NguoiDungService.java:[38,73] cannot find symbol
+[ERROR]   symbol:   method getTienTe()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.NguoiDung
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/TheTagService.java:[27,12] cannot find symbol
+[ERROR]   symbol:   method setNguoiDung(nhom7.J2EE.SpendwiseAI.entity.NguoiDung)
+[ERROR]   location: variable tag of type nhom7.J2EE.SpendwiseAI.entity.TheTag
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/ViTienService.java:[36,15] cannot find symbol
+[ERROR]   symbol:   method setChuSoHuu(nhom7.J2EE.SpendwiseAI.entity.NguoiDung)
+[ERROR]   location: variable viTien of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/ViTienService.java:[37,19] cannot find symbol
+[ERROR]   symbol:   method getSoDu()
+[ERROR]   location: variable viTien of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/ViTienService.java:[37,45] cannot find symbol
+[ERROR]   symbol:   method setSoDu(java.math.BigDecimal)
+[ERROR]   location: variable viTien of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/ViTienService.java:[43,22] cannot find symbol
+[ERROR]   symbol:   method getTenVi()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/ViTienService.java:[43,64] cannot find symbol
+[ERROR]   symbol:   method getTenVi()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/ViTienService.java:[44,22] cannot find symbol
+[ERROR]   symbol:   method getTienTe()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[ERROR] /C:/DoAnJ2EE/SpendwiseAI/SpendwiseAI/src/main/java/nhom7/J2EE/SpendwiseAI/service/ViTienService.java:[44,66] cannot find symbol
+[ERROR]   symbol:   method getTienTe()
+[ERROR]   location: variable duLieuMoi of type nhom7.J2EE.SpendwiseAI.entity.ViTien
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
