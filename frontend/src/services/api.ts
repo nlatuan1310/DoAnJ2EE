@@ -65,9 +65,18 @@ export async function getDefaultViId(): Promise<string> {
   const uid = getCurrentUserId();
   if (!uid) return '';
   try {
-    const res = await api.get(`/vi-tien/nguoi-dung/${uid}`);
-    if (Array.isArray(res.data) && res.data.length > 0) {
-      return res.data[0].id;
+    const [ownedRes, sharedRes] = await Promise.all([
+      api.get(`/vi-tien/nguoi-dung/${uid}`),
+      api.get(`/thanh-vien-vi/nguoi-dung/${uid}`)
+    ]);
+    if (Array.isArray(ownedRes.data) && ownedRes.data.length > 0) {
+      return ownedRes.data[0].id;
+    }
+    if (Array.isArray(sharedRes.data)) {
+      const shared = sharedRes.data.filter((m: any) => m.vaiTro !== 'owner');
+      if (shared.length > 0 && shared[0].viTien) {
+        return shared[0].viTien.id;
+      }
     }
   } catch {
     // fallback

@@ -30,6 +30,11 @@ public class NguoiDungController {
         return ResponseEntity.ok(nguoiDungService.layTheoId(id));
     }
 
+    @GetMapping("/email/{email}")
+    public ResponseEntity<NguoiDung> layTheoEmail(@PathVariable String email) {
+        return ResponseEntity.ok(nguoiDungService.layTheoEmail(email));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<NguoiDung> capNhat(@PathVariable UUID id, @RequestBody NguoiDung nguoiDung) {
         return ResponseEntity.ok(nguoiDungService.capNhat(id, nguoiDung));

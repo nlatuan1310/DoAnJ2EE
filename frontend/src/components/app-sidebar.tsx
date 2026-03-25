@@ -21,6 +21,7 @@ import {
   TrendingUp,
   ScanLine,
   LayoutGrid,
+  WalletCards,
 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { useState } from "react"
@@ -45,6 +46,11 @@ const mainMenuItems: MenuItem[] = [
     title: "Giao dịch",
     url: "/transactions",
     icon: Wallet,
+  },
+  {
+    title: "Ví tiền",
+    url: "/wallets",
+    icon: WalletCards,
   },
   {
     title: "Quét hóa đơn",

@@ -49,6 +49,7 @@ interface GiaoDich {
 }
 
 import api, { getCurrentUserId, autoCategorizeApi } from "../services/api";
+import { viTienApi } from "../services/walletService";
 
 /* ═══════ CONFIG ═══════ */
 const PAGE_SIZE = 10;
@@ -126,7 +127,7 @@ export default function Transactions() {
       const [gdRes, dmRes, viRes] = await Promise.all([
         api.get(`/giao-dich/nguoi-dung/${currentUserId}`),
         api.get(`/danh-muc/nguoi-dung/${currentUserId}`),
-        api.get(`/vi-tien/nguoi-dung/${currentUserId}`),
+        viTienApi.getAllAccessible(currentUserId),
       ]);
 
       setAllGiaoDich(Array.isArray(gdRes.data) ? gdRes.data : []);

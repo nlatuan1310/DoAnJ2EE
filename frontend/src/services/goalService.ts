@@ -1,4 +1,5 @@
 import api, { getCurrentUserId, getDefaultViId } from "./api";
+import { viTienApi } from "./walletService";
 
 // ===== TYPES khớp Backend Entity =====
 export interface MucTieuTietKiem {
@@ -30,7 +31,7 @@ export interface ViTien {
 /** Lấy danh sách ví tiền theo userId */
 export async function getWallets(userId?: string): Promise<ViTien[]> {
   const uid = userId || getCurrentUserId();
-  const res = await api.get<ViTien[]>(`/vi-tien/nguoi-dung/${uid}`);
+  const res = await viTienApi.getAllAccessible(uid);
   return res.data;
 }
 

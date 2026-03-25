@@ -60,6 +60,7 @@ interface NganSach {
 
 const API_BASE = "http://localhost:8080/api";
 
+import { viTienApi } from "@/services/walletService";
 import { getCurrentUserId } from "@/services/api";
 
 export default function Budgets() {
@@ -103,19 +104,19 @@ export default function Budgets() {
   const fetchInitialData = async () => {
     setLoading(true);
     try {
-      const [budgetsRes, catsRes, walletsRes, txRes] = await Promise.all([
+      const [budgetsRes, catsRes, txRes, walletsRes] = await Promise.all([
         fetch(`${API_BASE}/ngan-sach/nguoi-dung/${getCurrentUserId()}`),
         fetch(`${API_BASE}/danh-muc/nguoi-dung/${getCurrentUserId()}/loai/expense`),
-        fetch(`${API_BASE}/vi-tien/nguoi-dung/${getCurrentUserId()}`),
-        fetch(`${API_BASE}/giao-dich/nguoi-dung/${getCurrentUserId()}`)
+        fetch(`${API_BASE}/giao-dich/nguoi-dung/${getCurrentUserId()}`),
+        viTienApi.getAllAccessible()
       ]);
 
-      if (!budgetsRes.ok || !catsRes.ok || !walletsRes.ok) throw new Error("Không thể tải dữ liệu.");
+      if (!budgetsRes.ok || !catsRes.ok) throw new Error("Không thể tải dữ liệu.");
 
       const budgetsData = await budgetsRes.json();
       const catsData = await catsRes.json();
-      const walletsData = await walletsRes.json();
       const txData = await txRes.json();
+      const walletsData = walletsRes.data;
 
       const enrichedBudgets = budgetsData.map((b: NganSach) => {
         const spent = txData
