@@ -29,17 +29,7 @@ api.interceptors.response.use(
 
 export default api;
 
-/**
- * Lấy userId của người dùng hiện tại từ localStorage.
- * Trả về chuỗi rỗng nếu chưa đăng nhập.
- */
+// Helper: lấy userId hiện tại (test bypass = UUID 0)
 export function getCurrentUserId(): string {
   return localStorage.getItem("userId") || "00000000-0000-0000-0000-000000000000";
-}
-
-/**
- * Lấy viId (ví tiền) mặc định từ localStorage.
- */
-export function getDefaultViId(): string {
-  return localStorage.getItem("viId") || "00000000-0000-0000-0000-000000000000";
 }
