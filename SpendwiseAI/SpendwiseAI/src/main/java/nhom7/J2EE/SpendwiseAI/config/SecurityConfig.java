@@ -42,18 +42,8 @@ public class SecurityConfig {
                         // Cho phép truy cập không cần token
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/ai/**").permitAll() // Tạm thời mở để test giao diện
-                        .requestMatchers("/api/ai/**").permitAll() // Tạm thời mở để test giao diện
-                        .requestMatchers("/api/crypto/**").permitAll() // Quản lý Crypto - mở để test giao diện
-                        .requestMatchers("/api/tai-san-crypto/**").permitAll() // Danh sách coin - mở để giao diện truy cập
                         .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
-                        // ===== TẠM MỞ ĐỂ TEST =====
-                        .requestMatchers("/api/giao-dich/**").permitAll()
-                        .requestMatchers("/api/danh-muc/**").permitAll()
-                        .requestMatchers("/api/vi-tien/**").permitAll()
-                        .requestMatchers("/api/muc-tieu-tiet-kiem/**").permitAll()
-                        .requestMatchers("/api/nguoi-dung/**").permitAll()
-                        // ===== HẾT VÙNG TEST =====
+                        .requestMatchers(HttpMethod.GET, "/api/tai-san-crypto/**").permitAll() // Danh sách coin public
                         // Admin endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // Tất cả request khác cần xác thực

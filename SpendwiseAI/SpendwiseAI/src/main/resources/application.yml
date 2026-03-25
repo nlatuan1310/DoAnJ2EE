@@ -36,7 +36,7 @@ spring:
   ai:
     google:
       genai:
-        api-key: ${SPRING_AI_GOOGLE_GENAI_API_KEY:AIzaSy_YOUR_REAL_KEY_HERE}
+        api-key: ${SPRING_AI_GOOGLE_GENAI_API_KEY:}
         chat:
           options:
             model: gemini-2.5-flash
@@ -47,8 +47,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: cuong007266@gmail.com
-    password: upquqsismwmltlbm
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:

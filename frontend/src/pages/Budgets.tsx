@@ -59,7 +59,8 @@ interface NganSach {
 }
 
 const API_BASE = "http://localhost:8080/api";
-const USER_ID = "3394747b-2877-4009-80ac-334710926593"; 
+
+import { getCurrentUserId } from "@/services/api";
 
 export default function Budgets() {
   const [budgets, setBudgets] = useState<NganSach[]>([]);
@@ -103,10 +104,10 @@ export default function Budgets() {
     setLoading(true);
     try {
       const [budgetsRes, catsRes, walletsRes, txRes] = await Promise.all([
-        fetch(`${API_BASE}/ngan-sach/nguoi-dung/${USER_ID}`),
-        fetch(`${API_BASE}/danh-muc/nguoi-dung/${USER_ID}/loai/expense`),
-        fetch(`${API_BASE}/vi-tien/nguoi-dung/${USER_ID}`),
-        fetch(`${API_BASE}/giao-dich/nguoi-dung/${USER_ID}`)
+        fetch(`${API_BASE}/ngan-sach/nguoi-dung/${getCurrentUserId()}`),
+        fetch(`${API_BASE}/danh-muc/nguoi-dung/${getCurrentUserId()}/loai/expense`),
+        fetch(`${API_BASE}/vi-tien/nguoi-dung/${getCurrentUserId()}`),
+        fetch(`${API_BASE}/giao-dich/nguoi-dung/${getCurrentUserId()}`)
       ]);
 
       if (!budgetsRes.ok || !catsRes.ok || !walletsRes.ok) throw new Error("Không thể tải dữ liệu.");
@@ -149,7 +150,7 @@ export default function Budgets() {
       const isEditing = !!editingBudget;
       const url = isEditing 
         ? `${API_BASE}/ngan-sach/${editingBudget.id}` 
-        : `${API_BASE}/ngan-sach?nguoiDungId=${USER_ID}&viId=${formData.viId}&danhMucId=${formData.danhMucId}`;
+        : `${API_BASE}/ngan-sach?nguoiDungId=${getCurrentUserId()}&viId=${formData.viId}&danhMucId=${formData.danhMucId}`;
       
       const method = isEditing ? "PUT" : "POST";
       const body = {

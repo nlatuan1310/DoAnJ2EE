@@ -49,7 +49,7 @@ export async function createGoal(
   data?: Partial<MucTieuTietKiem>
 ): Promise<MucTieuTietKiem> {
   const uid = getCurrentUserId();
-  const vid = viId || getDefaultViId();
+  const vid = viId || await getDefaultViId();
   const res = await api.post<MucTieuTietKiem>(
     `/muc-tieu-tiet-kiem?nguoiDungId=${uid}&viId=${vid}`,
     data

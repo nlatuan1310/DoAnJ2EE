@@ -16,13 +16,9 @@ import {
   Wallet,
   PieChart,
   Goal,
-  Settings,
   BarChart3,
   ChevronDown,
-  CreditCard,
   TrendingUp,
-  Shield,
-  HelpCircle,
   ScanLine,
   LayoutGrid,
 } from "lucide-react"
@@ -42,7 +38,6 @@ const mainMenuItems: MenuItem[] = [
     icon: Home,
     subItems: [
       { title: "Tổng quan", url: "/" },
-      { title: "Phân tích", url: "/analytics" },
       { title: "Smart Dashboard", url: "/smart-dashboard" },
     ],
   },
@@ -77,32 +72,9 @@ const mainMenuItems: MenuItem[] = [
     icon: BarChart3,
   },
   {
-    title: "Thanh toán",
-    url: "/payments",
-    icon: CreditCard,
-  },
-]
-
-const moreMenuItems: MenuItem[] = [
-  {
-    title: "Cài đặt",
-    url: "/settings",
-    icon: Settings,
-  },
-  {
     title: "Đầu tư",
     url: "/investments",
     icon: TrendingUp,
-  },
-  {
-    title: "Bảo mật",
-    url: "/security",
-    icon: Shield,
-  },
-  {
-    title: "Trợ giúp",
-    url: "/help",
-    icon: HelpCircle,
   },
 ]
 
@@ -221,17 +193,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* More Section */}
-        <SidebarGroup className="mt-4">
-          <SidebarGroupLabel className="px-4 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-            Thêm
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-0.5 px-2">
-              {moreMenuItems.map((item) => renderMenuItem(item))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+
       </SidebarContent>
     </Sidebar>
   )

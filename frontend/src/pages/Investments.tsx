@@ -47,7 +47,8 @@ interface GiaoDichCrypto {
 }
 
 const API_BASE = "http://localhost:8080/api";
-const USER_ID = "3394747b-2877-4009-80ac-334710926593";
+
+import { getCurrentUserId } from "@/services/api";
 
 const CRYPTO_COLORS: Record<string, string> = {
   BTC: "from-orange-400 to-amber-500",
@@ -117,7 +118,7 @@ export default function Investments() {
     setError(null);
     try {
       const [portfolioRes, assetsRes] = await Promise.all([
-        fetch(`${API_BASE}/crypto/danh-muc/nguoi-dung/${USER_ID}`),
+        fetch(`${API_BASE}/crypto/danh-muc/nguoi-dung/${getCurrentUserId()}`),
         fetch(`${API_BASE}/tai-san-crypto`),
       ]);
       if (!portfolioRes.ok) throw new Error("Không thể tải danh mục crypto.");
@@ -193,7 +194,7 @@ export default function Investments() {
     setError(null);
     try {
       const res = await fetch(
-        `${API_BASE}/crypto/danh-muc?nguoiDungId=${USER_ID}&taiSanId=${addCoinForm.taiSanId}`,
+        `${API_BASE}/crypto/danh-muc?nguoiDungId=${getCurrentUserId()}&taiSanId=${addCoinForm.taiSanId}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
