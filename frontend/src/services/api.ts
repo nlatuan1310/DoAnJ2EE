@@ -1,35 +1,46 @@
-import axios from "axios";
+import axios from 'axios';
+
+const API_BASE_URL = 'http://localhost:8080/api';
 
 const api = axios.create({
-  baseURL: "/api",
+  baseURL: API_BASE_URL,
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
 });
 
-// Tự động gắn JWT token vào mọi request nếu có
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// Mocking current user ID (In real app, this would come from auth store)
+export const CURRENT_USER_ID = '930058b8-07e3-4d64-9040-41372cf9335f'; 
 
-// Xử lý lỗi 401 (Unauthorized) chung
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      console.warn("Phiên đăng nhập hết hạn hoặc chưa đăng nhập.");
-    }
-    return Promise.reject(error);
-  }
-);
+export const danhMucApi = {
+  getAll: (nguoiDungId: string = CURRENT_USER_ID) => 
+    api.get(`/danh-muc/nguoi-dung/${nguoiDungId}`),
+  
+  getByLoai: (loai: 'thu' | 'chi', nguoiDungId: string = CURRENT_USER_ID) => 
+    api.get(`/danh-muc/nguoi-dung/${nguoiDungId}/loai/${loai}`),
+    
+  create: (data: any, nguoiDungId: string = CURRENT_USER_ID) => 
+    api.post(`/danh-muc/nguoi-dung/${nguoiDungId}`, data),
+    
+  update: (id: number, data: any, nguoiDungId: string = CURRENT_USER_ID) => 
+    api.put(`/danh-muc/${id}/nguoi-dung/${nguoiDungId}`, data),
+    
+  delete: (id: number, nguoiDungId: string = CURRENT_USER_ID) => 
+    api.delete(`/danh-muc/${id}/nguoi-dung/${nguoiDungId}`),
+};
+
+export const theTagApi = {
+  getAll: (nguoiDungId: string = CURRENT_USER_ID) => 
+    api.get(`/the-tag/nguoi-dung/${nguoiDungId}`),
+    
+  create: (data: any, nguoiDungId: string = CURRENT_USER_ID) => 
+    api.post(`/the-tag/nguoi-dung/${nguoiDungId}`, data),
+    
+  update: (id: number, data: any, nguoiDungId: string = CURRENT_USER_ID) => 
+    api.put(`/the-tag/${id}/nguoi-dung/${nguoiDungId}`, data),
+    
+  delete: (id: number, nguoiDungId: string = CURRENT_USER_ID) => 
+    api.delete(`/the-tag/${id}/nguoi-dung/${nguoiDungId}`),
+};
 
 export default api;
-
-// Helper: lấy userId hiện tại (test bypass = UUID 0)
-export function getCurrentUserId(): string {
-  return localStorage.getItem("userId") || "00000000-0000-0000-0000-000000000000";
-}
