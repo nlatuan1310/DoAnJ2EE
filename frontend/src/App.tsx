@@ -15,6 +15,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import { AuthProvider } from "./hooks/useAuth";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ function App() {
               <Route path="/receipt-scanner" element={<ReceiptScanner />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/categories" element={<Categories />} />
+              <Route path="/settings" element={<Settings />} />
             </Route>
           </Routes>
         </BrowserRouter>

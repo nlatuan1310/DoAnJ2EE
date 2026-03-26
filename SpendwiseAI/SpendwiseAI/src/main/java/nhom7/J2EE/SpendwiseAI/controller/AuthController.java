@@ -68,4 +68,18 @@ public class AuthController {
         // Endpoint này chỉ trả về thông báo xác nhận thành công
         return ResponseEntity.ok(Map.of("message", "Đăng xuất thành công"));
     }
+
+    @PostMapping("/verify-2fa")
+    public ResponseEntity<AuthDTO.AuthResponse> verify2FA(@Valid @RequestBody AuthDTO.XacThuc2FARequest request) {
+        return ResponseEntity.ok(authService.xacThuc2FA(request));
+    }
+
+    @PostMapping("/toggle-2fa")
+    public ResponseEntity<Map<String, String>> toggle2FA(
+            Authentication authentication,
+            @RequestBody AuthDTO.Toggle2FARequest request) {
+        authService.toggle2FA(authentication.getName(), request.isEnable());
+        String status = request.isEnable() ? "Bật" : "Tắt";
+        return ResponseEntity.ok(Map.of("message", status + " bảo mật 2 lớp thành công"));
+    }
 }

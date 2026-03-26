@@ -21,6 +21,7 @@ import {
   TrendingUp,
   ScanLine,
   LayoutGrid,
+  Settings,
 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { useState } from "react"
@@ -75,6 +76,11 @@ const mainMenuItems: MenuItem[] = [
     title: "Đầu tư",
     url: "/investments",
     icon: TrendingUp,
+  },
+  {
+    title: "Cài đặt",
+    url: "/settings",
+    icon: Settings,
   },
 ]
 
