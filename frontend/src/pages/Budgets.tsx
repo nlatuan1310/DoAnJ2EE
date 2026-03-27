@@ -23,6 +23,7 @@ interface DanhMuc {
   tenDanhMuc: string;
   loai: string;
   icon: string;
+  mauSac?: string;
 }
 
 interface ViTien {
@@ -43,9 +44,11 @@ interface NganSach {
   spent?: number;
 }
 
-import api, { getCurrentUserId } from "@/services/api";
+import api, { danhMucApi } from "@/services/api";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Budgets() {
+  const { user } = useAuth();
   const [budgets, setBudgets] = useState<NganSach[]>([]);
   const [categories, setCategories] = useState<DanhMuc[]>([]);
   const [wallets, setWallets] = useState<ViTien[]>([]);
@@ -71,8 +74,10 @@ export default function Budgets() {
   const [creatingCategory, setCreatingCategory] = useState(false);
 
   useEffect(() => {
-    fetchInitialData();
-  }, []);
+    if (user?.id) {
+      fetchInitialData(user.id);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     if (formData.ngayBatDau && formData.chuKy !== 'custom') {
@@ -88,14 +93,14 @@ export default function Budgets() {
     }
   }, [formData.ngayBatDau, formData.chuKy]);
 
-  const fetchInitialData = async () => {
+  const fetchInitialData = async (userId: string) => {
     setLoading(true);
     try {
       const [budgetsRes, catsRes, walletsRes, txRes] = await Promise.all([
-        api.get(`/ngan-sach/nguoi-dung/${getCurrentUserId()}`),
-        api.get(`/danh-muc/nguoi-dung/${getCurrentUserId()}/loai/chi`),
-        api.get(`/vi-tien/nguoi-dung/${getCurrentUserId()}`),
-        api.get(`/giao-dich/nguoi-dung/${getCurrentUserId()}`)
+        api.get(`/ngan-sach/nguoi-dung/${userId}`),
+        danhMucApi.getAll(userId),
+        api.get(`/vi-tien/nguoi-dung/${userId}`),
+        api.get(`/giao-dich/nguoi-dung/${userId}`)
       ]);
 
       const budgetsData = budgetsRes.data;
@@ -118,11 +123,13 @@ export default function Budgets() {
       });
 
       setBudgets(enrichedBudgets);
-      setCategories(catsData);
+      // Lọc danh mục chi để hiển thị trong mục tạo ngân sách
+      const chiCategories = catsData.filter((c: DanhMuc) => c.loai === "chi");
+      setCategories(chiCategories);
       setWallets(walletsData);
 
       if (walletsData.length > 0 && !formData.viId) setFormData(prev => ({ ...prev, viId: walletsData[0].id }));
-      if (catsData.length > 0 && !formData.danhMucId) setFormData(prev => ({ ...prev, danhMucId: catsData[0].id.toString() }));
+      if (chiCategories.length > 0 && !formData.danhMucId) setFormData(prev => ({ ...prev, danhMucId: chiCategories[0].id.toString() }));
 
     } catch (err: any) {
       setError(err.message);
@@ -138,7 +145,7 @@ export default function Budgets() {
       const isEditing = !!editingBudget;
       const url = isEditing
         ? `/ngan-sach/${editingBudget.id}`
-        : `/ngan-sach?nguoiDungId=${getCurrentUserId()}&viId=${formData.viId}&danhMucId=${formData.danhMucId}`;
+        : `/ngan-sach?nguoiDungId=${user?.id}&viId=${formData.viId}&danhMucId=${formData.danhMucId}`;
 
       const body = {
         gioiHanTien: parseFloat(formData.gioiHanTien),
@@ -156,7 +163,7 @@ export default function Budgets() {
       setSuccess(isEditing ? "Đã cập nhật!" : "Đã tạo mới!");
       setIsModalOpen(false);
       setEditingBudget(null);
-      fetchInitialData();
+      if (user?.id) fetchInitialData(user.id);
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
       setError(err.message);
@@ -169,12 +176,12 @@ export default function Budgets() {
     if (!newCategoryName.trim()) return;
     setCreatingCategory(true);
     try {
-      const res = await api.post(`/danh-muc/nguoi-dung/${getCurrentUserId()}`, {
+      const res = await danhMucApi.create({
         tenDanhMuc: newCategoryName.trim(),
         loai: "chi",
-        icon: "",
-        mauSac: ""
-      });
+        icon: "Utensils",
+        mauSac: "#4f46e5"
+      }, user?.id);
       const newCat = res.data;
 
       setCategories(prev => [...prev, newCat]);
@@ -196,7 +203,7 @@ export default function Budgets() {
     try {
       await api.delete(`/ngan-sach/${id}`);
       setSuccess("Đã xóa.");
-      fetchInitialData();
+      if (user?.id) fetchInitialData(user.id);
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
       setError(err.message);
