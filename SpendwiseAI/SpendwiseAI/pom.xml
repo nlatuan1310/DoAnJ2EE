@@ -81,6 +81,12 @@
 			<artifactId>spring-ai-starter-model-google-genai</artifactId>
 		</dependency>
 
+		<!-- Spring AI – Ollama (Llama) cho RAG Financial Advisor -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-starter-model-ollama</artifactId>
+		</dependency>
+
 		<!-- Lombok -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
