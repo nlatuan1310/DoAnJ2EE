@@ -11,6 +11,7 @@ import Investments from "./pages/Investments";
 import ReceiptScanner from "./pages/ReceiptScanner";
 import Reports from "./pages/Reports";
 import Categories from "./pages/Categories";
+import FinancialAdvisor from "./pages/FinancialAdvisor";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -40,6 +41,7 @@ function App() {
               <Route path="/reports" element={<Reports />} />
               <Route path="/categories" element={<Categories />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/advisor" element={<FinancialAdvisor />} />
             </Route>
           </Routes>
         </BrowserRouter>

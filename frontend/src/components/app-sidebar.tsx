@@ -22,6 +22,7 @@ import {
   ScanLine,
   LayoutGrid,
   Settings,
+  BrainCircuit,
 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { useState } from "react"
@@ -81,6 +82,11 @@ const mainMenuItems: MenuItem[] = [
     title: "Cài đặt",
     url: "/settings",
     icon: Settings,
+  },
+  {
+    title: "Cố vấn AI",
+    url: "/advisor",
+    icon: BrainCircuit,
   },
 ]
 

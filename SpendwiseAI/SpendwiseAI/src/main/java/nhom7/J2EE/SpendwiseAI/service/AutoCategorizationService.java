@@ -8,6 +8,7 @@ import nhom7.J2EE.SpendwiseAI.repository.DanhMucRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,9 +29,9 @@ public class AutoCategorizationService {
     private final DanhMucRepository danhMucRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public AutoCategorizationService(ChatClient.Builder chatClientBuilder,
+    public AutoCategorizationService(@Qualifier("geminiChatClient") ChatClient chatClient,
                                      DanhMucRepository danhMucRepository) {
-        this.chatClient = chatClientBuilder.build();
+        this.chatClient = chatClient;
         this.danhMucRepository = danhMucRepository;
     }
 
