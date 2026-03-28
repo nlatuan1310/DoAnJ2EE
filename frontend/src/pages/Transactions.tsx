@@ -34,6 +34,7 @@ interface DanhMuc {
 interface ViTien {
   id: string;
   tenVi: string;
+  vaiTro?: string;
 }
 
 interface GiaoDich {
@@ -247,8 +248,9 @@ export default function Transactions() {
       return;
     }
     const viId = newGD.viId || (wallets.length > 0 ? wallets[0].id : "");
-    if (!viId) {
-      setCreateError("Bạn chưa có ví nào. Hãy tạo ví trước.");
+    const selectedVi = wallets.find(v => v.id === viId);
+    if (selectedVi && selectedVi.vaiTro === "VIEWER") {
+      setCreateError("Bạn chỉ có quyền xem trên ví này, không thể thêm giao dịch.");
       return;
     }
 
@@ -754,20 +756,23 @@ export default function Transactions() {
                 <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
                   Ví
                 </label>
-                <select
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm
-                             appearance-none outline-none cursor-pointer
-                             focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400"
-                  value={newGD.viId || (wallets.length > 0 ? wallets[0].id : "")}
-                  onChange={(e) => setNewGD({ ...newGD, viId: e.target.value })}
-                >
-                  {wallets.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.tenVi}
-                    </option>
-                  ))}
-                  {wallets.length === 0 && <option value="">Chưa có ví</option>}
-                </select>
+                  <select
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm
+                               appearance-none outline-none cursor-pointer
+                               focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400"
+                    value={newGD.viId || (wallets.length > 0 ? wallets[0].id : "")}
+                    onChange={(e) => {
+                      setNewGD({ ...newGD, viId: e.target.value });
+                      setCreateError(null);
+                    }}
+                  >
+                    {wallets.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.tenVi} {v.vaiTro ? `(${v.vaiTro})` : ""}
+                      </option>
+                    ))}
+                    {wallets.length === 0 && <option value="">Chưa có ví</option>}
+                  </select>
               </div>
 
               {/* Danh mục + AI Suggest */}
