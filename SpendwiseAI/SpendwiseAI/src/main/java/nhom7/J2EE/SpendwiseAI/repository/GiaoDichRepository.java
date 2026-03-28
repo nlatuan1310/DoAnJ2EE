@@ -26,8 +26,20 @@ public interface GiaoDichRepository extends JpaRepository<GiaoDich, UUID>, JpaSp
 
     List<GiaoDich> findByNguoiDungIdAndDanhMucId(UUID nguoiDungId, Integer danhMucId);
 
-    // === RAG Financial Advisor queries ===
+    @org.springframework.data.jpa.repository.Query("SELECT gd.danhMuc.id, gd.danhMuc.tenDanhMuc, gd.danhMuc.mauSac, gd.danhMuc.icon, SUM(gd.soTien) " +
+            "FROM GiaoDich gd " +
+            "WHERE gd.nguoiDung.id = :nguoiDungId AND gd.ngayGiaoDich BETWEEN :tuNgay AND :denNgay AND gd.loai = 'expense' " +
+            "GROUP BY gd.danhMuc.id, gd.danhMuc.tenDanhMuc, gd.danhMuc.mauSac, gd.danhMuc.icon")
+    List<Object[]> thongKeTheoDanhMuc(UUID nguoiDungId, LocalDateTime tuNgay, LocalDateTime denNgay);
 
+    @org.springframework.data.jpa.repository.Query("SELECT CAST(gd.ngayGiaoDich AS date), SUM(gd.soTien) " +
+            "FROM GiaoDich gd " +
+            "WHERE gd.nguoiDung.id = :nguoiDungId AND gd.ngayGiaoDich BETWEEN :tuNgay AND :denNgay AND gd.loai = 'expense' " +
+            "GROUP BY CAST(gd.ngayGiaoDich AS date) " +
+            "ORDER BY CAST(gd.ngayGiaoDich AS date)")
+    List<Object[]> thongKeTheoNgay(UUID nguoiDungId, LocalDateTime tuNgay, LocalDateTime denNgay);
+  
+    // === RAG Financial Advisor queries ===
     @Query("SELECT COALESCE(SUM(g.soTien), 0) FROM GiaoDich g " +
            "WHERE g.nguoiDung.id = :userId AND g.loai = :loai " +
            "AND g.ngayGiaoDich >= :fromDate")
