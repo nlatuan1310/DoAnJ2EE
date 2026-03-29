@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Plus,
   Trash2,
@@ -44,11 +44,11 @@ interface GiaoDichCrypto {
   soLuong: number;
   gia: number;
   ngayGiaoDich: string;
+  viId?: string;
 }
 
-const API_BASE = "http://localhost:8080/api";
 
-import { getCurrentUserId } from "@/services/api";
+import api, { getCurrentUserId } from "@/services/api";
 
 const CRYPTO_COLORS: Record<string, string> = {
   BTC: "from-orange-400 to-amber-500",
@@ -66,14 +66,19 @@ const CRYPTO_COLORS: Record<string, string> = {
 const getCryptoGradient = (kyHieu: string) =>
   CRYPTO_COLORS[kyHieu?.toUpperCase()] ?? "from-slate-400 to-slate-600";
 
-const formatNumber = (n: number, decimals = 2) =>
+const formatNumber = (n: number, maxDecimals = 6) =>
   new Intl.NumberFormat("vi-VN", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: maxDecimals,
   }).format(n);
 
-const formatCurrency = (n: number) =>
-  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
+const formatCurrency = (n: number, currency = "VND") => {
+  const locale = currency === "USD" ? "en-US" : "vi-VN";
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: currency,
+  }).format(n);
+};
 
 const formatVnCurrencyInput = (val: string) => {
   const numericVal = val.replace(/[^0-9]/g, "");
@@ -88,9 +93,12 @@ const parseVnCurrency = (val: string) => {
 export default function Investments() {
   const [portfolio, setPortfolio] = useState<DanhMucCrypto[]>([]);
   const [availableAssets, setAvailableAssets] = useState<TaiSanCrypto[]>([]);
+  const [userWallets, setUserWallets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pricesLoading, setPricesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [marketPrices, setMarketPrices] = useState<Record<string, { usd: number, vnd: number }>>({});
 
   // Modal: Add coin to portfolio
   const [isAddCoinOpen, setIsAddCoinOpen] = useState(false);
@@ -111,31 +119,55 @@ export default function Investments() {
     soLuong: "",
     gia: "",
     ngayGiaoDich: new Date().toISOString().slice(0, 16),
+    viId: "",
   });
+
+  const fetchMarketPrices = useCallback(async (coins: DanhMucCrypto[]) => {
+    if (coins.length === 0) return;
+    setPricesLoading(true);
+    try {
+      const symbols = coins.map(c => c.taiSan.kyHieu).join(",");
+      const res = await api.get(`/crypto/market-prices?symbols=${symbols}`);
+      setMarketPrices(res.data);
+    } catch (e) {
+      console.error("Lỗi khi tải giá thị trường:", e);
+    } finally {
+      setPricesLoading(false);
+    }
+  }, []);
 
   const fetchPortfolio = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [portfolioRes, assetsRes] = await Promise.all([
-        fetch(`${API_BASE}/crypto/danh-muc/nguoi-dung/${getCurrentUserId()}`),
-        fetch(`${API_BASE}/tai-san-crypto`),
+      const [portfolioRes, assetsRes, walletsRes] = await Promise.all([
+        api.get(`/crypto/danh-muc/nguoi-dung/${getCurrentUserId()}`),
+        api.get("/tai-san-crypto"),
+        api.get(`/vi-tien/nguoi-dung/${getCurrentUserId()}`),
       ]);
-      if (!portfolioRes.ok) throw new Error("Không thể tải danh mục crypto.");
-      if (!assetsRes.ok) throw new Error("Không thể tải danh sách tài sản.");
-      const portfolioData = await portfolioRes.json();
-      const assetsData = await assetsRes.json();
+      
+      const portfolioData = portfolioRes.data;
+      const assetsData = assetsRes.data;
+      const walletsData = walletsRes.data;
+      
       setPortfolio(portfolioData);
       setAvailableAssets(assetsData);
+      setUserWallets(walletsData);
+      
       if (assetsData.length > 0 && !addCoinForm.taiSanId) {
         setAddCoinForm((p) => ({ ...p, taiSanId: assetsData[0].id.toString() }));
       }
+      
+      // Sau khi lấy portfolio, lấy luôn giá thị trường
+      if (portfolioData.length > 0) {
+        fetchMarketPrices(portfolioData);
+      }
     } catch (e: any) {
-      setError(e.message);
+      setError(e.response?.data?.message || e.message || "Không thể tải dữ liệu.");
     } finally {
       setLoading(false);
     }
-  }, [addCoinForm.taiSanId]);
+  }, [addCoinForm.taiSanId, fetchMarketPrices]);
 
   useEffect(() => {
     fetchPortfolio();
@@ -150,15 +182,19 @@ export default function Investments() {
   // ========================
   //  AUTO-FETCH LIVE PRICE
   // ========================
-  const fetchLivePrice = async (kyHieu: string): Promise<number> => {
+  const fetchLivePrice = async (symbol: string) => {
     try {
-      const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${kyHieu.toUpperCase()}USDT`);
-      if (!res.ok) return 0;
-      const data = await res.json();
-      const usdPrice = parseFloat(data.price);
-      return Math.round(usdPrice * 25400); // Tỷ giá tham khảo 1 USD = 25,400 VNĐ
-    } catch {
-      return 0; // Fallback nếu lỗi (mất mạng, coin không có trên sàn Binance)
+      const res = await api.get(`/crypto/market-prices?symbols=${symbol}`);
+      const data = res.data;
+      const s = symbol.toUpperCase();
+      // Thử tìm theo ký hiệu hoặc tên ID (bitcoin, ethereum...)
+      const prices = data[s] || data[symbol.toLowerCase()];
+      const walletRef = userWallets.find(w => w.id === txForm.viId);
+      const currency = walletRef?.tienTe || "VND";
+      return currency === "USD" ? (prices?.usd || 0) : (prices?.vnd || 0);
+    } catch (e) {
+      console.error("Lỗi khi lấy giá live:", e);
+      return 0;
     }
   };
 
@@ -189,29 +225,25 @@ export default function Investments() {
   //  ADD COIN TO PORTFOLIO
   // ========================
   const handleAddCoin = async () => {
-    if (!addCoinForm.taiSanId) return;
-    setLoading(true);
-    setError(null);
+    if (!addCoinForm.taiSanId || !addCoinForm.diaChiVi) {
+      setError("Vui lòng chọn coin và ví gắn kết.");
+      return;
+    }
     try {
-      const res = await fetch(
-        `${API_BASE}/crypto/danh-muc?nguoiDungId=${getCurrentUserId()}&taiSanId=${addCoinForm.taiSanId}`,
+      await api.post(
+        `/crypto/danh-muc/${getCurrentUserId()}/${addCoinForm.taiSanId}`,
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            soLuong: parseFloat(addCoinForm.soLuong) || 0,
-            giaMuaTrungBinh: parseVnCurrency(addCoinForm.giaMuaTrungBinh),
-            diaChiVi: addCoinForm.diaChiVi || "",
-          }),
+          soLuong: parseFloat(addCoinForm.soLuong) || 0,
+          giaMuaTrungBinh: parseVnCurrency(addCoinForm.giaMuaTrungBinh),
+          diaChiVi: addCoinForm.diaChiVi || "",
         }
       );
-      if (!res.ok) throw new Error("Không thể thêm coin.");
       showSuccess("Đã thêm coin vào danh mục!");
       setIsAddCoinOpen(false);
       setAddCoinForm({ taiSanId: availableAssets[0]?.id.toString() || "", soLuong: "", giaMuaTrungBinh: "", diaChiVi: "" });
       fetchPortfolio();
     } catch (e: any) {
-      setError(e.message);
+      setError(e.response?.data?.message || e.message);
     } finally {
       setLoading(false);
     }
@@ -220,12 +252,11 @@ export default function Investments() {
   const handleDeleteCoin = async (id: string) => {
     if (!confirm("Xóa coin này khỏi danh mục? Toàn bộ lịch sử giao dịch sẽ bị xóa.")) return;
     try {
-      const res = await fetch(`${API_BASE}/crypto/danh-muc/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Không thể xóa.");
+      await api.delete(`/crypto/danh-muc/${id}`);
       showSuccess("Đã xóa coin.");
       fetchPortfolio();
     } catch (e: any) {
-      setError(e.message);
+      setError(e.response?.data?.message || e.message);
     }
   };
 
@@ -237,76 +268,87 @@ export default function Investments() {
     setIsTxModalOpen(true);
     setTxLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/crypto/giao-dich/danh-muc/${coin.id}`);
-      if (!res.ok) throw new Error("Không thể tải giao dịch.");
-      setTransactions(await res.json());
+      const res = await api.get(`/crypto/giao-dich/danh-muc/${coin.id}`);
+      setTransactions(res.data);
     } catch (e: any) {
-      setError(e.message);
+      setError(e.response?.data?.message || e.message);
     } finally {
       setTxLoading(false);
     }
   };
 
   const handleAddTransaction = async () => {
-    if (!selectedCoin || !txForm.soLuong || !txForm.gia) return;
+    if (!selectedCoin || !txForm.soLuong || !txForm.gia || !txForm.viId) {
+      setError("Vui lòng điền đầy đủ thông tin và chọn ví thanh toán.");
+      return;
+    }
     setTxLoading(true);
-    setError(null);
     try {
-      const res = await fetch(
-        `${API_BASE}/crypto/giao-dich?danhMucId=${selectedCoin.id}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            loai: txForm.loai,
-            soLuong: parseFloat(txForm.soLuong),
-            gia: parseVnCurrency(txForm.gia),
-            ngayGiaoDich: txForm.ngayGiaoDich + ":00",
-          }),
-        }
-      );
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(errText || "Không thể ghi giao dịch.");
-      }
-      showSuccess(`Đã ghi nhận lệnh ${txForm.loai === "buy" ? "Mua" : "Bán"}!`);
-      setTxForm({ loai: "buy", soLuong: "", gia: "", ngayGiaoDich: new Date().toISOString().slice(0, 16) });
-      // Reload transactions and portfolio
-      const [txRes] = await Promise.all([
-        fetch(`${API_BASE}/crypto/giao-dich/danh-muc/${selectedCoin.id}`),
-      ]);
-      setTransactions(await txRes.json());
-      fetchPortfolio();
+      await api.post(`/crypto/giao-dich/${selectedCoin.id}`, {
+        loai: txForm.loai,
+        soLuong: parseFloat(txForm.soLuong),
+        gia: parseFloat(txForm.gia),
+        ngayGiaoDich: txForm.ngayGiaoDich,
+        viId: txForm.viId, // Gửi mã ví thanh toán lên backend
+      });
+      showSuccess(txForm.loai === "buy" ? "Ghi nhận lệnh Mua thành công!" : "Ghi nhận lệnh Bán thành công!");
+      setIsTxModalOpen(false);
+      fetchPortfolio(); // Tải lại danh mục và ví tiền
     } catch (e: any) {
-      setError(e.message);
+      setError(e.response?.data?.message || "Lỗi khi ghi nhận giao dịch.");
     } finally {
       setTxLoading(false);
     }
   };
 
   const handleDeleteTransaction = async (txId: string) => {
-    if (!confirm("Xóa giao dịch này?")) return;
+    if (!confirm("Bạn có chắc chắn muốn xóa giao dịch này? Tiền trong ví sẽ được hoàn trả/khấu trừ tương ứng.")) return;
     try {
-      await fetch(`${API_BASE}/crypto/giao-dich/${txId}`, { method: "DELETE" });
-      showSuccess("Đã xóa giao dịch.");
+      await api.delete(`/crypto/giao-dich/${txId}`);
+      showSuccess("Đã xóa giao dịch thành công.");
+      
+      // Tải lại dữ liệu
       if (selectedCoin) {
-        const res = await fetch(`${API_BASE}/crypto/giao-dich/danh-muc/${selectedCoin.id}`);
-        setTransactions(await res.json());
+        const res = await api.get(`/crypto/giao-dich/danh-muc/${selectedCoin.id}`);
+        setTransactions(res.data);
       }
       fetchPortfolio();
     } catch (e: any) {
-      setError(e.message);
+      setError(e.response?.data?.message || "Lỗi khi xóa giao dịch.");
     }
   };
 
   // ========================
-  //  Stats
+  //  Stats (Optimized with useMemo)
   // ========================
-  const tongVonDauTu = portfolio.reduce(
-    (s, c) => s + (c.soLuong || 0) * (c.giaMuaTrungBinh || 0),
-    0
-  );
-  const tongCoin = portfolio.length;
+  const stats = useMemo(() => {
+    const vdt = portfolio.reduce((s, c) => {
+      const cost = (c.soLuong || 0) * (c.giaMuaTrungBinh || 0);
+      const walletRef = userWallets.find(w => w.tenVi === c.diaChiVi);
+      return s + (walletRef?.tienTe === "USD" ? cost * 25400 : cost);
+    }, 0);
+
+    const gtht = portfolio.reduce((s, c) => {
+      const symbol = c.taiSan.kyHieu.toUpperCase();
+      const prices = marketPrices[symbol];
+      if (!prices || (prices.usd === undefined && prices.vnd === undefined)) return s;
+      
+      const walletRef = userWallets.find(w => w.tenVi === c.diaChiVi);
+      const giaHienTaiVnd = walletRef?.tienTe === "USD" 
+        ? (prices.usd || 0) * 25400 
+        : (prices.vnd || 0);
+        
+      return s + (c.soLuong || 0) * giaHienTaiVnd;
+    }, 0);
+
+    const ll = Number.isNaN(gtht) ? 0 : gtht - vdt;
+    const ptll = vdt > 0 ? (ll / vdt) * 100 : 0;
+
+    return { tongVonDauTu: vdt, tongGiaTriHienTai: gtht, tongLaiLo: ll, phanTramLaiLo: ptll };
+  }, [portfolio, userWallets, marketPrices]);
+
+  const { tongVonDauTu, tongGiaTriHienTai, tongLaiLo, phanTramLaiLo } = stats;
+
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto animate-in fade-in duration-500 space-y-8">
@@ -348,21 +390,53 @@ export default function Investments() {
       </div>
 
       {/* Stats Bar */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Tổng vốn đầu tư", value: formatCurrency(tongVonDauTu), icon: <Wallet className="w-5 h-5" />, color: "amber" },
-          { label: "Số loại coin", value: `${tongCoin} coin`, icon: <BarChart3 className="w-5 h-5" />, color: "indigo" },
-          { label: "Trạng thái", value: loading ? "Đang tải..." : "Cập nhật", icon: <RefreshCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />, color: "emerald" },
+          { 
+            label: "Giá trị hiện tại", 
+            value: pricesLoading ? <span className="animate-pulse text-slate-300">Đang tính...</span> : formatCurrency(tongGiaTriHienTai), 
+            icon: <BarChart3 className="w-5 h-5" />, 
+            color: "indigo" 
+          },
+          { 
+            label: "Tổng Lãi/Lỗ", 
+            value: pricesLoading ? <span className="animate-pulse text-slate-300">...</span> : (
+              <span className={tongLaiLo >= 0 ? "text-emerald-600" : "text-rose-600"}>
+                {tongLaiLo >= 0 ? "+" : ""}{formatCurrency(tongLaiLo)}
+              </span>
+            ), 
+            icon: tongLaiLo >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />, 
+            color: tongLaiLo >= 0 ? "emerald" : "rose",
+            subValue: pricesLoading ? undefined : `${phanTramLaiLo >= 0 ? "+" : ""}${phanTramLaiLo.toFixed(2)}%`
+          },
+          { 
+            label: "Trạng thái", 
+            value: loading || pricesLoading ? "Đang tải..." : "Đã cập nhật", 
+            icon: <RefreshCw className={`w-5 h-5 ${(loading || pricesLoading) ? "animate-spin" : ""}`} />, 
+            color: "sky",
+            onClick: () => fetchPortfolio() 
+          },
         ].map((stat, i) => (
-          <Card key={i} className="border-none shadow-sm rounded-2xl bg-white">
+          <Card key={i} className={`border-none shadow-sm rounded-2xl bg-white ${stat.onClick ? "cursor-pointer hover:bg-slate-50 transition-colors" : ""}`} onClick={stat.onClick}>
             <CardContent className="p-5 flex items-center gap-4">
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center 
-                ${i === 0 ? "bg-amber-50 text-amber-500" : i === 1 ? "bg-indigo-50 text-indigo-500" : "bg-emerald-50 text-emerald-500"}`}>
+                ${stat.color === "amber" ? "bg-amber-50 text-amber-500" : 
+                  stat.color === "indigo" ? "bg-indigo-50 text-indigo-500" : 
+                  stat.color === "emerald" ? "bg-emerald-50 text-emerald-500" :
+                  stat.color === "rose" ? "bg-rose-50 text-rose-500" : "bg-sky-50 text-sky-500"}`}>
                 {stat.icon}
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                <p className="text-xl font-black text-slate-800">{stat.value}</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-lg font-black text-slate-800">{stat.value}</p>
+                  {stat.subValue && (
+                    <span className={`text-[10px] font-bold ${tongLaiLo >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                      ({stat.subValue})
+                    </span>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -387,8 +461,9 @@ export default function Investments() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {portfolio.map((coin) => {
+              const wallet = userWallets.find(w => w.tenVi === coin.diaChiVi);
+              const currency = wallet?.tienTe || "VND";
               const gradient = getCryptoGradient(coin.taiSan?.kyHieu);
-              const tongGiaTri = (coin.soLuong || 0) * (coin.giaMuaTrungBinh || 0);
               return (
                 <Card
                   key={coin.id}
@@ -433,14 +508,66 @@ export default function Investments() {
                         <p className="font-black text-slate-800 text-base">{formatNumber(coin.giaMuaTrungBinh || 0, 0)}</p>
                       </div>
                     </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-slate-50 rounded-xl p-3 relative group/price">
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Giá thị trường</p>
+                        <div className="flex items-center justify-between">
+                          <p className="font-black text-indigo-600 text-base">
+                            {marketPrices[coin.taiSan.kyHieu.toUpperCase()] 
+                              ? (currency === "USD" 
+                                  ? formatNumber(marketPrices[coin.taiSan.kyHieu.toUpperCase()].usd || 0, 0)
+                                  : formatNumber(marketPrices[coin.taiSan.kyHieu.toUpperCase()].vnd || 0, 0))
+                              : "---"}
+                          </p>
+                          <button onClick={() => fetchMarketPrices([coin])} className="text-slate-200 hover:text-indigo-400 p-0.5 transition-colors">
+                            <RefreshCw className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="bg-slate-50 rounded-xl p-3">
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Lãi / Lỗ</p>
+                        {(() => {
+                          const prices = marketPrices[coin.taiSan.kyHieu.toUpperCase()];
+                          if (!prices || (currency === "USD" && prices.usd === undefined) || (currency === "VND" && prices.vnd === undefined)) {
+                            return <p className="font-black text-slate-400 text-base">---</p>;
+                          }
+                          const marketPrice = currency === "USD" ? (prices.usd || 0) : (prices.vnd || 0);
+                          const buyPrice = coin.giaMuaTrungBinh || 0;
+                          const profit = (marketPrice - buyPrice) * (coin.soLuong || 0);
+                          const profitPct = buyPrice > 0 ? ((marketPrice - buyPrice) / buyPrice) * 100 : 0;
+                          const isProfit = profit >= 0;
+                          return (
+                            <div className="flex flex-col">
+                              <p className={`font-black text-base ${isProfit ? "text-emerald-500" : "text-rose-500"}`}>
+                                {isProfit ? "+" : ""}{formatNumber(profit, 0)}
+                              </p>
+                              <p className={`text-[10px] font-bold ${isProfit ? "text-emerald-400" : "text-rose-400"}`}>
+                                {isProfit ? "+" : ""}{profitPct.toFixed(2)}%
+                              </p>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
                     <div className="pt-3 border-t border-slate-50 flex items-center justify-between">
                       <div>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tổng giá trị vốn</p>
-                        <p className="font-black text-slate-700">{formatCurrency(tongGiaTri)}</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Giá trị hiện tại</p>
+                        <p className="font-black text-slate-700">
+                          {marketPrices[coin.taiSan.kyHieu.toUpperCase()] 
+                            ? formatCurrency(
+                                (currency === "USD" 
+                                  ? (marketPrices[coin.taiSan.kyHieu.toUpperCase()].usd || 0)
+                                  : (marketPrices[coin.taiSan.kyHieu.toUpperCase()].vnd || 0)) * (coin.soLuong || 0),
+                                currency
+                              )
+                            : formatCurrency(0, currency)}
+                        </p>
                       </div>
                       <div className="flex items-center gap-1.5 text-xs font-bold text-amber-500 bg-amber-50 px-3 py-1.5 rounded-xl">
                         <History className="w-3.5 h-3.5" />
-                        Lịch sử
+                        Chi tiết
                       </div>
                     </div>
                     {coin.diaChiVi && (
@@ -507,13 +634,17 @@ export default function Investments() {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Địa chỉ ví (tùy chọn)</label>
-                <Input
-                  placeholder="0x..."
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Gắn với ví nào?</label>
+                <select
                   value={addCoinForm.diaChiVi}
                   onChange={(e) => setAddCoinForm({ ...addCoinForm, diaChiVi: e.target.value })}
-                  className="h-11 rounded-xl bg-slate-50 border-none font-mono text-sm text-slate-600"
-                />
+                  className="w-full h-11 pl-4 pr-8 rounded-xl bg-slate-50 border-none font-bold text-slate-800 text-sm focus:ring-2 focus:ring-amber-100 appearance-none"
+                >
+                  <option value="">-- Chọn ví (tùy chọn) --</option>
+                  {userWallets.map((w) => (
+                    <option key={w.id} value={w.tenVi}>{w.tenVi} (Số dư: {formatCurrency(w.soDu, w.tienTe)})</option>
+                  ))}
+                </select>
               </div>
             </div>
             <div className="p-6 border-t border-slate-50 bg-slate-50/50 flex gap-3">
@@ -604,6 +735,19 @@ export default function Investments() {
                     className="h-11 rounded-xl bg-white border-slate-100 font-bold text-slate-700"
                   />
                 </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-1">Ví thanh toán</label>
+                  <select
+                    value={txForm.viId}
+                    onChange={(e) => setTxForm({ ...txForm, viId: e.target.value })}
+                    className="w-full h-11 pl-4 pr-8 rounded-xl bg-white border-slate-100 font-bold text-slate-800 text-sm focus:ring-2 focus:ring-amber-100 appearance-none"
+                  >
+                    <option value="">-- Chọn ví giao dịch --</option>
+                    {userWallets.map((w) => (
+                      <option key={w.id} value={w.id}>{w.tenVi} (Số dư: {formatCurrency(w.soDu, w.tienTe)})</option>
+                    ))}
+                  </select>
+                </div>
                 <Button
                   onClick={handleAddTransaction}
                   disabled={txLoading || !txForm.soLuong || !txForm.gia}
@@ -624,45 +768,49 @@ export default function Investments() {
                   <div className="py-10 text-center">
                     <RefreshCw className="w-6 h-6 text-slate-300 mx-auto animate-spin" />
                   </div>
-                ) : transactions.length === 0 ? (
+                ) : transactions.length > 0 ? (
+                  [...transactions]
+                    .sort((a, b) => new Date(b.ngayGiaoDich).getTime() - new Date(a.ngayGiaoDich).getTime())
+                    .map((tx) => {
+                      const walletObj = userWallets.find(w => w.id === tx.viId) || userWallets.find(w => w.tenVi === selectedCoin.diaChiVi);
+                      const txCurrency = walletObj?.tienTe || "VND";
+                      return (
+                        <div key={tx.id}
+                          className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors group">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center
+                              ${tx.loai === "buy" ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600"}`}>
+                              {tx.loai === "buy" ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
+                            </div>
+                            <div>
+                              <p className="font-black text-slate-800 text-sm">
+                                {tx.loai === "buy" ? "Mua" : "Bán"} {formatNumber(tx.soLuong, 6)} {selectedCoin.taiSan?.kyHieu}
+                              </p>
+                              <p className="text-xs text-slate-400 font-medium">
+                                @ {formatNumber(tx.gia, 0)} {txCurrency} • {new Date(tx.ngayGiaoDich).toLocaleDateString("vi-VN")}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <p className={`font-black text-sm ${tx.loai === "buy" ? "text-emerald-600" : "text-rose-600"}`}>
+                              {tx.loai === "buy" ? "+" : "-"}{formatCurrency(tx.soLuong * tx.gia, txCurrency)}
+                            </p>
+                            <Button
+                              variant="ghost" size="icon"
+                              onClick={() => handleDeleteTransaction(tx.id)}
+                              className="h-8 w-8 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })
+                ) : (
                   <div className="py-10 text-center">
                     <History className="w-8 h-8 text-slate-200 mx-auto mb-2" />
                     <p className="text-slate-400 text-sm font-medium">Chưa có giao dịch nào.</p>
                   </div>
-                ) : (
-                  [...transactions]
-                    .sort((a, b) => new Date(b.ngayGiaoDich).getTime() - new Date(a.ngayGiaoDich).getTime())
-                    .map((tx) => (
-                      <div key={tx.id}
-                        className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors group">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center
-                            ${tx.loai === "buy" ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600"}`}>
-                            {tx.loai === "buy" ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
-                          </div>
-                          <div>
-                            <p className="font-black text-slate-800 text-sm">
-                              {tx.loai === "buy" ? "Mua" : "Bán"} {formatNumber(tx.soLuong, 6)} {selectedCoin.taiSan?.kyHieu}
-                            </p>
-                            <p className="text-xs text-slate-400 font-medium">
-                              @ {formatNumber(tx.gia, 0)} VNĐ • {new Date(tx.ngayGiaoDich).toLocaleDateString("vi-VN")}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <p className={`font-black text-sm ${tx.loai === "buy" ? "text-emerald-600" : "text-rose-600"}`}>
-                            {tx.loai === "buy" ? "+" : "-"}{formatCurrency(tx.soLuong * tx.gia)}
-                          </p>
-                          <Button
-                            variant="ghost" size="icon"
-                            onClick={() => handleDeleteTransaction(tx.id)}
-                            className="h-8 w-8 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))
                 )}
               </div>
             </div>

@@ -24,15 +24,21 @@ public class CryptoService {
     private final GiaoDichCryptoRepository giaoDichCryptoRepository;
     private final NguoiDungRepository nguoiDungRepository;
     private final TaiSanCryptoRepository taiSanCryptoRepository;
+    private final ViTienService viTienService;
+    private final nhom7.J2EE.SpendwiseAI.repository.ViTienRepository viTienRepository;
 
     public CryptoService(DanhMucCryptoRepository danhMucCryptoRepository,
                          GiaoDichCryptoRepository giaoDichCryptoRepository,
                          NguoiDungRepository nguoiDungRepository,
-                         TaiSanCryptoRepository taiSanCryptoRepository) {
+                         TaiSanCryptoRepository taiSanCryptoRepository,
+                         ViTienService viTienService,
+                         nhom7.J2EE.SpendwiseAI.repository.ViTienRepository viTienRepository) {
         this.danhMucCryptoRepository = danhMucCryptoRepository;
         this.giaoDichCryptoRepository = giaoDichCryptoRepository;
         this.nguoiDungRepository = nguoiDungRepository;
         this.taiSanCryptoRepository = taiSanCryptoRepository;
+        this.viTienService = viTienService;
+        this.viTienRepository = viTienRepository;
     }
 
     // ========================
@@ -46,6 +52,42 @@ public class CryptoService {
     public DanhMucCrypto layDanhMucTheoId(UUID id) {
         return danhMucCryptoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy danh mục crypto: " + id));
+    }
+
+    /**
+     * Tính toán lại số lượng và giá trung bình cho một danh mục dựa trên lịch sử giao dịch.
+     */
+    @Transactional
+    public void tinhLaiPortfolio(UUID danhMucId) {
+        DanhMucCrypto dm = layDanhMucTheoId(danhMucId);
+        List<GiaoDichCrypto> history = giaoDichCryptoRepository.findByDanhMucCryptoId(danhMucId);
+
+        BigDecimal currentQty = BigDecimal.ZERO;
+        BigDecimal avgPrice = BigDecimal.ZERO;
+
+        // Sắp xếp lịch sử theo thời gian để tính Avg Price chính xác
+        history.sort((a,b) -> a.getNgayGiaoDich().compareTo(b.getNgayGiaoDich()));
+
+        for (GiaoDichCrypto tx : history) {
+            if ("buy".equalsIgnoreCase(tx.getLoai())) {
+                BigDecimal oldTotalCost = currentQty.multiply(avgPrice);
+                BigDecimal newTxCost = tx.getSoLuong().multiply(tx.getGia());
+                currentQty = currentQty.add(tx.getSoLuong());
+                if (currentQty.compareTo(BigDecimal.ZERO) > 0) {
+                    avgPrice = oldTotalCost.add(newTxCost).divide(currentQty, 8, RoundingMode.HALF_UP);
+                }
+            } else if ("sell".equalsIgnoreCase(tx.getLoai())) {
+                currentQty = currentQty.subtract(tx.getSoLuong());
+                if (currentQty.compareTo(BigDecimal.ZERO) <= 0) {
+                    currentQty = BigDecimal.ZERO;
+                    avgPrice = BigDecimal.ZERO;
+                }
+            }
+        }
+
+        dm.setSoLuong(currentQty);
+        dm.setGiaMuaTrungBinh(avgPrice);
+        danhMucCryptoRepository.save(dm);
     }
 
     @Transactional
@@ -88,48 +130,68 @@ public class CryptoService {
         return giaoDichCryptoRepository.findByDanhMucCryptoId(danhMucId);
     }
 
-    /**
-     * Ghi nhận một giao dịch mới (buy/sell).
-     * - Buy: cập nhật lại giá mua trung bình (bình quân gia quyền) và cộng số lượng.
-     * - Sell: trừ số lượng (giá TB giữ nguyên).
-     */
+    private void capNhatSoDuVi(UUID viId, BigDecimal amount, String type) {
+        if (viId == null) return;
+        nhom7.J2EE.SpendwiseAI.entity.ViTien vi = viTienService.layTheoId(viId);
+        
+        // Cập nhật số dư: Mua thì trừ, Bán thì cộng
+        if ("buy".equalsIgnoreCase(type)) {
+            if (vi.getSoDu().compareTo(amount) < 0) {
+                throw new RuntimeException("Số dư ví " + vi.getTenVi() + " không đủ để thực hiện giao dịch.");
+            }
+            vi.setSoDu(vi.getSoDu().subtract(amount));
+        } else {
+            vi.setSoDu(vi.getSoDu().add(amount));
+        }
+        viTienRepository.save(vi);
+    }
+
     @Transactional
     public GiaoDichCrypto ghiGiaoDich(UUID danhMucId, GiaoDichCrypto duLieu) {
         DanhMucCrypto dm = layDanhMucTheoId(danhMucId);
         duLieu.setDanhMucCrypto(dm);
         if (duLieu.getNgayGiaoDich() == null) duLieu.setNgayGiaoDich(LocalDateTime.now());
 
-        if ("buy".equalsIgnoreCase(duLieu.getLoai())) {
-            // Tính giá mua trung bình mới: (soLuongCu * giaTBCu + soLuongMoi * giaMoi) / (soLuongCu + soLuongMoi)
-            BigDecimal soLuongCu = dm.getSoLuong() != null ? dm.getSoLuong() : BigDecimal.ZERO;
-            BigDecimal giaTBCu = dm.getGiaMuaTrungBinh() != null ? dm.getGiaMuaTrungBinh() : BigDecimal.ZERO;
-            BigDecimal soLuongMoi = duLieu.getSoLuong();
-            BigDecimal giaMoi = duLieu.getGia();
-
-            BigDecimal tongSoLuong = soLuongCu.add(soLuongMoi);
-            if (tongSoLuong.compareTo(BigDecimal.ZERO) > 0) {
-                BigDecimal giaTBMoi = (soLuongCu.multiply(giaTBCu).add(soLuongMoi.multiply(giaMoi)))
-                        .divide(tongSoLuong, 8, RoundingMode.HALF_UP);
-                dm.setGiaMuaTrungBinh(giaTBMoi);
+        // Ràng buộc khi bán: không được bán vượt quá số lượng hiện có
+        if ("sell".equalsIgnoreCase(duLieu.getLoai())) {
+            BigDecimal currentQty = dm.getSoLuong() != null ? dm.getSoLuong() : BigDecimal.ZERO;
+            if (duLieu.getSoLuong().compareTo(currentQty) > 0) {
+                throw new RuntimeException("Số lượng bán vượt quá số lượng đang nắm giữ (" + currentQty + ").");
             }
-            dm.setSoLuong(tongSoLuong);
-
-        } else if ("sell".equalsIgnoreCase(duLieu.getLoai())) {
-            BigDecimal soLuongCu = dm.getSoLuong() != null ? dm.getSoLuong() : BigDecimal.ZERO;
-            BigDecimal soLuongBan = duLieu.getSoLuong();
-            BigDecimal soLuongConLai = soLuongCu.subtract(soLuongBan);
-            if (soLuongConLai.compareTo(BigDecimal.ZERO) < 0) {
-                throw new RuntimeException("Số lượng bán vượt quá số lượng hiện có.");
-            }
-            dm.setSoLuong(soLuongConLai);
         }
 
-        danhMucCryptoRepository.save(dm);
-        return giaoDichCryptoRepository.save(duLieu);
+        // Cập nhật ví tiền nếu có link viId
+        if (duLieu.getViId() != null) {
+            BigDecimal totalAmount = duLieu.getSoLuong().multiply(duLieu.getGia());
+            capNhatSoDuVi(duLieu.getViId(), totalAmount, duLieu.getLoai());
+        }
+
+        // Lưu giao dịch trước khi tính lại
+        GiaoDichCrypto savedTx = giaoDichCryptoRepository.save(duLieu);
+
+        // Tính toán lại Portfolio
+        tinhLaiPortfolio(danhMucId);
+
+        return savedTx;
     }
 
     @Transactional
     public void xoaGiaoDich(UUID id) {
+        GiaoDichCrypto tx = giaoDichCryptoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Giao dịch không tồn tại: " + id));
+        UUID danhMucId = tx.getDanhMucCrypto().getId();
+
+        // Hoàn tiền lại cho ví (Trình tự ngược lại của Buy/Sell)
+        if (tx.getViId() != null) {
+            BigDecimal totalAmount = tx.getSoLuong().multiply(tx.getGia());
+            // Nếu là Buy, xóa đi nghĩa là cộng lại tiền. Nếu là Sell, xóa đi nghĩa là trừ lại tiền.
+            String reverseType = "buy".equalsIgnoreCase(tx.getLoai()) ? "sell" : "buy";
+            capNhatSoDuVi(tx.getViId(), totalAmount, reverseType);
+        }
+
         giaoDichCryptoRepository.deleteById(id);
+        
+        // Tính lại Portfolio sau khi xóa lịch sử
+        tinhLaiPortfolio(danhMucId);
     }
 }
