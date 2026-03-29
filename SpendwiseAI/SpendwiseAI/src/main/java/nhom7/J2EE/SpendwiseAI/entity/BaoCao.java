@@ -25,7 +25,7 @@ public class BaoCao {
     private String loai; // monthly / yearly
 
     @Column(name = "dinh_dang")
-    private String dinhDang; // pdf / csv
+    private String dinhDang; // pdf / csv / xlsx
 
     @Column(name = "file_url", columnDefinition = "TEXT")
     private String fileUrl;

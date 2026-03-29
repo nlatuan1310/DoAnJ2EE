@@ -35,10 +35,11 @@ public class BaoCaoController {
     @GetMapping("/export/excel")
     public ResponseEntity<InputStreamResource> exportExcel(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
+            @RequestParam(defaultValue = "monthly") String loai) {
 
         NguoiDung user = getCurrentUser();
-        ByteArrayInputStream out = baoCaoService.exportExcel(user.getId(), start, end);
+        ByteArrayInputStream out = baoCaoService.exportExcel(user.getId(), start, end, loai);
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("Content-Disposition", "attachment; filename=BaoCao_" + user.getHoVaTen() + ".xlsx");
@@ -52,10 +53,11 @@ public class BaoCaoController {
     @GetMapping("/export/pdf")
     public ResponseEntity<InputStreamResource> exportPdf(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
+            @RequestParam(defaultValue = "monthly") String loai) {
 
         NguoiDung user = getCurrentUser();
-        ByteArrayInputStream out = baoCaoService.exportPdf(user.getId(), start, end);
+        ByteArrayInputStream out = baoCaoService.exportPdf(user.getId(), start, end, loai);
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("Content-Disposition", "attachment; filename=BaoCao_" + user.getHoVaTen() + ".pdf");

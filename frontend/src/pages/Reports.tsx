@@ -24,6 +24,7 @@ export default function Reports() {
   const [endDate, setEndDate] = useState<string>(
     new Date().toISOString().split('T')[0]
   )
+  const [reportType, setReportType] = useState<'monthly' | 'yearly'>('monthly')
   const [loading, setLoading] = useState<{ excel: boolean; pdf: boolean }>({
     excel: false,
     pdf: false
@@ -43,7 +44,7 @@ export default function Reports() {
       const endDateTime = `${endDate}T23:59:59`
       
       const response = await fetch(
-        `http://localhost:8080/api/reports/export/${formatType}?start=${startDateTime}&end=${endDateTime}`,
+        `http://localhost:8080/api/reports/export/${formatType}?start=${startDateTime}&end=${endDateTime}&loai=${reportType}`,
         {
           method: 'GET',
           headers: {
@@ -60,13 +61,13 @@ export default function Reports() {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `BaoCao_${formatType === 'excel' ? 'Excel' : 'PDF'}_${format(new Date(), 'yyyyMMdd')}.${formatType === 'excel' ? 'xlsx' : 'pdf'}`
+      a.download = `BaoCao_${reportType === 'monthly' ? 'Thang' : 'Nam'}_${formatType === 'excel' ? 'Excel' : 'PDF'}_${format(new Date(), 'yyyyMMdd')}.${formatType === 'excel' ? 'xlsx' : 'pdf'}`
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
 
-      setMessage({ text: `Xuất báo cáo ${formatType.toUpperCase()} thành công!`, type: 'success' })
+      setMessage({ text: `Xuất báo cáo ${reportType === 'monthly' ? 'Tháng' : 'Năm'} (${formatType.toUpperCase()}) thành công!`, type: 'success' })
     } catch (error: any) {
       console.error(error)
       setMessage({ text: error.message || 'Có lỗi xảy ra khi tải báo cáo.', type: 'error' })
@@ -82,40 +83,76 @@ export default function Reports() {
         <p className="text-slate-500 mt-2">Xuất dữ liệu tài chính của bạn ra các định dạng phổ biến để lưu trữ hoặc phân tích sâu hơn.</p>
       </div>
 
-      {/* Date Range Selection */}
-      <Card className="mb-8 border-slate-200 shadow-sm">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <CalendarIcon className="w-5 h-5 text-violet-500" />
-            Chọn khoảng thời gian
-          </CardTitle>
-          <CardDescription>Dữ liệu báo cáo sẽ được lọc theo khoảng thời gian bạn chọn bên dưới.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4 items-end">
-            <div className="grid w-full sm:w-auto items-center gap-1.5">
-              <label htmlFor="startDate" className="text-sm font-medium text-slate-700">Từ ngày</label>
-              <input
-                type="date"
-                id="startDate"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 transition-all"
-              />
+      {/* Report Options Selection */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <Card className="lg:col-span-2 border-slate-200 shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <CalendarIcon className="w-5 h-5 text-violet-500" />
+              Chọn khoảng thời gian
+            </CardTitle>
+            <CardDescription>Dữ liệu báo cáo sẽ được lọc theo khoảng thời gian bạn chọn bên dưới.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row gap-4 items-end">
+              <div className="grid w-full sm:w-auto items-center gap-1.5">
+                <label htmlFor="startDate" className="text-sm font-medium text-slate-700">Từ ngày</label>
+                <input
+                  type="date"
+                  id="startDate"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 transition-all"
+                />
+              </div>
+              <div className="grid w-full sm:w-auto items-center gap-1.5">
+                <label htmlFor="endDate" className="text-sm font-medium text-slate-700">Đến ngày</label>
+                <input
+                  type="date"
+                  id="endDate"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 transition-all"
+                />
+              </div>
             </div>
-            <div className="grid w-full sm:w-auto items-center gap-1.5">
-              <label htmlFor="endDate" className="text-sm font-medium text-slate-700">Đến ngày</label>
-              <input
-                type="date"
-                id="endDate"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 transition-all"
-              />
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-violet-500" />
+              Loại báo cáo
+            </CardTitle>
+            <CardDescription>Chọn định kỳ báo cáo muốn xuất.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex p-1 bg-slate-100 rounded-lg">
+              <button
+                onClick={() => setReportType('monthly')}
+                className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+                  reportType === 'monthly' 
+                    ? 'bg-white text-violet-600 shadow-sm' 
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                Hàng tháng
+              </button>
+              <button
+                onClick={() => setReportType('yearly')}
+                className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+                  reportType === 'yearly' 
+                    ? 'bg-white text-violet-600 shadow-sm' 
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                Hàng năm
+              </button>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Export Options */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
