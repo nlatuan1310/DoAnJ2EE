@@ -23,6 +23,7 @@ import {
   LayoutGrid,
   Settings,
   BrainCircuit,
+  CreditCard,
 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { useState } from "react"
@@ -49,10 +50,18 @@ const mainMenuItems: MenuItem[] = [
     icon: Wallet,
   },
   {
-    title: "Phân tích",
-    url: "/analytics",
-    icon: TrendingUp,
-  },
+  title: "Phân tích",
+  url: "/analytics",
+  icon: TrendingUp,
+},
+{
+  title: "Ví",
+  icon: CreditCard,
+  subItems: [
+    { title: "Ví cá nhân", url: "/wallets/personal" },
+    { title: "Ví nhóm", url: "/wallets/group" },
+  ],
+},
   {
     title: "Quét hóa đơn",
     url: "/receipt-scanner",

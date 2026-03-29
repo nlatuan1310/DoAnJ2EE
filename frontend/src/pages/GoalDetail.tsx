@@ -125,7 +125,7 @@ export default function GoalDetail() {
         viTien: goalData.viTien ? { id: goalData.viTien.id, tenVi: goalData.viTien.tenVi } : undefined,
         color: "violet",
       })
-      setContributions(contribData.map((c) => ({
+      setContributions(contribData.map((c: any) => ({
         id: c.id,
         soTien: c.soTien,
         ngayTao: c.ngayTao,
@@ -156,7 +156,7 @@ export default function GoalDetail() {
     }
   }
 
-  const handleEdit = (data: GoalFormData) => {
+  const handleEdit = async (data: GoalFormData) => {
     if (!goal) return
     // NOTE: Backend chưa có PUT endpoint
     setGoal({

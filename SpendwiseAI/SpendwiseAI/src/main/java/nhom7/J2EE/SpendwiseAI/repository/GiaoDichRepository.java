@@ -19,6 +19,8 @@ public interface GiaoDichRepository extends JpaRepository<GiaoDich, UUID>, JpaSp
 
     List<GiaoDich> findByViTienId(UUID viId);
 
+    List<GiaoDich> findByViTienIdIn(List<UUID> viIds);
+
     List<GiaoDich> findByNguoiDungIdAndLoai(UUID nguoiDungId, String loai);
 
     List<GiaoDich> findByNguoiDungIdAndNgayGiaoDichBetween(
