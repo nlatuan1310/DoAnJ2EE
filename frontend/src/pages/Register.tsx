@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Mail, Lock, Phone, ArrowRight, ShieldCheck, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Lock, Phone, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,34 +12,19 @@ export default function Register() {
     hoVaTen: '',
     dienThoai: ''
   });
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    // Ngẫu nhiên: Chỉ cho phép nhập số cho trường điện thoại
-    if (name === 'dienThoai') {
-      const numericValue = value.replace(/\D/g, '');
-      setFormData({ ...formData, [name]: numericValue });
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-
-    // Client-side validation
-    if (formData.dienThoai.length < 10 || formData.dienThoai.length > 11) {
-      setError('Số điện thoại phải từ 10-11 chữ số');
-      setLoading(false);
-      return;
-    }
 
     try {
       const response = await fetch('http://localhost:8080/api/auth/dang-ky', {
@@ -53,7 +38,7 @@ export default function Register() {
       if (response.ok) {
         navigate('/login');
       } else {
-        setError(data.message || 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.');
+        setError(data.message || 'Họ và tên hoặc Email đã được sử dụng');
       }
     } catch (err) {
       setError('Lỗi kết nối máy chủ');
@@ -147,8 +132,7 @@ export default function Register() {
                     <Input
                       id="dienThoai"
                       name="dienThoai"
-                      type="tel"
-                      required
+                      type="text"
                       value={formData.dienThoai}
                       onChange={handleChange}
                       className="h-12 pl-12 pr-4 bg-white border-slate-200 rounded-2xl text-slate-900 focus:ring-violet-500 focus:border-violet-500 transition-all font-medium"
@@ -169,20 +153,13 @@ export default function Register() {
                   <Input
                     id="matKhau"
                     name="matKhau"
-                    type={showPassword ? "text" : "password"}
+                    type="password"
                     required
                     value={formData.matKhau}
                     onChange={handleChange}
-                    className="h-12 pl-12 pr-12 bg-white border-slate-200 rounded-2xl text-slate-900 focus:ring-violet-500 focus:border-violet-500 transition-all font-medium"
+                    className="h-12 pl-12 pr-4 bg-white border-slate-200 rounded-2xl text-slate-900 focus:ring-violet-500 focus:border-violet-500 transition-all font-medium"
                     placeholder="••••••••"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-violet-600 transition-colors duration-200"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
                 </div>
               </div>
 

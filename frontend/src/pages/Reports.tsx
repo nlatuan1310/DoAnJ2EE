@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { 
   Card, 
   CardContent, 
@@ -16,15 +16,6 @@ import {
   AlertCircle
 } from "lucide-react"
 import { format } from "date-fns"
-import { reportsApi } from "@/services/api";
-
-interface Report {
-  id: string;
-  loai: string;
-  dinhDang: string;
-  fileUrl: string;
-  ngayTao: string;
-}
 
 export default function Reports() {
   const [startDate, setStartDate] = useState<string>(
@@ -33,7 +24,6 @@ export default function Reports() {
   const [endDate, setEndDate] = useState<string>(
     new Date().toISOString().split('T')[0]
   )
-  const [reportType, setReportType] = useState<'monthly' | 'yearly'>('monthly')
   const [loading, setLoading] = useState<{ excel: boolean; pdf: boolean }>({
     excel: false,
     pdf: false
@@ -42,20 +32,6 @@ export default function Reports() {
     text: '',
     type: null
   })
-  const [history, setHistory] = useState<Report[]>([])
-
-  const fetchHistory = async () => {
-    try {
-      const res = await reportsApi.getHistory();
-      setHistory(res.data);
-    } catch (err) {
-      console.error("Lỗi khi tải lịch sử báo cáo:", err);
-    }
-  };
-
-  useEffect(() => {
-    fetchHistory();
-  }, []);
 
   const handleExport = async (formatType: 'excel' | 'pdf') => {
     setLoading(prev => ({ ...prev, [formatType]: true }))
@@ -67,7 +43,7 @@ export default function Reports() {
       const endDateTime = `${endDate}T23:59:59`
       
       const response = await fetch(
-        `http://localhost:8080/api/reports/export/${formatType}?start=${startDateTime}&end=${endDateTime}&loai=${reportType}`,
+        `http://localhost:8080/api/reports/export/${formatType}?start=${startDateTime}&end=${endDateTime}`,
         {
           method: 'GET',
           headers: {
@@ -84,14 +60,13 @@ export default function Reports() {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `BaoCao_${reportType === 'monthly' ? 'Thang' : 'Nam'}_${formatType === 'excel' ? 'Excel' : 'PDF'}_${format(new Date(), 'yyyyMMdd')}.${formatType === 'excel' ? 'xlsx' : 'pdf'}`
+      a.download = `BaoCao_${formatType === 'excel' ? 'Excel' : 'PDF'}_${format(new Date(), 'yyyyMMdd')}.${formatType === 'excel' ? 'xlsx' : 'pdf'}`
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
 
-      setMessage({ text: `Xuất báo cáo ${reportType === 'monthly' ? 'Tháng' : 'Năm'} (${formatType.toUpperCase()}) thành công!`, type: 'success' })
-      fetchHistory(); // Làm mới lịch sử sau khi xuất
+      setMessage({ text: `Xuất báo cáo ${formatType.toUpperCase()} thành công!`, type: 'success' })
     } catch (error: any) {
       console.error(error)
       setMessage({ text: error.message || 'Có lỗi xảy ra khi tải báo cáo.', type: 'error' })
@@ -100,27 +75,6 @@ export default function Reports() {
     }
   }
 
-  const handleDownload = async (report: Report) => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8080/api/reports/download/${report.id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) throw new Error("Không thể tải file");
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = report.fileUrl.split('/').pop() || "report";
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      alert("Lỗi khi tải lại báo cáo");
-    }
-  };
-
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1200px] mx-auto">
       <div className="mb-8">
@@ -128,76 +82,40 @@ export default function Reports() {
         <p className="text-slate-500 mt-2">Xuất dữ liệu tài chính của bạn ra các định dạng phổ biến để lưu trữ hoặc phân tích sâu hơn.</p>
       </div>
 
-      {/* Report Options Selection */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        <Card className="lg:col-span-2 border-slate-200 shadow-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <CalendarIcon className="w-5 h-5 text-violet-500" />
-              Chọn khoảng thời gian
-            </CardTitle>
-            <CardDescription>Dữ liệu báo cáo sẽ được lọc theo khoảng thời gian bạn chọn bên dưới.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row gap-4 items-end">
-              <div className="grid w-full sm:w-auto items-center gap-1.5">
-                <label htmlFor="startDate" className="text-sm font-medium text-slate-700">Từ ngày</label>
-                <input
-                  type="date"
-                  id="startDate"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 transition-all"
-                />
-              </div>
-              <div className="grid w-full sm:w-auto items-center gap-1.5">
-                <label htmlFor="endDate" className="text-sm font-medium text-slate-700">Đến ngày</label>
-                <input
-                  type="date"
-                  id="endDate"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 transition-all"
-                />
-              </div>
+      {/* Date Range Selection */}
+      <Card className="mb-8 border-slate-200 shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <CalendarIcon className="w-5 h-5 text-violet-500" />
+            Chọn khoảng thời gian
+          </CardTitle>
+          <CardDescription>Dữ liệu báo cáo sẽ được lọc theo khoảng thời gian bạn chọn bên dưới.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-4 items-end">
+            <div className="grid w-full sm:w-auto items-center gap-1.5">
+              <label htmlFor="startDate" className="text-sm font-medium text-slate-700">Từ ngày</label>
+              <input
+                type="date"
+                id="startDate"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 transition-all"
+              />
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-violet-500" />
-              Loại báo cáo
-            </CardTitle>
-            <CardDescription>Chọn định kỳ báo cáo muốn xuất.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex p-1 bg-slate-100 rounded-lg">
-              <button
-                onClick={() => setReportType('monthly')}
-                className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                  reportType === 'monthly' 
-                    ? 'bg-white text-violet-600 shadow-sm' 
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                Hàng tháng
-              </button>
-              <button
-                onClick={() => setReportType('yearly')}
-                className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                  reportType === 'yearly' 
-                    ? 'bg-white text-violet-600 shadow-sm' 
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                Hàng năm
-              </button>
+            <div className="grid w-full sm:w-auto items-center gap-1.5">
+              <label htmlFor="endDate" className="text-sm font-medium text-slate-700">Đến ngày</label>
+              <input
+                type="date"
+                id="endDate"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 transition-all"
+              />
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Export Options */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -270,40 +188,16 @@ export default function Reports() {
         </div>
       )}
 
-      {/* Preview Section - Real History */}
-      <div className="mt-12">
+      {/* Preview Section - Mockup */}
+      <div className="mt-12 opacity-50 grayscale select-none pointer-events-none">
         <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-6">Mẫu báo cáo gần đây</h3>
-        {history.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl text-slate-400">
-            <FileText className="w-10 h-10 mb-2 opacity-20" />
-            <p className="text-sm">Chưa có báo cáo nào được xuất.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {history.slice(0, 8).map(report => (
-              <div 
-                key={report.id} 
-                className="group p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:border-violet-200 hover:shadow-md transition-all cursor-pointer"
-                onClick={() => handleDownload(report)}
-              >
-               
-                <h4 className="font-bold text-slate-800 text-sm truncate">
-                  Báo cáo {report.loai === 'monthly' ? 'Tháng' : 'Năm'}
-                </h4>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  {format(new Date(report.ngayTao), 'dd/MM/yyyy HH:mm')}
-                </p>
-                <div className="mt-3 flex items-center gap-1.5">
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase font-bold ${
-                    report.dinhDang === 'xlsx' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
-                  }`}>
-                    {report.dinhDang}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="aspect-[3/4] bg-slate-100 rounded-lg border-2 border-dashed border-slate-200 flex items-center justify-center">
+              <FileText className="w-8 h-8 text-slate-300" />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )

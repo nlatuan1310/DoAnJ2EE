@@ -158,29 +158,4 @@ export const financialAdvisorApi = {
     api.delete(`/co-van-ai/lich-su/${id}`),
 };
 
-// ===== Statistics API (Thống kê - dùng cho Analytics.tsx) =====
-
-export const thongKeApi = {
-  getCategoryStats: (start: string, end: string, nguoiDungId?: string) => {
-    const uid = nguoiDungId || getCurrentUserId();
-    return api.get(`/thong-ke/category?nguoiDungId=${uid}&start=${start}&end=${end}`);
-  },
-
-  getTagStats: (start: string, end: string, nguoiDungId?: string) => {
-    const uid = nguoiDungId || getCurrentUserId();
-    return api.get(`/thong-ke/tag?nguoiDungId=${uid}&start=${start}&end=${end}`);
-  },
-
-  getTrend: (start: string, end: string, nguoiDungId?: string) => {
-    const uid = nguoiDungId || getCurrentUserId();
-    return api.get(`/thong-ke/trend?nguoiDungId=${uid}&start=${start}&end=${end}`);
-  },
-};
-
-// ===== Reports API (Báo cáo - dùng cho Reports.tsx) =====
-
-export const reportsApi = {
-  getHistory: () => api.get('/reports'),
-};
-
 export default api;
