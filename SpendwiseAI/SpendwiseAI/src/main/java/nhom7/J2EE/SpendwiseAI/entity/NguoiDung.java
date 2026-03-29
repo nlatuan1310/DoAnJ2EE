@@ -47,6 +47,9 @@ public class NguoiDung {
     @Column(name = "otp_expiry")
     private LocalDateTime otpExpiry;
 
+    @Column(name = "is_2fa_enabled")
+    private boolean is2faEnabled;
+
     @PrePersist
     protected void onCreate() {
         ngayTao = LocalDateTime.now();

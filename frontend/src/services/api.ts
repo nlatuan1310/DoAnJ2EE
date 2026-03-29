@@ -142,4 +142,20 @@ export const autoCategorizeApi = {
   },
 };
 
+// ===== RAG Financial Advisor API (Cố vấn tài chính AI – Ollama/Llama) =====
+
+export const financialAdvisorApi = {
+  /** Gửi câu hỏi cho cố vấn AI */
+  askQuestion: (data: { cauHoi: string }) =>
+    api.post('/co-van-ai/hoi', data),
+
+  /** Lấy lịch sử hội thoại */
+  getHistory: () =>
+    api.get('/co-van-ai/lich-su'),
+
+  /** Xóa một câu hỏi trong lịch sử */
+  deleteHistory: (id: string) =>
+    api.delete(`/co-van-ai/lich-su/${id}`),
+};
+
 export default api;

@@ -11,10 +11,12 @@ import Investments from "./pages/Investments";
 import ReceiptScanner from "./pages/ReceiptScanner";
 import Reports from "./pages/Reports";
 import Categories from "./pages/Categories";
+import FinancialAdvisor from "./pages/FinancialAdvisor";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import { AuthProvider } from "./hooks/useAuth";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +46,8 @@ function App() {
               <Route path="/receipt-scanner" element={<ReceiptScanner />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/categories" element={<Categories />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/advisor" element={<FinancialAdvisor />} />
             </Route>
 
             {/* Admin Routes with Guard */}
