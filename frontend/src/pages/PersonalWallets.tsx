@@ -73,7 +73,7 @@ export default function PersonalWallets() {
     try {
       const res = await walletService.getWallets(userId);
       const personal = res.data.filter((w: WalletType) => 
-        w.vaiTro === 'OWNER' && (w.soThanhVien || 0) === 0
+        w.vaiTro === 'OWNER' && !w.nhom && (w.soThanhVien || 0) === 0
       );
       setWallets(personal);
     } catch (err: any) {

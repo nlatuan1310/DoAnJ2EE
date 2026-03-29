@@ -31,6 +31,10 @@ public class ViTien {
     @Column(name = "so_du")
     private BigDecimal soDu;
 
+    @Builder.Default
+    @Column(name = "nhom")
+    private Boolean nhom = false;
+
     @Column(name = "ngay_tao")
     private LocalDateTime ngayTao;
 
