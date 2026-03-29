@@ -14,6 +14,9 @@ import java.util.UUID;
 public interface ViTienRepository extends JpaRepository<ViTien, UUID> {
 
     List<ViTien> findByChuSoHuuId(UUID chuSoHuuId);
+    
+    @Query("SELECT v FROM ViTien v JOIN FETCH v.chuSoHuu WHERE v.chuSoHuu.id = :userId OR EXISTS (SELECT 1 FROM ThanhVienVi tv WHERE tv.viTien = v AND tv.nguoiDung.id = :userId)")
+    List<ViTien> findAccessibleWallets(@Param("userId") UUID userId);
 
     @Query("SELECT COALESCE(SUM(v.soDu), 0) FROM ViTien v WHERE v.chuSoHuu.id = :userId")
     BigDecimal sumSoDuByUserId(@Param("userId") UUID userId);

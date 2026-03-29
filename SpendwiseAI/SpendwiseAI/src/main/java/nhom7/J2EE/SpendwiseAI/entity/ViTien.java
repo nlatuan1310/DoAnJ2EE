@@ -38,4 +38,13 @@ public class ViTien {
     protected void onCreate() {
         ngayTao = LocalDateTime.now();
     }
+
+    @Transient
+    private String vaiTro; // Role of current user in this wallet (OWNER, EDITOR, VIEWER)
+
+    @Transient
+    private String tenChuSoHuu;
+
+    @Transient
+    private Long soThanhVien;
 }

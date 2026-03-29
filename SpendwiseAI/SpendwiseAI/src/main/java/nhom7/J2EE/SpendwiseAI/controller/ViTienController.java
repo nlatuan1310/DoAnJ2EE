@@ -1,5 +1,6 @@
 package nhom7.J2EE.SpendwiseAI.controller;
 
+import nhom7.J2EE.SpendwiseAI.entity.ThanhVienVi;
 import nhom7.J2EE.SpendwiseAI.entity.ViTien;
 import nhom7.J2EE.SpendwiseAI.service.ViTienService;
 import org.springframework.http.ResponseEntity;
@@ -42,5 +43,31 @@ public class ViTienController {
     public ResponseEntity<Void> xoa(@PathVariable UUID id) {
         viTienService.xoa(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/thanh-vien")
+    public ResponseEntity<ThanhVienVi> moiThanhVien(@PathVariable UUID id, 
+                                                    @RequestParam String email, 
+                                                    @RequestParam String vaiTro) {
+        return ResponseEntity.ok(viTienService.moiThanhVien(id, email, vaiTro));
+    }
+
+    @DeleteMapping("/{id}/thanh-vien/{nguoiDungId}")
+    public ResponseEntity<Void> xoaThanhVien(@PathVariable UUID id, 
+                                             @PathVariable UUID nguoiDungId) {
+        viTienService.xoaThanhVien(id, nguoiDungId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/thanh-vien/{nguoiDungId}")
+    public ResponseEntity<ThanhVienVi> capNhatVaiTro(@PathVariable UUID id, 
+                                                     @PathVariable UUID nguoiDungId, 
+                                                     @RequestParam String vaiTro) {
+        return ResponseEntity.ok(viTienService.capNhatVaiTro(id, nguoiDungId, vaiTro));
+    }
+
+    @GetMapping("/{id}/thanh-vien")
+    public ResponseEntity<List<ThanhVienVi>> layDanhSachThanhVien(@PathVariable UUID id) {
+        return ResponseEntity.ok(viTienService.layDanhSachThanhVien(id));
     }
 }
