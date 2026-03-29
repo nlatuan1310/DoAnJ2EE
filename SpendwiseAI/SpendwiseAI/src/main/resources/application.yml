@@ -78,3 +78,10 @@ jwt:
   secret: ${JWT_SECRET:SpendWiseAI-Default-Secret-Key-Change-In-Production-2024-Very-Long-Key}
   expiration: 86400000  # 24 giờ (ms)
 
+# ==========================================
+# Crypto Price Configuration
+# ==========================================
+crypto:
+  exchange-rate:
+    usd-to-vnd: 25400
+

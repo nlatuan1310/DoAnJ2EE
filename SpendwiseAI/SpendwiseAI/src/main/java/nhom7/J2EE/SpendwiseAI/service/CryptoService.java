@@ -8,6 +8,7 @@ import nhom7.J2EE.SpendwiseAI.repository.DanhMucCryptoRepository;
 import nhom7.J2EE.SpendwiseAI.repository.GiaoDichCryptoRepository;
 import nhom7.J2EE.SpendwiseAI.repository.NguoiDungRepository;
 import nhom7.J2EE.SpendwiseAI.repository.TaiSanCryptoRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,9 @@ public class CryptoService {
     private final TaiSanCryptoRepository taiSanCryptoRepository;
     private final ViTienService viTienService;
     private final nhom7.J2EE.SpendwiseAI.repository.ViTienRepository viTienRepository;
+    
+    @Value("${crypto.exchange-rate.usd-to-vnd:25400}")
+    private double usdVndRate;
 
     public CryptoService(DanhMucCryptoRepository danhMucCryptoRepository,
                          GiaoDichCryptoRepository giaoDichCryptoRepository,
@@ -78,8 +82,9 @@ public class CryptoService {
                 }
             } else if ("sell".equalsIgnoreCase(tx.getLoai())) {
                 currentQty = currentQty.subtract(tx.getSoLuong());
+                // Không gạt về 0 ở đây để hỗ trợ việc nhập giao dịch lùi ngày (backdated transactions)
                 if (currentQty.compareTo(BigDecimal.ZERO) <= 0) {
-                    currentQty = BigDecimal.ZERO;
+                    // Nếu hết coin thì reset giá trung bình (đã bán hết hoặc bán khống)
                     avgPrice = BigDecimal.ZERO;
                 }
             }
@@ -102,7 +107,33 @@ public class CryptoService {
         if (duLieu.getSoLuong() == null) duLieu.setSoLuong(BigDecimal.ZERO);
         if (duLieu.getGiaMuaTrungBinh() == null) duLieu.setGiaMuaTrungBinh(BigDecimal.ZERO);
 
-        return danhMucCryptoRepository.save(duLieu);
+        // Lưu danh mục trước
+        DanhMucCrypto savedDm = danhMucCryptoRepository.save(duLieu);
+
+        // NẾU CÓ SỐ LƯỢNG BAN ĐẦU > 0, TỰ ĐỘNG TẠO GIAO DỊCH 'BUY' ĐỂ LỊCH SỬ CHÍNH XÁC
+        if (savedDm.getSoLuong().compareTo(BigDecimal.ZERO) > 0) {
+            GiaoDichCrypto initialTx = GiaoDichCrypto.builder()
+                    .danhMucCrypto(savedDm)
+                    .loai("buy")
+                    .soLuong(savedDm.getSoLuong())
+                    .gia(savedDm.getGiaMuaTrungBinh())
+                    .ngayGiaoDich(LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0)) // Đặt đầu ngày hôm nay để ưu tiên trước các lệnh trong cùng ngày
+                    .viId(duLieu.getViId()) // Nếu frontend gửi viId, gán vào đây
+                    .build();
+
+            // Cập nhật ví tiền nếu có link viId (Khấu trừ vốn đầu tư ban đầu)
+            if (initialTx.getViId() != null) {
+                BigDecimal totalAmount = initialTx.getSoLuong().multiply(initialTx.getGia());
+                capNhatSoDuVi(initialTx.getViId(), totalAmount, "buy");
+            }
+
+            giaoDichCryptoRepository.save(initialTx);
+        }
+
+        // Tính toán lại Portfolio (thực ra không cần nếu vừa tạo nhưng để chắc chắn)
+        tinhLaiPortfolio(savedDm.getId());
+
+        return savedDm;
     }
 
     @Transactional
@@ -135,13 +166,20 @@ public class CryptoService {
         nhom7.J2EE.SpendwiseAI.entity.ViTien vi = viTienService.layTheoId(viId);
         
         // Cập nhật số dư: Mua thì trừ, Bán thì cộng
+        BigDecimal amountToUpdate = amount;
+        
+        // NẾU VÍ LÀ USD, CHIA CHO TỶ GIÁ (vì amount truyền vào đang là VNĐ)
+        if ("USD".equalsIgnoreCase(vi.getTienTe())) {
+            amountToUpdate = amount.divide(BigDecimal.valueOf(usdVndRate), 2, RoundingMode.HALF_UP);
+        }
+
         if ("buy".equalsIgnoreCase(type)) {
-            if (vi.getSoDu().compareTo(amount) < 0) {
+            if (vi.getSoDu().compareTo(amountToUpdate) < 0) {
                 throw new RuntimeException("Số dư ví " + vi.getTenVi() + " không đủ để thực hiện giao dịch.");
             }
-            vi.setSoDu(vi.getSoDu().subtract(amount));
+            vi.setSoDu(vi.getSoDu().subtract(amountToUpdate));
         } else {
-            vi.setSoDu(vi.getSoDu().add(amount));
+            vi.setSoDu(vi.getSoDu().add(amountToUpdate));
         }
         viTienRepository.save(vi);
     }

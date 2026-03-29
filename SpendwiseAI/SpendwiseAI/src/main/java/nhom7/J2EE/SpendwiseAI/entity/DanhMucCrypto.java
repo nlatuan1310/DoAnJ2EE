@@ -33,4 +33,7 @@ public class DanhMucCrypto {
 
     @Column(name = "dia_chi_vi", columnDefinition = "TEXT")
     private String diaChiVi;
+
+    @Transient
+    private UUID viId;
 }
