@@ -67,6 +67,7 @@ public class ViTienService {
         ViTien vi = layTheoId(id);
         if (duLieuMoi.getTenVi() != null) vi.setTenVi(duLieuMoi.getTenVi());
         if (duLieuMoi.getTienTe() != null) vi.setTienTe(duLieuMoi.getTienTe());
+        if (duLieuMoi.getSoDu() != null) vi.setSoDu(duLieuMoi.getSoDu());
         return viTienRepository.save(vi);
     }
 

@@ -1,23 +1,8 @@
 import { useState, useEffect } from "react";
 import { 
   Plus, 
-  Search, 
-  Filter, 
-  MoreVertical, 
   Edit2, 
   Trash2, 
-  PieChart, 
-  Wallet as WalletIcon, 
-  Calendar, 
-  AlertCircle,
-  CheckCircle2,
-  ChevronRight,
-  ArrowUpRight,
-  LayoutGrid,
-  List as ListIcon,
-  TrendingDown,
-  Target,
-  RefreshCw,
   X,
   Info
 } from "lucide-react";
@@ -26,7 +11,6 @@ import {
   CardContent, 
   CardHeader, 
   CardTitle,
-  CardDescription
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -238,6 +222,9 @@ export default function Budgets() {
         </div>
       </div>
 
+      {error && <div className="bg-rose-50 text-rose-600 p-4 rounded-xl text-sm font-bold border border-rose-100">{error}</div>}
+      {success && <div className="bg-emerald-50 text-emerald-600 p-4 rounded-xl text-sm font-bold border border-emerald-100">{success}</div>}
+
       {/* Stats Summary - Compact */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
@@ -262,8 +249,20 @@ export default function Budgets() {
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-slate-800 tracking-tight">Chi tiết ngân sách</h2>
           <div className="flex items-center bg-slate-100 p-1 rounded-xl">
-             <Button variant="white" size="sm" className="rounded-lg shadow-sm text-xs font-bold px-4">Lưới</Button>
-             <Button variant="ghost" size="sm" className="rounded-lg text-xs font-bold text-slate-400 px-4">Danh sách</Button>
+             <Button 
+                variant={viewMode === "grid" ? "secondary" : "ghost"} 
+                size="sm" 
+                onClick={() => setViewMode("grid")}
+                className={`rounded-lg ${viewMode === "grid" ? "shadow-sm bg-white text-slate-800" : "text-slate-400"} text-xs font-bold px-4`}>
+                Lưới
+             </Button>
+             <Button 
+                variant={viewMode === "list" ? "secondary" : "ghost"} 
+                size="sm" 
+                onClick={() => setViewMode("list")}
+                className={`rounded-lg ${viewMode === "list" ? "shadow-sm bg-white text-slate-800" : "text-slate-400"} text-xs font-bold px-4`}>
+                Danh sách
+             </Button>
           </div>
         </div>
 
@@ -272,7 +271,7 @@ export default function Budgets() {
             <p className="text-slate-400 font-medium">Bạn chưa thiết lập ngân sách nào.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "flex flex-col gap-4"}>
             {budgets.map((b) => {
               const spent = b.spent || 0;
               const progress = Math.min((spent / b.gioiHanTien) * 100, 100);

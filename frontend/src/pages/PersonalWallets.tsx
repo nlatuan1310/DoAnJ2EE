@@ -35,8 +35,16 @@ import {
 import walletService, { Wallet as WalletType } from "@/services/walletService";
 import { getCurrentUserId } from "@/services/api";
 
-const fmtVND = (n: number) =>
-  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
+const formatCurrency = (n: number, currency: string = "VND") => {
+  try {
+    return new Intl.NumberFormat(currency === "USD" ? "en-US" : "vi-VN", {
+      style: "currency",
+      currency: currency || "VND",
+    }).format(n);
+  } catch (error) {
+    return `${n} ${currency}`;
+  }
+};
 
 export default function PersonalWallets() {
   const [wallets, setWallets] = useState<WalletType[]>([]);
@@ -52,7 +60,7 @@ export default function PersonalWallets() {
 
   // Form states
   const [newWallet, setNewWallet] = useState({ tenVi: "", tienTe: "VND", soDu: 0 });
-  const [editWalletData, setEditWalletData] = useState({ tenVi: "", tienTe: "VND" });
+  const [editWalletData, setEditWalletData] = useState({ tenVi: "", tienTe: "VND", soDu: 0 });
   const [inviteEmail, setInviteEmail] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -92,7 +100,7 @@ export default function PersonalWallets() {
 
   const openEditWallet = (wallet: WalletType) => {
     setSelectedWallet(wallet);
-    setEditWalletData({ tenVi: wallet.tenVi, tienTe: wallet.tienTe });
+    setEditWalletData({ tenVi: wallet.tenVi, tienTe: wallet.tienTe, soDu: wallet.soDu });
     setIsEditWalletOpen(true);
   };
 
@@ -188,7 +196,7 @@ export default function PersonalWallets() {
                 <div className="bg-slate-50/50 rounded-2xl p-6 text-center border border-slate-100 relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite] pointer-events-none" />
                   <span className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-2 block">Số dư hiện dụng</span>
-                  <div className="text-3xl font-black text-slate-900 tracking-tighter">{fmtVND(wallet.soDu)}</div>
+                  <div className="text-3xl font-black text-slate-900 tracking-tighter">{formatCurrency(wallet.soDu, wallet.tienTe)}</div>
                 </div>
                 <div className="flex gap-3">
                   <Button variant="outline" size="lg" className="flex-1 rounded-xl h-11 border-slate-200 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700 transition-all font-bold" onClick={() => openEditWallet(wallet)}>
@@ -240,6 +248,10 @@ export default function PersonalWallets() {
                   <option value="VND">Vietnam Dong (VND)</option>
                   <option value="USD">US Dollar (USD)</option>
                 </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Tổng số dư</label>
+                <Input type="number" value={editWalletData.soDu} onChange={e => setEditWalletData({...editWalletData, soDu: Number(e.target.value)})} className="h-12 bg-slate-50 rounded-xl border-slate-200 focus:ring-violet-500/20 transition-all font-bold text-slate-900" />
               </div>
             </div>
             <Button className="w-full bg-violet-600 hover:bg-violet-700 h-14 rounded-xl font-black text-white shadow-lg shadow-violet-200" onClick={handleUpdateWallet} disabled={actionLoading}>

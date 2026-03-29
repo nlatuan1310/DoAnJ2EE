@@ -23,12 +23,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Users,
   Trash2,
   Loader2,
@@ -43,8 +37,16 @@ import {
 import walletService, { Wallet as WalletType, WalletMember } from "@/services/walletService";
 import { getCurrentUserId } from "@/services/api";
 
-const fmtVND = (n: number) =>
-  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
+const formatCurrency = (n: number, currency: string = "VND") => {
+  try {
+    return new Intl.NumberFormat(currency === "USD" ? "en-US" : "vi-VN", {
+      style: "currency",
+      currency: currency || "VND",
+    }).format(n);
+  } catch (error) {
+    return `${n} ${currency}`;
+  }
+};
 
 export default function GroupWallets() {
   const [wallets, setWallets] = useState<WalletType[]>([]);
@@ -60,7 +62,7 @@ export default function GroupWallets() {
   const [loadingMembers, setLoadingMembers] = useState(false);
 
   // Form states
-  const [editWalletData, setEditWalletData] = useState({ tenVi: "", tienTe: "VND" });
+  const [editWalletData, setEditWalletData] = useState({ tenVi: "", tienTe: "VND", soDu: 0 });
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("VIEWER");
   const [actionLoading, setActionLoading] = useState(false);
@@ -87,7 +89,7 @@ export default function GroupWallets() {
 
   const openEditWallet = (wallet: WalletType) => {
     setSelectedWallet(wallet);
-    setEditWalletData({ tenVi: wallet.tenVi, tienTe: wallet.tienTe });
+    setEditWalletData({ tenVi: wallet.tenVi, tienTe: wallet.tienTe, soDu: wallet.soDu });
     setIsEditWalletOpen(true);
   };
 
@@ -205,6 +207,8 @@ export default function GroupWallets() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {wallets.map((wallet) => {
             const isOwner = wallet.vaiTro === 'OWNER';
+            const isEditor = wallet.vaiTro === 'EDITOR';
+            const canEdit = isOwner || isEditor;
             return (
               <Card key={wallet.id} className="group relative overflow-hidden border-slate-200 hover:border-emerald-400 hover:shadow-[0_20px_50px_rgba(16,185,129,0.15)] transition-all duration-500 bg-white rounded-[2rem]">
                 <div className={`absolute -top-10 -right-10 w-40 h-40 rounded-full blur-3xl opacity-20 ${isOwner ? 'bg-violet-500' : 'bg-emerald-500'}`} />
@@ -227,7 +231,7 @@ export default function GroupWallets() {
                 <CardContent className="space-y-6 pt-10">
                   <div className="bg-slate-50/80 rounded-3xl p-8 text-center border border-slate-100/50 shadow-inner group-hover:bg-white transition-colors duration-500">
                     <span className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em] mb-3 block">Số dư hợp nhất</span>
-                    <div className="text-4xl font-black text-slate-900 tracking-tighter">{fmtVND(wallet.soDu)}</div>
+                    <div className="text-4xl font-black text-slate-900 tracking-tighter">{formatCurrency(wallet.soDu, wallet.tienTe)}</div>
                   </div>
                   
                   <div className="flex items-center justify-between px-2">
@@ -239,17 +243,21 @@ export default function GroupWallets() {
                   </div>
 
                   <div className="flex gap-3 pt-2">
-                    {isOwner ? (
+                    {canEdit ? (
                       <>
                         <Button variant="outline" size="lg" className="flex-1 rounded-2xl h-12 border-slate-200 hover:border-violet-300 hover:text-violet-600 font-bold transition-all" onClick={() => openEditWallet(wallet)}>
                           <Pencil className="w-4 h-4 mr-2" /> Sửa
                         </Button>
-                        <Button variant="outline" size="lg" className="flex-1 rounded-2xl h-12 border-slate-200 hover:border-violet-300 hover:text-violet-600 font-bold transition-all" onClick={() => openManageMembers(wallet)}>
-                          <UserPlus className="w-4 h-4 mr-2" /> Nhóm
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-all" onClick={() => handleDeleteWallet(wallet.id)}>
-                          <Trash2 className="w-5 h-5" />
-                        </Button>
+                        {isOwner && (
+                          <>
+                            <Button variant="outline" size="lg" className="flex-1 rounded-2xl h-12 border-slate-200 hover:border-violet-300 hover:text-violet-600 font-bold transition-all" onClick={() => openManageMembers(wallet)}>
+                              <UserPlus className="w-4 h-4 mr-2" /> Nhóm
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-all" onClick={() => handleDeleteWallet(wallet.id)}>
+                              <Trash2 className="w-5 h-5" />
+                            </Button>
+                          </>
+                        )}
                       </>
                     ) : (
                       <div className="flex-1 flex items-center justify-between p-4 px-6 rounded-2xl bg-slate-50 text-slate-600 text-xs font-black border border-slate-100">
@@ -298,6 +306,10 @@ export default function GroupWallets() {
                   <option value="VND">Vietnam Dong (VND)</option>
                   <option value="USD">US Dollar (USD)</option>
                 </select>
+              </div>
+              <div className="space-y-2 px-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tổng số dư</label>
+                <Input type="number" value={editWalletData.soDu} onChange={e => setEditWalletData({...editWalletData, soDu: Number(e.target.value)})} className="h-14 bg-slate-50 rounded-2xl border-slate-200 text-lg font-bold text-slate-900 focus:bg-white transition-all" />
               </div>
             </div>
             <Button className="w-full bg-violet-600 hover:bg-violet-700 h-16 rounded-2xl font-black text-lg text-white shadow-2xl shadow-violet-200 active:scale-[0.98] transition-all" onClick={handleUpdateWallet} disabled={actionLoading}>
