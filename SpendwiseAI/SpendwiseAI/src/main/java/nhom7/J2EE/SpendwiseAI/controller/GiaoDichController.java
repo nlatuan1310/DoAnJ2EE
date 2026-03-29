@@ -144,5 +144,28 @@ public class GiaoDichController {
             @RequestBody GiaoDich giaoDich) {
         return ResponseEntity.ok(giaoDichService.taoVoiAutoCategory(nguoiDungId, viId, giaoDich));
     }
+
+    // =============================================
+    // Hóa đơn đính kèm giao dịch
+    // =============================================
+
+    /**
+     * Lưu chi tiết hóa đơn (ảnh + nội dung OCR) đính kèm 1 giao dịch.
+     */
+    @PostMapping("/{giaoDichId}/hoa-don")
+    public ResponseEntity<?> luuHoaDon(
+            @PathVariable UUID giaoDichId,
+            @RequestParam(required = false) String anhHoaDon,
+            @RequestParam(required = false) String noiDungOcr) {
+        return ResponseEntity.ok(giaoDichService.luuHoaDon(giaoDichId, anhHoaDon, noiDungOcr));
+    }
+
+    /**
+     * Lấy danh sách hóa đơn đính kèm của 1 giao dịch.
+     */
+    @GetMapping("/{giaoDichId}/hoa-don")
+    public ResponseEntity<?> layHoaDon(@PathVariable UUID giaoDichId) {
+        return ResponseEntity.ok(giaoDichService.layHoaDon(giaoDichId));
+    }
 }
 
