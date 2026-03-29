@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -22,7 +22,16 @@ import {
   X,
   Sparkles,
   Bot,
+  Clock,
 } from "lucide-react";
+
+import {
+  layLichSuTimKiem,
+  luuLichSuTimKiem,
+  xoaLichSu,
+  xoaTatCaLichSu,
+  LichSuTimKiem,
+} from "../services/searchHistoryService";
 
 /* ═══════ TYPES ═══════ */
 interface DanhMuc {
@@ -86,6 +95,11 @@ export default function Transactions() {
   const [denNgay, setDenNgay] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
 
+  /* --- search history state --- */
+  const [searchHistory, setSearchHistory] = useState<LichSuTimKiem[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
   /* --- pagination state --- */
   const [page, setPage] = useState(0);
 
@@ -116,6 +130,59 @@ export default function Transactions() {
     }, 500);
     return () => clearTimeout(t);
   }, [keyword]);
+
+  /* ──── 1a) Auto-save keyword khi debounce hoàn tất ──── */
+  useEffect(() => {
+    if (debouncedKw.trim()) {
+      luuLichSuTimKiem(debouncedKw.trim())
+        .then(() => fetchSearchHistory())
+        .catch(() => {});
+    }
+  }, [debouncedKw]);
+
+  /* ──── 1b) Fetch search history ──── */
+  const fetchSearchHistory = useCallback(async () => {
+    try {
+      const data = await layLichSuTimKiem();
+      setSearchHistory(data);
+    } catch {
+      // silent
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSearchHistory();
+  }, [fetchSearchHistory]);
+
+  /* ──── 1c) Click-outside to close history dropdown ──── */
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowHistory(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleSelectHistory = (tuKhoa: string) => {
+    setKeyword(tuKhoa);
+    setShowHistory(false);
+  };
+
+  const handleDeleteHistory = async (id: string) => {
+    try {
+      await xoaLichSu(id);
+      setSearchHistory((prev) => prev.filter((h) => h.id !== id));
+    } catch { /* silent */ }
+  };
+
+  const handleClearAllHistory = async () => {
+    try {
+      await xoaTatCaLichSu();
+      setSearchHistory([]);
+    } catch { /* silent */ }
+  };
 
   /* ──── 2) Fetch data từ Backend (1 lần) ──── */
   const fetchData = async () => {
@@ -315,7 +382,7 @@ export default function Transactions() {
       </div>
 
       {/* ═══ FILTER BAR ═══ */}
-      <Card className="shadow-sm">
+      <Card className="shadow-sm overflow-visible">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-semibold text-slate-700 flex items-center gap-2">
@@ -341,8 +408,8 @@ export default function Transactions() {
         <CardContent className="space-y-4">
           {/* Row 1: Keyword + Loại + Danh mục + Reset */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3">
-            {/* Keyword (Debounced) */}
-            <div className="lg:col-span-5">
+            {/* Keyword (Debounced) + Recent Search History */}
+            <div className="lg:col-span-5" ref={searchRef}>
               <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
                 Tìm kiếm
               </label>
@@ -356,9 +423,59 @@ export default function Transactions() {
                              outline-none transition-all placeholder:text-slate-400"
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
+                  onFocus={() => {
+                    if (searchHistory.length > 0) setShowHistory(true);
+                  }}
                 />
                 {keyword !== debouncedKw && (
                   <Loader2 className="w-4 h-4 text-violet-500 animate-spin absolute right-3 top-1/2 -translate-y-1/2" />
+                )}
+
+                {/* ── Recent Search History Dropdown ── */}
+                {showHistory && searchHistory.length > 0 && (
+                  <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-slate-200
+                                  rounded-xl shadow-lg shadow-slate-200/50 overflow-hidden animate-in fade-in slide-in-from-top-1">
+                    <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-100">
+                      <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <Clock className="w-3 h-3" /> Tìm kiếm gần đây
+                      </span>
+                      <button
+                        onClick={handleClearAllHistory}
+                        className="text-[11px] text-rose-400 hover:text-rose-600 font-medium transition-colors"
+                      >
+                        Xóa tất cả
+                      </button>
+                    </div>
+                    <ul className="max-h-48 overflow-y-auto">
+                      {searchHistory.map((item) => (
+                        <li
+                          key={item.id}
+                          className="flex items-center justify-between px-3 py-2 hover:bg-violet-50/60
+                                     cursor-pointer transition-colors group"
+                        >
+                          <button
+                            className="flex items-center gap-2 flex-1 text-left text-sm text-slate-600
+                                       group-hover:text-violet-700 truncate"
+                            onClick={() => handleSelectHistory(item.tuKhoa)}
+                          >
+                            <Search className="w-3.5 h-3.5 text-slate-300 group-hover:text-violet-400 shrink-0" />
+                            <span className="truncate">{item.tuKhoa}</span>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteHistory(item.id);
+                            }}
+                            className="p-1 rounded-md text-slate-300 hover:text-rose-500 hover:bg-rose-50
+                                       opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                            title="Xóa"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </div>
             </div>
