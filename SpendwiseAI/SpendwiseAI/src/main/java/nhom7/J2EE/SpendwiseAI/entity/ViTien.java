@@ -31,6 +31,10 @@ public class ViTien {
     @Column(name = "so_du")
     private BigDecimal soDu;
 
+    @Builder.Default
+    @Column(name = "nhom")
+    private Boolean nhom = false;
+
     @Column(name = "ngay_tao")
     private LocalDateTime ngayTao;
 
@@ -38,4 +42,13 @@ public class ViTien {
     protected void onCreate() {
         ngayTao = LocalDateTime.now();
     }
+
+    @Transient
+    private String vaiTro; // Role of current user in this wallet (OWNER, EDITOR, VIEWER)
+
+    @Transient
+    private String tenChuSoHuu;
+
+    @Transient
+    private Long soThanhVien;
 }

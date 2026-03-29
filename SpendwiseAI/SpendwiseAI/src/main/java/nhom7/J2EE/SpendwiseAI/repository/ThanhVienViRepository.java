@@ -12,5 +12,7 @@ public interface ThanhVienViRepository extends JpaRepository<ThanhVienVi, ThanhV
 
     List<ThanhVienVi> findByIdViId(UUID viId);
 
+    long countByIdViId(UUID viId);
+
     List<ThanhVienVi> findByIdNguoiDungId(UUID nguoiDungId);
 }

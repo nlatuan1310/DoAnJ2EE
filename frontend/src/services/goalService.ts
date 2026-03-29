@@ -43,6 +43,12 @@ export async function getGoals(userId?: string): Promise<MucTieuTietKiem[]> {
   return res.data;
 }
 
+/** Lấy mục tiêu theo ID */
+export async function getGoalById(mucTieuId: string): Promise<MucTieuTietKiem> {
+  const res = await api.get<MucTieuTietKiem>(`/muc-tieu-tiet-kiem/${mucTieuId}`);
+  return res.data;
+}
+
 /** Tạo mục tiêu mới */
 export async function createGoal(
   viId?: string,
