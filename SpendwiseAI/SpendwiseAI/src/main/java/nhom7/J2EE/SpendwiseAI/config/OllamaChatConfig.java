@@ -3,6 +3,7 @@ package nhom7.J2EE.SpendwiseAI.config;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -27,6 +28,7 @@ public class OllamaChatConfig {
      * ChatClient cho Ollama (Llama) — dùng bởi FinancialAdvisorService.
      */
     @Bean("ollamaChatClient")
+    @ConditionalOnProperty(name = "spring.ai.ollama.enabled", havingValue = "true")
     public ChatClient ollamaChatClient(
             @Qualifier("ollamaChatModel") ChatModel ollamaChatModel) {
         return ChatClient.builder(ollamaChatModel).build();

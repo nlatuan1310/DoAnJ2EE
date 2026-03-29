@@ -34,22 +34,14 @@ spring:
   # Spring AI – Google Gemini
   # ==========================================
   ai:
+    ollama:
+      enabled: false
     google:
       genai:
         api-key: ${SPRING_AI_GOOGLE_GENAI_API_KEY:AIzaSy_YOUR_REAL_KEY_HERE}
         chat:
           options:
             model: gemini-2.5-flash
-
-    # ==========================================
-    # Ollama – Llama (RAG Financial Advisor)
-    # ==========================================
-    ollama:
-      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
-      chat:
-        options:
-          model: llama3.1:8b
-          temperature: 0.7
 
   # ==========================================
   # Mail Configuration
@@ -77,4 +69,3 @@ server:
 jwt:
   secret: ${JWT_SECRET:SpendWiseAI-Default-Secret-Key-Change-In-Production-2024-Very-Long-Key}
   expiration: 86400000  # 24 giờ (ms)
-

@@ -42,6 +42,11 @@ public class DangKyDichVuController {
         return ResponseEntity.ok(dangKyDichVuService.capNhat(id, dkdv));
     }
 
+    @GetMapping("/sap-den-han")
+    public ResponseEntity<List<DangKyDichVu>> laySapDenHan(@RequestParam(defaultValue = "7") int days) {
+        return ResponseEntity.ok(dangKyDichVuService.laySapDenHan(java.time.LocalDate.now().plusDays(days)));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> xoa(@PathVariable UUID id) {
         dangKyDichVuService.xoa(id);

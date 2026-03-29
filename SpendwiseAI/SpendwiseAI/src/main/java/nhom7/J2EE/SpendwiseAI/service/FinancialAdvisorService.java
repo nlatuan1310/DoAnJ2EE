@@ -9,6 +9,7 @@ import nhom7.J2EE.SpendwiseAI.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -33,7 +34,9 @@ public class FinancialAdvisorService {
 
     private static final Logger log = LoggerFactory.getLogger(FinancialAdvisorService.class);
 
-    private final ChatClient ollamaChatClient;
+    @Autowired(required = false)
+    @Qualifier("ollamaChatClient")
+    private ChatClient ollamaChatClient;
     private final GiaoDichRepository giaoDichRepository;
     private final ViTienRepository viTienRepository;
     private final NganSachRepository nganSachRepository;
@@ -42,14 +45,12 @@ public class FinancialAdvisorService {
     private final CauHoiAIRepository cauHoiAIRepository;
 
     public FinancialAdvisorService(
-            @Qualifier("ollamaChatClient") ChatClient ollamaChatClient,
             GiaoDichRepository giaoDichRepository,
             ViTienRepository viTienRepository,
             NganSachRepository nganSachRepository,
             MucTieuTietKiemRepository mucTieuRepository,
             NguoiDungRepository nguoiDungRepository,
             CauHoiAIRepository cauHoiAIRepository) {
-        this.ollamaChatClient = ollamaChatClient;
         this.giaoDichRepository = giaoDichRepository;
         this.viTienRepository = viTienRepository;
         this.nganSachRepository = nganSachRepository;
@@ -72,17 +73,22 @@ public class FinancialAdvisorService {
 
         // 3. GENERATE — Gọi Llama qua Ollama
         String traLoi;
-        try {
-            traLoi = ollamaChatClient.prompt()
-                    .user(prompt)
-                    .call()
-                    .content();
-            log.info("Ollama response length: {} chars", traLoi != null ? traLoi.length() : 0);
-        } catch (Exception e) {
-            log.error("Lỗi khi gọi Ollama: {}", e.getMessage(), e);
-            traLoi = "Xin lỗi, hiện tại tôi không thể xử lý yêu cầu của bạn. " +
-                     "Vui lòng kiểm tra Ollama đang chạy (http://localhost:11434) " +
-                     "và model llama3.1:8b đã được tải. Lỗi: " + e.getMessage();
+        if (ollamaChatClient != null) {
+            try {
+                traLoi = ollamaChatClient.prompt()
+                        .user(prompt)
+                        .call()
+                        .content();
+                log.info("Ollama response length: {} chars", traLoi != null ? traLoi.length() : 0);
+            } catch (Exception e) {
+                log.error("Lỗi khi gọi Ollama: {}", e.getMessage(), e);
+                traLoi = "Xin lỗi, hiện tại tôi không thể xử lý yêu cầu của bạn. " +
+                         "Vui lòng kiểm tra Ollama đang chạy (http://localhost:11434) " +
+                         "và model llama3.1:8b đã được tải. Lỗi: " + e.getMessage();
+            }
+        } else {
+            traLoi = "AI chưa được cấu hình. Vui lòng bật 'spring.ai.ollama.enabled=true' và kiểm tra cài đặt Ollama.";
+            log.warn("RAG Advisor — OllamaChatClient is null. Ollama might be disabled.");
         }
 
         // 4. Lưu lịch sử vào CauHoiAI
