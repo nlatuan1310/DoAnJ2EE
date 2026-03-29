@@ -49,6 +49,11 @@ const mainMenuItems: MenuItem[] = [
     icon: Wallet,
   },
   {
+    title: "Phân tích",
+    url: "/analytics",
+    icon: TrendingUp,
+  },
+  {
     title: "Quét hóa đơn",
     url: "/receipt-scanner",
     icon: ScanLine,

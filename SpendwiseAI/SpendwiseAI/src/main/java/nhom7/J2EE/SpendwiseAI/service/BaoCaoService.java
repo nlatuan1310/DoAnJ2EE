@@ -100,4 +100,12 @@ public class BaoCaoService {
             throw new RuntimeException("Lỗi khi lưu file báo cáo: " + e.getMessage());
         }
     }
+
+    public List<BaoCao> findByNguoiDung(UUID userId) {
+        return baoCaoRepository.findByNguoiDungIdOrderByNgayTaoDesc(userId);
+    }
+
+    public BaoCao findById(UUID id) {
+        return baoCaoRepository.findById(id).orElseThrow(() -> new RuntimeException("Report not found"));
+    }
 }

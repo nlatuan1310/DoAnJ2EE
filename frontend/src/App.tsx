@@ -11,6 +11,7 @@ import Investments from "./pages/Investments";
 import ReceiptScanner from "./pages/ReceiptScanner";
 import Reports from "./pages/Reports";
 import Categories from "./pages/Categories";
+import Analytics from "./pages/Analytics";
 import FinancialAdvisor from "./pages/FinancialAdvisor";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -50,6 +51,7 @@ function AppContent() {
           {isAuthenticated && <Route path="/" element={<Home />} />}
           <Route path="/smart-dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/" />} />
           <Route path="/transactions" element={isAuthenticated ? <Transactions /> : <Navigate to="/" />} />
+          <Route path="/analytics" element={isAuthenticated ? <Analytics /> : <Navigate to="/" />} />
           <Route path="/budgets" element={isAuthenticated ? <Budgets /> : <Navigate to="/" />} />
           <Route path="/goals" element={isAuthenticated ? <Goals /> : <Navigate to="/" />} />
           <Route path="/goals/:id" element={isAuthenticated ? <GoalDetail /> : <Navigate to="/" />} />

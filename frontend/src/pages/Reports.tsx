@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { 
   Card, 
   CardContent, 
@@ -16,6 +16,15 @@ import {
   AlertCircle
 } from "lucide-react"
 import { format } from "date-fns"
+import { reportsApi } from "@/services/api";
+
+interface Report {
+  id: string;
+  loai: string;
+  dinhDang: string;
+  fileUrl: string;
+  ngayTao: string;
+}
 
 export default function Reports() {
   const [startDate, setStartDate] = useState<string>(
@@ -33,6 +42,20 @@ export default function Reports() {
     text: '',
     type: null
   })
+  const [history, setHistory] = useState<Report[]>([])
+
+  const fetchHistory = async () => {
+    try {
+      const res = await reportsApi.getHistory();
+      setHistory(res.data);
+    } catch (err) {
+      console.error("Lỗi khi tải lịch sử báo cáo:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
 
   const handleExport = async (formatType: 'excel' | 'pdf') => {
     setLoading(prev => ({ ...prev, [formatType]: true }))
@@ -68,6 +91,7 @@ export default function Reports() {
       document.body.removeChild(a)
 
       setMessage({ text: `Xuất báo cáo ${reportType === 'monthly' ? 'Tháng' : 'Năm'} (${formatType.toUpperCase()}) thành công!`, type: 'success' })
+      fetchHistory(); // Làm mới lịch sử sau khi xuất
     } catch (error: any) {
       console.error(error)
       setMessage({ text: error.message || 'Có lỗi xảy ra khi tải báo cáo.', type: 'error' })
@@ -75,6 +99,27 @@ export default function Reports() {
       setLoading(prev => ({ ...prev, [formatType]: false }))
     }
   }
+
+  const handleDownload = async (report: Report) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`http://localhost:8080/api/reports/download/${report.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error("Không thể tải file");
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = report.fileUrl.split('/').pop() || "report";
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert("Lỗi khi tải lại báo cáo");
+    }
+  };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1200px] mx-auto">
@@ -225,16 +270,40 @@ export default function Reports() {
         </div>
       )}
 
-      {/* Preview Section - Mockup */}
-      <div className="mt-12 opacity-50 grayscale select-none pointer-events-none">
+      {/* Preview Section - Real History */}
+      <div className="mt-12">
         <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-6">Mẫu báo cáo gần đây</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="aspect-[3/4] bg-slate-100 rounded-lg border-2 border-dashed border-slate-200 flex items-center justify-center">
-              <FileText className="w-8 h-8 text-slate-300" />
-            </div>
-          ))}
-        </div>
+        {history.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl text-slate-400">
+            <FileText className="w-10 h-10 mb-2 opacity-20" />
+            <p className="text-sm">Chưa có báo cáo nào được xuất.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {history.slice(0, 8).map(report => (
+              <div 
+                key={report.id} 
+                className="group p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:border-violet-200 hover:shadow-md transition-all cursor-pointer"
+                onClick={() => handleDownload(report)}
+              >
+               
+                <h4 className="font-bold text-slate-800 text-sm truncate">
+                  Báo cáo {report.loai === 'monthly' ? 'Tháng' : 'Năm'}
+                </h4>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  {format(new Date(report.ngayTao), 'dd/MM/yyyy HH:mm')}
+                </p>
+                <div className="mt-3 flex items-center gap-1.5">
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase font-bold ${
+                    report.dinhDang === 'xlsx' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+                  }`}>
+                    {report.dinhDang}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
