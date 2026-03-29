@@ -117,7 +117,19 @@
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-jackson</artifactId>
 			<version>0.12.6</version>
-<scope>runtime</scope>
+			<scope>runtime</scope>
+		</dependency>
+		
+		<!-- Thư viện Gửi Mail -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+		
+		<!-- Thư viện Gửi Mail -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
 		</dependency>
 		
 		<!-- Thư viện Gửi Mail -->
@@ -178,7 +190,6 @@
 		</plugins>
 	</build>
 
-
 	<repositories>
 		<repository>
 			<id>spring-milestones</id>
@@ -201,4 +212,3 @@
 	</pluginRepositories>
 
 </project>
-

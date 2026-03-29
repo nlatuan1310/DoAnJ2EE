@@ -22,6 +22,12 @@ import GroupWallets from "./pages/GroupWallets";
 
 const queryClient = new QueryClient();
 
+// Admin Imports
+import AdminLayout from "./layouts/AdminLayout";
+import AdminRoute from "./components/admin/AdminRoute";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+
 function App() {
   return (
     <AuthProvider>
@@ -46,6 +52,14 @@ function App() {
               <Route path="/wallets/group" element={<GroupWallets />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/advisor" element={<FinancialAdvisor />} />
+            </Route>
+
+            {/* Admin Routes with Guard */}
+            <Route element={<AdminRoute />}>
+              <Route element={<AdminLayout />}>
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin/users" element={<AdminUsers />} />
+              </Route>
             </Route>
           </Routes>
         </BrowserRouter>

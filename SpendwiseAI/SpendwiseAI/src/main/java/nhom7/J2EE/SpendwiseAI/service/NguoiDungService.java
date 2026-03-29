@@ -11,9 +11,11 @@ import java.util.UUID;
 public class NguoiDungService {
 
     private final NguoiDungRepository nguoiDungRepository;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
-    public NguoiDungService(NguoiDungRepository nguoiDungRepository) {
+    public NguoiDungService(NguoiDungRepository nguoiDungRepository, org.springframework.jdbc.core.JdbcTemplate jdbcTemplate) {
         this.nguoiDungRepository = nguoiDungRepository;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     public List<NguoiDung> layTatCa() {
@@ -39,7 +41,21 @@ public class NguoiDungService {
         return nguoiDungRepository.save(nguoiDung);
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public void xoa(UUID id) {
+        String[] bangCoNguoiDungId = {
+            "thanh_vien_vi", "giao_dich", "muc_tieu_tiet_kiem", 
+            "the_tag", "danh_muc", "thong_bao", "quet_hoa_don", "ngan_sach", 
+            "lich_su_tim_kiem", "danh_muc_crypto", "dang_ky_dich_vu", 
+            "cau_hoi_ai", "canh_bao", "bao_cao"
+        };
+        for (String bang : bangCoNguoiDungId) {
+            jdbcTemplate.update("DELETE FROM " + bang + " WHERE nguoi_dung_id = ?", id);
+        }
+        
+        // Bảng ví tiền dùng tên cột khác
+        jdbcTemplate.update("DELETE FROM vi_tien WHERE chu_so_huu_id = ?", id);
+        
         nguoiDungRepository.deleteById(id);
     }
 }
