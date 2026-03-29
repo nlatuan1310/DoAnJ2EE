@@ -122,7 +122,7 @@ export default function GoalDetail() {
         soTienHienTai: goalData.soTienHienTai,
         ngayMucTieu: goalData.ngayMucTieu,
         ngayTao: goalData.ngayTao,
-        viTien: goalData.viTien ? { id: goalData.viTien.id, tenVi: goalData.viTien.tenVi } : undefined,
+        viTien: goalData.viTien ? { id: goalData.viTien.id, tenVi: goalData.viTien.tenVi, soDu: goalData.viTien.soDu } : undefined,
         color: "violet",
       })
       setContributions(contribData.map((c) => ({
@@ -150,13 +150,15 @@ export default function GoalDetail() {
       await goalService.contributeToGoal(goal.id, amount)
       // Reload data từ server
       await fetchData()
-    } catch (err) {
+    } catch (err: any) {
       console.error("Lỗi đóng góp:", err)
-      alert("Không thể đóng góp. Vui lòng thử lại.")
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message || "Xảy ra lỗi không xác định."
+      alert("Không thể đóng góp: " + errorMsg)
+      throw err; // throw so modal can stop closing
     }
   }
 
-  const handleEdit = (data: GoalFormData) => {
+  const handleEdit = async (data: GoalFormData) => {
     if (!goal) return
     // NOTE: Backend chưa có PUT endpoint
     setGoal({
@@ -244,7 +246,7 @@ export default function GoalDetail() {
                 <h1 className="text-xl sm:text-2xl font-bold text-white">{goal.tenMucTieu}</h1>
                 <div className="flex items-center gap-3 mt-1">
                   <span className="flex items-center gap-1 text-sm text-white/80">
-                    <Wallet className="w-3.5 h-3.5" /> {goal.viTien?.tenVi}
+                    <Wallet className="w-3.5 h-3.5" /> {goal.viTien?.tenVi} {goal.viTien?.soDu !== undefined ? `(${formatCurrency(goal.viTien.soDu)})` : ""}
                   </span>
                   <span className="flex items-center gap-1 text-sm text-white/80">
                     <Calendar className="w-3.5 h-3.5" /> {formatDate(goal.ngayMucTieu)}
