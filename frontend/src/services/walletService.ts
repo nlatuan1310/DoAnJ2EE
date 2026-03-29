@@ -10,6 +10,7 @@ export interface Wallet {
   vaiTro: "OWNER" | "EDITOR" | "VIEWER";
   tenChuSoHuu?: string;
   soThanhVien?: number;
+  nhom?: boolean;
   role?: string; // added manually from membership
 }
 

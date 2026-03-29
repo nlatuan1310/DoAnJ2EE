@@ -33,6 +33,7 @@ import {
   ShieldCheck,
   ShieldAlert,
   ArrowRightLeft,
+  Plus,
 } from "lucide-react";
 import walletService, { Wallet as WalletType, WalletMember } from "@/services/walletService";
 import { getCurrentUserId } from "@/services/api";
@@ -56,13 +57,15 @@ export default function GroupWallets() {
 
   // Modal states
   const [isEditWalletOpen, setIsEditWalletOpen] = useState(false);
+  const [isAddWalletOpen, setIsAddWalletOpen] = useState(false);
   const [isManageMembersOpen, setIsManageMembersOpen] = useState(false);
   const [selectedWallet, setSelectedWallet] = useState<WalletType | null>(null);
   const [members, setMembers] = useState<WalletMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
 
   // Form states
-  const [editWalletData, setEditWalletData] = useState({ tenVi: "", tienTe: "VND", soDu: 0 });
+  const [newWallet, setNewWallet] = useState({ tenVi: "", tienTe: "VND", soDu: 0, nhom: true });
+  const [editWalletData, setEditWalletData] = useState({ tenVi: "", tienTe: "VND", soDu: 0, nhom: true });
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("VIEWER");
   const [actionLoading, setActionLoading] = useState(false);
@@ -76,7 +79,7 @@ export default function GroupWallets() {
     try {
       const res = await walletService.getWallets(userId);
       const group = res.data.filter((w: WalletType) => 
-        w.vaiTro !== 'OWNER' || (w.soThanhVien || 0) > 0
+        w.vaiTro !== 'OWNER' || w.nhom || (w.soThanhVien || 0) > 0
       );
       setWallets(group);
     } catch (err: any) {
@@ -87,9 +90,28 @@ export default function GroupWallets() {
     }
   };
 
+  const handleCreateWallet = async () => {
+    setActionLoading(true);
+    try {
+      await walletService.createWallet(userId, newWallet);
+      setIsAddWalletOpen(false);
+      setNewWallet({ tenVi: "", tienTe: "VND", soDu: 0, nhom: true });
+      fetchWallets();
+    } catch (err) {
+      alert("Lỗi khi tạo ví nhóm.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const openEditWallet = (wallet: WalletType) => {
     setSelectedWallet(wallet);
-    setEditWalletData({ tenVi: wallet.tenVi, tienTe: wallet.tienTe, soDu: wallet.soDu });
+    setEditWalletData({ 
+      tenVi: wallet.tenVi, 
+      tienTe: wallet.tienTe, 
+      soDu: wallet.soDu,
+      nhom: wallet.nhom ?? true 
+    });
     setIsEditWalletOpen(true);
   };
 
@@ -182,6 +204,10 @@ export default function GroupWallets() {
           </h1>
           <p className="text-slate-500 mt-3 text-lg font-medium">Quản lý tài chính tập thể với sự minh bạch tuyệt đối</p>
         </div>
+        <Button onClick={() => setIsAddWalletOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 shadow-xl shadow-emerald-100 h-14 px-10 font-black text-lg rounded-2xl transition-all active:scale-95">
+          <Plus className="w-6 h-6 mr-2" />
+          Tạo ví nhóm
+        </Button>
       </div>
 
       {loading ? (
@@ -382,6 +408,53 @@ export default function GroupWallets() {
            <div className="p-8 bg-slate-50 text-center">
               <Button variant="ghost" className="font-bold text-slate-400" onClick={() => setIsManageMembersOpen(false)}>ĐÓNG CỬA SỔ</Button>
            </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Wallet Modal */}
+      <Dialog open={isAddWalletOpen} onOpenChange={setIsAddWalletOpen}>
+        <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden border-none shadow-3xl rounded-[2.5rem]">
+          <div className="bg-gradient-to-br from-emerald-600 to-teal-700 p-12 text-white relative">
+            <div className="w-20 h-20 bg-white/20 rounded-[2rem] flex items-center justify-center mb-8 shadow-inner">
+              <Users className="w-10 h-10 text-white" />
+            </div>
+            <DialogHeader className="p-0">
+              <DialogTitle className="text-4xl font-black text-white tracking-tight">Kích hoạt ví nhóm</DialogTitle>
+              <DialogDescription className="text-emerald-100 max-w-xs mt-3 text-lg font-medium leading-relaxed">Bắt đầu hành trình quản lý tài chính chung minh bạch và hiệu quả cùng đồng đội.</DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="p-12 space-y-10 bg-white">
+            <div className="space-y-6">
+              <div className="space-y-3 px-1">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] ml-1">Định danh ví nhóm</label>
+                <Input placeholder="Ví dụ: Quỹ nhà 2024, Team Building..." value={newWallet.tenVi} onChange={e => setNewWallet({...newWallet, tenVi: e.target.value})} className="h-16 bg-slate-50 rounded-2xl border-slate-200 text-xl font-bold focus:bg-white focus:ring-4 focus:ring-emerald-500/10 transition-all" />
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-3 px-1">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] ml-1">Quỹ đầu kỳ</label>
+                  <Input type="number" placeholder="0" value={newWallet.soDu} onChange={e => setNewWallet({...newWallet, soDu: Number(e.target.value)})} className="h-16 bg-slate-50 rounded-2xl border-slate-200 text-xl font-black text-emerald-600 focus:bg-white transition-all" />
+                </div>
+                <div className="space-y-3 px-1">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] ml-1">Tiền tệ</label>
+                   <select className="w-full h-16 px-6 bg-slate-50 border border-slate-200 rounded-2xl text-base font-black outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all appearance-none cursor-pointer" value={newWallet.tienTe} onChange={e => setNewWallet({...newWallet, tienTe: e.target.value})}>
+                    <option value="VND">VND (₫)</option>
+                    <option value="USD">USD ($)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <Button className="w-full bg-emerald-600 hover:bg-emerald-700 h-20 rounded-[1.5rem] font-black text-xl text-white shadow-[0_20px_40px_rgba(16,185,129,0.3)] active:scale-[0.97] transition-all flex items-center justify-center gap-3" onClick={handleCreateWallet} disabled={actionLoading || !newWallet.tenVi.trim()}>
+              {actionLoading ? <Loader2 className="animate-spin w-8 h-8" /> : (
+                <>
+                  <Users className="w-6 h-6" />
+                  XÁC NHẬN TẠO VÍ NHÓM
+                </>
+              )}
+            </Button>
+            <p className="text-center text-slate-400 text-xs font-medium italic">
+              * Sau khi tạo, bạn có thể mời thành viên tham gia ngay lập tức.
+            </p>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

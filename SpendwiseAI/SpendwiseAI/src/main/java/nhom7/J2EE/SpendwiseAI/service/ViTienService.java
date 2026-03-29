@@ -59,6 +59,7 @@ public class ViTienService {
         viTien.setChuSoHuu(chuSoHuu);
         if (viTien.getSoDu() == null) viTien.setSoDu(BigDecimal.ZERO);
         if (viTien.getTienTe() == null) viTien.setTienTe("VND");
+        // nhom is already set in the viTien object from front-end
         
         return viTienRepository.save(viTien);
     }
@@ -68,6 +69,7 @@ public class ViTienService {
         if (duLieuMoi.getTenVi() != null) vi.setTenVi(duLieuMoi.getTenVi());
         if (duLieuMoi.getTienTe() != null) vi.setTienTe(duLieuMoi.getTienTe());
         if (duLieuMoi.getSoDu() != null) vi.setSoDu(duLieuMoi.getSoDu());
+        vi.setNhom(duLieuMoi.getNhom());
         return viTienRepository.save(vi);
     }
 
@@ -96,6 +98,12 @@ public class ViTienService {
                 .nguoiDung(nguoiMoi)
                 .vaiTro(vaiTro)
                 .build();
+
+        // Tự động chuyển thành ví nhóm nếu có thành viên mới
+        if (!Boolean.TRUE.equals(vi.getNhom())) {
+            vi.setNhom(true);
+            viTienRepository.save(vi);
+        }
 
         return thanhVienViRepository.save(thanhVien);
     }
