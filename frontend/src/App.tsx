@@ -41,29 +41,34 @@ function AppContent() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Routes */}
+        {/* Public Routes - No Layout */}
         <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <Login />} />
         <Route path="/register" element={isAuthenticated ? <Navigate to="/" /> : <Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         
-        {/* Landing Page Route (Unauthenticated) */}
+        {/* Landing Page - No Layout (Unauthenticated only) */}
         {!isAuthenticated && <Route path="/" element={<LandingPage />} />}
 
-        {/* Authenticated Routes */}
+        {/* Authenticated Routes - With MainLayout */}
         <Route element={<MainLayout />}>
+          {/* Home Page for authenticated users */}
           {isAuthenticated && <Route path="/" element={<Home />} />}
-          <Route path="/smart-dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/" />} />
-          <Route path="/transactions" element={isAuthenticated ? <Transactions /> : <Navigate to="/" />} />
-          <Route path="/analytics" element={isAuthenticated ? <Analytics /> : <Navigate to="/" />} />
-          <Route path="/budgets" element={isAuthenticated ? <Budgets /> : <Navigate to="/" />} />
-          <Route path="/goals" element={isAuthenticated ? <Goals /> : <Navigate to="/" />} />
-          <Route path="/goals/:id" element={isAuthenticated ? <GoalDetail /> : <Navigate to="/" />} />
-          <Route path="/investments" element={isAuthenticated ? <Investments /> : <Navigate to="/" />} />
-          <Route path="/receipt-scanner" element={isAuthenticated ? <ReceiptScanner /> : <Navigate to="/" />} />
-          <Route path="/reports" element={isAuthenticated ? <Reports /> : <Navigate to="/" />} />
-          <Route path="/categories" element={isAuthenticated ? <Categories /> : <Navigate to="/" />} />
-          <Route path="/settings" element={isAuthenticated ? <Settings /> : <Navigate to="/" />} />
-          <Route path="/advisor" element={isAuthenticated ? <FinancialAdvisor /> : <Navigate to="/" />} />
+          
+          {/* All other protected routes */}
+          <Route path="/smart-dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />
+          <Route path="/transactions" element={isAuthenticated ? <Transactions /> : <Navigate to="/login" />} />
+          <Route path="/analytics" element={isAuthenticated ? <Analytics /> : <Navigate to="/login" />} />
+          <Route path="/budgets" element={isAuthenticated ? <Budgets /> : <Navigate to="/login" />} />
+          <Route path="/goals" element={isAuthenticated ? <Goals /> : <Navigate to="/login" />} />
+          <Route path="/goals/:id" element={isAuthenticated ? <GoalDetail /> : <Navigate to="/login" />} />
+          <Route path="/investments" element={isAuthenticated ? <Investments /> : <Navigate to="/login" />} />
+          <Route path="/receipt-scanner" element={isAuthenticated ? <ReceiptScanner /> : <Navigate to="/login" />} />
+          <Route path="/reports" element={isAuthenticated ? <Reports /> : <Navigate to="/login" />} />
+          <Route path="/categories" element={isAuthenticated ? <Categories /> : <Navigate to="/login" />} />
+          <Route path="/wallets/personal" element={isAuthenticated ? <PersonalWallets /> : <Navigate to="/login" />} />
+          <Route path="/wallets/group" element={isAuthenticated ? <GroupWallets /> : <Navigate to="/login" />} />
+          <Route path="/settings" element={isAuthenticated ? <Settings /> : <Navigate to="/login" />} />
+          <Route path="/advisor" element={isAuthenticated ? <FinancialAdvisor /> : <Navigate to="/login" />} />
         </Route>
 
         {/* Admin Routes with Guard */}
@@ -86,37 +91,6 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClient}>
         <AppContent />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route element={<MainLayout />}>
-              <Route path="/" element={<Home />} />
-              <Route path="/smart-dashboard" element={<Dashboard />} />
-              <Route path="/transactions" element={<Transactions />} />
-              <Route path="/budgets" element={<Budgets />} />
-              <Route path="/goals" element={<Goals />} />
-              <Route path="/goals/:id" element={<GoalDetail />} />
-              <Route path="/investments" element={<Investments />} />
-              <Route path="/receipt-scanner" element={<ReceiptScanner />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/categories" element={<Categories />} />
-              <Route path="/wallets/personal" element={<PersonalWallets />} />
-              <Route path="/wallets/group" element={<GroupWallets />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/advisor" element={<FinancialAdvisor />} />
-            </Route>
-            {/* Admin Routes with Guard */}
-            <Route element={<AdminRoute />}>
-              <Route element={<AdminLayout />}>
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/admin/users" element={<AdminUsers />} />
-              </Route>
-            </Route>
-          </Routes>
-        </BrowserRouter>
-
       </QueryClientProvider>
     </AuthProvider>
   )
