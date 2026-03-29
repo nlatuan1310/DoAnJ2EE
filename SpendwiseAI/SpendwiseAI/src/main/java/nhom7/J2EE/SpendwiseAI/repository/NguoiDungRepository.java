@@ -15,4 +15,9 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, UUID> {
     boolean existsByEmail(String email);
 
     long countByNgayTaoBetween(java.time.LocalDateTime tuNgay, java.time.LocalDateTime denNgay);
+
+    @org.springframework.data.jpa.repository.Query("SELECT FUNCTION('TO_CHAR', nd.ngayTao, 'YYYY-MM'), COUNT(nd) FROM NguoiDung nd " +
+            "WHERE nd.ngayTao >= :fromDate GROUP BY FUNCTION('TO_CHAR', nd.ngayTao, 'YYYY-MM') " +
+            "ORDER BY FUNCTION('TO_CHAR', nd.ngayTao, 'YYYY-MM')")
+    java.util.List<Object[]> countNguoiDungTheoThang(@org.springframework.data.repository.query.Param("fromDate") java.time.LocalDateTime fromDate);
 }

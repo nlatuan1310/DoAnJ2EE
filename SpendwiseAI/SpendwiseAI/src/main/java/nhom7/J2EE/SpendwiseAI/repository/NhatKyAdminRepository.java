@@ -13,4 +13,6 @@ public interface NhatKyAdminRepository extends JpaRepository<NhatKyAdmin, UUID> 
     List<NhatKyAdmin> findByAdminIdOrderByNgayTaoDesc(UUID adminId);
 
     List<NhatKyAdmin> findByBangDuLieu(String bangDuLieu);
+
+    org.springframework.data.domain.Page<NhatKyAdmin> findAllByOrderByNgayTaoDesc(org.springframework.data.domain.Pageable pageable);
 }
