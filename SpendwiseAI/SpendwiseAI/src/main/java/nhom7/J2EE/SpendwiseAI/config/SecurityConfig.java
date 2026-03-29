@@ -44,6 +44,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/tai-san-crypto/**").permitAll() // Danh sách coin public
+                        .requestMatchers("/reports_export/**").permitAll() // Truy cập file báo cáo đã xuất
                         // Admin endpoints (Yêu cầu xác thực JWT + role ADMIN)
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/nguoi-dung/**").authenticated()

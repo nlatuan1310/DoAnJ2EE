@@ -2,6 +2,7 @@ package nhom7.J2EE.SpendwiseAI.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
@@ -38,6 +39,8 @@ public class AuthDTO {
         @NotBlank(message = "Họ và tên không được để trống")
         private String hoVaTen;
 
+        @NotBlank(message = "Số điện thoại không được để trống")
+        @Pattern(regexp = "^\\d{10,11}$", message = "Số điện thoại phải là chữ số và có từ 10-11 ký tự")
         private String dienThoai;
     }
 
