@@ -1,4 +1,6 @@
+
 import { useState, useEffect, useMemo } from "react"
+
 import { 
   Card, 
   CardContent, 
@@ -43,6 +45,7 @@ interface Report {
   ngayTao: string;
 }
 
+
 interface GiaoDich {
   id: string;
   soTien: number;
@@ -60,10 +63,12 @@ export default function Reports() {
   const [endDate, setEndDate] = useState<string>(
     new Date().toISOString().split('T')[0]
   )
+
   const [reportType, setReportType] = useState<'monthly' | 'yearly'>('monthly')
   const [reportName, setReportName] = useState<string>("")
   const [selectedWallet, setSelectedWallet] = useState<string>("all")
   const [wallets, setWallets] = useState<Wallet[]>([])
+
   const [loading, setLoading] = useState<{ excel: boolean; pdf: boolean }>({
     excel: false,
     pdf: false
@@ -269,6 +274,7 @@ export default function Reports() {
       
       const response = await fetch(
         `http://localhost:8080/api/reports/export/${formatType}?start=${startDateTime}&end=${endDateTime}&loai=${reportType}&tenBaoCao=${encodeURIComponent(reportName)}${viParam}`,
+
         {
           method: 'GET',
           headers: { 'Authorization': `Bearer ${token}` }
@@ -289,10 +295,12 @@ export default function Reports() {
       const finalFileName = reportName.trim() ? `${reportName.replace(/\.[^/.]+$/, "")}.${fileExt}` : `${defaultName}.${fileExt}`
       
       a.download = finalFileName
+
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
+
 
       setMessage({ text: `Xuất báo cáo thành công!`, type: 'success' })
       setReportName("") 
@@ -427,6 +435,7 @@ export default function Reports() {
       setDeleteReportId(null);
     }
   };
+
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1200px] mx-auto">
@@ -600,7 +609,6 @@ export default function Reports() {
         <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Trung tâm Báo cáo</h1>
         <p className="text-slate-500 mt-2">Xuất dữ liệu tài chính của bạn ra các định dạng phổ biến để lưu trữ hoặc phân tích sâu hơn.</p>
       </div>
-
       {/* Report Options Selection */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         <Card className="lg:col-span-2 border-slate-200 shadow-sm">
@@ -953,8 +961,8 @@ export default function Reports() {
         </div>
       )}
 
-      {/* Preview Section - Real History */}
-      <div className="mt-12">
+      {/* Preview Section - Mockup */}
+      <div className="mt-12 opacity-50 grayscale select-none pointer-events-none">
         <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-6">Mẫu báo cáo gần đây</h3>
         {history.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl text-slate-400">

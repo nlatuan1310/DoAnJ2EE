@@ -50,18 +50,13 @@ const mainMenuItems: MenuItem[] = [
     icon: Wallet,
   },
   {
-  title: "Phân tích",
-  url: "/analytics",
-  icon: TrendingUp,
-},
-{
-  title: "Ví",
-  icon: CreditCard,
-  subItems: [
-    { title: "Ví cá nhân", url: "/wallets/personal" },
-    { title: "Ví nhóm", url: "/wallets/group" },
-  ],
-},
+    title: "Ví",
+    icon: CreditCard,
+    subItems: [
+      { title: "Ví cá nhân", url: "/wallets/personal" },
+      { title: "Ví nhóm", url: "/wallets/group" },
+    ],
+  },
   {
     title: "Quét hóa đơn",
     url: "/receipt-scanner",

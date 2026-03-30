@@ -1,6 +1,12 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AuthProvider, useAuth } from "./hooks/useAuth";
+
 import MainLayout from "./layouts/MainLayout";
+import AdminLayout from "./layouts/AdminLayout";
+import AdminRoute from "./components/admin/AdminRoute";
+
+// Pages
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
@@ -11,26 +17,23 @@ import Investments from "./pages/Investments";
 import ReceiptScanner from "./pages/ReceiptScanner";
 import Reports from "./pages/Reports";
 import Categories from "./pages/Categories";
-import Analytics from "./pages/Analytics";
 import FinancialAdvisor from "./pages/FinancialAdvisor";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import Settings from "./pages/Settings";
-
-import { AuthProvider, useAuth } from "./hooks/useAuth";
-import LandingPage from "./pages/LandingPage";
-import { Navigate } from "react-router-dom";
-
 import PersonalWallets from "./pages/PersonalWallets";
 import GroupWallets from "./pages/GroupWallets";
-const queryClient = new QueryClient();
 
-// Admin Imports
-import AdminLayout from "./layouts/AdminLayout";
-import AdminRoute from "./components/admin/AdminRoute";
+// Admin Pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
+
+// (Nếu có)
+import LandingPage from "./pages/LandingPage";
+import Analytics from "./pages/Analytics";
+
+const queryClient = new QueryClient();
 
 /**
  * AppContent handles components that need useAuth hook
@@ -41,20 +44,18 @@ function AppContent() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Routes - No Layout */}
+        {/* Public Routes */}
         <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <Login />} />
         <Route path="/register" element={isAuthenticated ? <Navigate to="/" /> : <Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        
-        {/* Landing Page - No Layout (Unauthenticated only) */}
+
+        {/* Landing Page */}
         {!isAuthenticated && <Route path="/" element={<LandingPage />} />}
 
-        {/* Authenticated Routes - With MainLayout */}
+        {/* Protected Routes */}
         <Route element={<MainLayout />}>
-          {/* Home Page for authenticated users */}
           {isAuthenticated && <Route path="/" element={<Home />} />}
-          
-          {/* All other protected routes */}
+
           <Route path="/smart-dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />
           <Route path="/transactions" element={isAuthenticated ? <Transactions /> : <Navigate to="/login" />} />
           <Route path="/analytics" element={isAuthenticated ? <Analytics /> : <Navigate to="/login" />} />
@@ -71,7 +72,7 @@ function AppContent() {
           <Route path="/advisor" element={isAuthenticated ? <FinancialAdvisor /> : <Navigate to="/login" />} />
         </Route>
 
-        {/* Admin Routes with Guard */}
+        {/* Admin Routes */}
         <Route element={<AdminRoute />}>
           <Route element={<AdminLayout />}>
             <Route path="/admin" element={<AdminDashboard />} />
@@ -79,7 +80,7 @@ function AppContent() {
           </Route>
         </Route>
 
-        {/* Catch-all Redirect */}
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
@@ -93,7 +94,7 @@ function App() {
         <AppContent />
       </QueryClientProvider>
     </AuthProvider>
-  )
+  );
 }
 
 export default App;

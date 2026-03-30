@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { Mail, Lock, ShieldCheck, ArrowRight, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, ShieldCheck, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,7 +11,6 @@ export default function Login() {
   const [step, setStep] = useState<1 | 2>(1);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -163,21 +162,25 @@ export default function Login() {
                     </div>
                     <Input
                       id="password"
-                      type={showPassword ? "text" : "password"}
+                      type="password"
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="h-13 pl-12 pr-12 bg-white border-slate-200 rounded-2xl text-slate-900 focus:ring-violet-500 focus:border-violet-500 transition-all font-medium"
+                      className="h-13 pl-12 pr-4 bg-white border-slate-200 rounded-2xl text-slate-900 focus:ring-violet-500 focus:border-violet-500 transition-all font-medium"
                       placeholder="••••••••"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-violet-600 transition-colors duration-200"
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
                   </div>
+                </div>
+
+                <div className="flex items-center gap-2 ml-1">
+                  <input
+                    id="remember-me"
+                    type="checkbox"
+                    className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300 rounded-lg cursor-pointer"
+                  />
+                  <label htmlFor="remember-me" className="text-sm text-slate-600 font-medium cursor-pointer">
+                    Duy trì đăng nhập
+                  </label>
                 </div>
 
                 <Button

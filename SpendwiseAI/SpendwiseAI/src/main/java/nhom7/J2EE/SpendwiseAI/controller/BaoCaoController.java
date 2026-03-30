@@ -1,7 +1,6 @@
 package nhom7.J2EE.SpendwiseAI.controller;
 
 import lombok.RequiredArgsConstructor;
-import nhom7.J2EE.SpendwiseAI.entity.BaoCao;
 import nhom7.J2EE.SpendwiseAI.entity.NguoiDung;
 import nhom7.J2EE.SpendwiseAI.repository.NguoiDungRepository;
 import nhom7.J2EE.SpendwiseAI.service.BaoCaoService;
@@ -12,15 +11,12 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.ByteArrayInputStream;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/reports")
@@ -50,6 +46,7 @@ public class BaoCaoController {
         String fileName = (tenBaoCao != null && !tenBaoCao.isBlank()) ? tenBaoCao : "BaoCao_" + user.getHoVaTen();
         if(!fileName.endsWith(".xlsx")) fileName += ".xlsx";
 
+
         HttpHeaders headers = new HttpHeaders();
         headers.add("Content-Disposition", "attachment; filename=" + fileName);
 
@@ -62,6 +59,7 @@ public class BaoCaoController {
     @GetMapping("/export/pdf")
     public ResponseEntity<InputStreamResource> exportPdf(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
+
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
             @RequestParam(defaultValue = "monthly") String loai,
             @RequestParam(required = false) String tenBaoCao,
@@ -105,6 +103,7 @@ public class BaoCaoController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(new InputStreamResource(out));
     }
+
 
     @GetMapping
     public ResponseEntity<List<BaoCao>> getHistory() {
@@ -191,4 +190,5 @@ public class BaoCaoController {
         baoCaoService.sendSingleTransactionByEmail(id, user.getId(), emailNhan, noiDung);
         return ResponseEntity.ok().build();
     }
+
 }

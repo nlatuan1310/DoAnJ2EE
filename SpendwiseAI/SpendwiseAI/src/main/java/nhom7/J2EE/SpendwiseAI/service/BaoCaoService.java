@@ -10,11 +10,6 @@ import nhom7.J2EE.SpendwiseAI.repository.NguoiDungRepository;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -29,6 +24,7 @@ public class BaoCaoService {
     private final ExcelExportService excelExportService;
     private final PdfExportService pdfExportService;
     private final EmailService emailService;
+
 
     private static final String EXPORT_DIR = "reports_export/";
 
@@ -53,20 +49,23 @@ public class BaoCaoService {
         // Save to file
         String fileUrl = saveFile(fileName, content);
 
+
         // Lưu lịch sử
+        NguoiDung user = nguoiDungRepository.findById(nguoiDungId).orElse(null);
         BaoCao reportRecord = BaoCao.builder()
                 .nguoiDung(user)
-                .loai(loai)
-                .dinhDang("xlsx")
-                .fileUrl(fileUrl)
+                .loai("monthly")
+                .dinhDang("excel")
                 .ngayTao(LocalDateTime.now())
                 .build();
         baoCaoRepository.save(reportRecord);
 
-        return outToReturn;
+        return excelExportService.exportGiaoDichToExcel(transactions);
     }
 
+
     public ByteArrayInputStream exportPdf(UUID nguoiDungId, LocalDateTime start, LocalDateTime end, String loai, String tenBaoCao, UUID viId) {
+
         NguoiDung user = nguoiDungRepository.findById(nguoiDungId).orElseThrow(() -> new RuntimeException("User not found"));
         List<GiaoDich> transactions;
         if (viId != null) {
@@ -87,12 +86,12 @@ public class BaoCaoService {
         // Save to file
         String fileUrl = saveFile(fileName, content);
 
+
         // Lưu lịch sử
         BaoCao reportRecord = BaoCao.builder()
                 .nguoiDung(user)
-                .loai(loai)
+                .loai("monthly")
                 .dinhDang("pdf")
-                .fileUrl(fileUrl)
                 .ngayTao(LocalDateTime.now())
                 .build();
         baoCaoRepository.save(reportRecord);
@@ -183,6 +182,7 @@ public class BaoCaoService {
 
     public BaoCao findById(UUID id) {
         return baoCaoRepository.findById(id).orElseThrow(() -> new RuntimeException("Report not found"));
+
     }
 
     public void sendReportByEmail(UUID nguoiDungId, LocalDateTime start, LocalDateTime end, String loai, String dinhDang, String tenBaoCao, String emailNhan, String noiDung, UUID viId) {
