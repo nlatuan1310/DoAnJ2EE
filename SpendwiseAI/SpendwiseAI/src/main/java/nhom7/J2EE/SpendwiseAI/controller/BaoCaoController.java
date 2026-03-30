@@ -1,7 +1,6 @@
 package nhom7.J2EE.SpendwiseAI.controller;
 
 import lombok.RequiredArgsConstructor;
-import nhom7.J2EE.SpendwiseAI.entity.BaoCao;
 import nhom7.J2EE.SpendwiseAI.entity.NguoiDung;
 import nhom7.J2EE.SpendwiseAI.repository.NguoiDungRepository;
 import nhom7.J2EE.SpendwiseAI.service.BaoCaoService;
@@ -20,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.ByteArrayInputStream;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 
@@ -111,52 +109,7 @@ public class BaoCaoController {
     }
 
 
-    @GetMapping
-    public ResponseEntity<List<BaoCao>> getHistory() {
-        NguoiDung user = getCurrentUser();
-        return ResponseEntity.ok(baoCaoService.findByNguoiDung(user.getId()));
-    }
 
-    @GetMapping("/download/{id}")
-    public ResponseEntity<InputStreamResource> downloadReport(@PathVariable("id") UUID id) {
-        BaoCao report = baoCaoService.findById(id);
-        
-        // Cần verify xem report này có thuộc user hiện tại không
-        NguoiDung currentUser = getCurrentUser();
-        if (!report.getNguoiDung().getId().equals(currentUser.getId())) {
-            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
-        }
-
-        try {
-            java.io.File file = new java.io.File(report.getFileUrl().substring(1)); // Bỏ dấu / ở đầu
-            java.io.FileInputStream fis = new java.io.FileInputStream(file);
-            InputStreamResource resource = new InputStreamResource(fis);
-
-            String contentType = report.getDinhDang().equals("xlsx") 
-                ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
-                : "application/pdf";
-
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + file.getName())
-                    .contentType(MediaType.parseMediaType(contentType))
-                    .body(resource);
-        } catch (java.io.FileNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @org.springframework.web.bind.annotation.DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteReport(@PathVariable("id") UUID id) {
-        BaoCao report = baoCaoService.findById(id);
-        NguoiDung currentUser = getCurrentUser();
-        
-        if (!report.getNguoiDung().getId().equals(currentUser.getId())) {
-            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
-        }
-
-        baoCaoService.deleteReport(id);
-        return ResponseEntity.ok().build();
-    }
 
     @GetMapping("/export/email")
     public ResponseEntity<Void> sendEmailReport(

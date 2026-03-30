@@ -1,20 +1,11 @@
 package nhom7.J2EE.SpendwiseAI.service;
 
 import lombok.RequiredArgsConstructor;
-import nhom7.J2EE.SpendwiseAI.entity.BaoCao;
-import nhom7.J2EE.SpendwiseAI.entity.GiaoDich;
-import nhom7.J2EE.SpendwiseAI.entity.NguoiDung;
-import nhom7.J2EE.SpendwiseAI.repository.BaoCaoRepository;
 import nhom7.J2EE.SpendwiseAI.repository.GiaoDichRepository;
 import nhom7.J2EE.SpendwiseAI.repository.NguoiDungRepository;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -24,14 +15,10 @@ import java.util.UUID;
 public class BaoCaoService {
 
     private final GiaoDichRepository giaoDichRepository;
-    private final BaoCaoRepository baoCaoRepository;
     private final NguoiDungRepository nguoiDungRepository;
     private final ExcelExportService excelExportService;
     private final PdfExportService pdfExportService;
     private final EmailService emailService;
-
-
-    private static final String EXPORT_DIR = "reports_export/";
 
     public ByteArrayInputStream exportExcel(UUID nguoiDungId, LocalDateTime start, LocalDateTime end, String loai, String tenBaoCao, UUID viId) {
         List<GiaoDich> transactions;
@@ -42,35 +29,10 @@ public class BaoCaoService {
         }
         
         NguoiDung user = nguoiDungRepository.findById(nguoiDungId).orElse(null);
-        String baseName = (tenBaoCao != null && !tenBaoCao.isBlank()) ? tenBaoCao : "BaoCao_" + (user != null ? user.getHoVaTen() : "User");
-        String fileName = baseName + "_" + UUID.randomUUID().toString().substring(0, 8) + ".xlsx";
-
-        ByteArrayInputStream out = excelExportService.exportGiaoDichToExcel(transactions);
-        byte[] content = out.readAllBytes();
-        
-        // Reset the input stream for return
-        ByteArrayInputStream outToReturn = new ByteArrayInputStream(content);
-        
-        // Save to file
-        String fileUrl = saveFile(fileName, content);
-
-
-        // Lưu lịch sử
-        BaoCao reportRecord = BaoCao.builder()
-                .nguoiDung(user)
-                .loai(loai != null ? loai : "monthly")
-                .dinhDang("excel")
-                .fileUrl(fileUrl)
-                .ngayTao(LocalDateTime.now())
-                .build();
-        baoCaoRepository.save(reportRecord);
-
-        return outToReturn;
+        return excelExportService.exportGiaoDichToExcel(transactions);
     }
 
-
     public ByteArrayInputStream exportPdf(UUID nguoiDungId, LocalDateTime start, LocalDateTime end, String loai, String tenBaoCao, UUID viId) {
-
         NguoiDung user = nguoiDungRepository.findById(nguoiDungId).orElseThrow(() -> new RuntimeException("User not found"));
         List<GiaoDich> transactions;
         if (viId != null) {
@@ -79,30 +41,7 @@ public class BaoCaoService {
             transactions = giaoDichRepository.findByNguoiDungIdAndNgayGiaoDichBetween(nguoiDungId, start, end);
         }
         
-        String baseName = (tenBaoCao != null && !tenBaoCao.isBlank()) ? tenBaoCao : "BaoCao_" + user.getHoVaTen();
-        String fileName = baseName + "_" + UUID.randomUUID().toString().substring(0, 8) + ".pdf";
-
-        ByteArrayInputStream out = pdfExportService.exportExpenseReport(user, transactions, start, end);
-        byte[] content = out.readAllBytes();
-
-        // Reset the input stream for return
-        ByteArrayInputStream outToReturn = new ByteArrayInputStream(content);
-
-        // Save to file
-        String fileUrl = saveFile(fileName, content);
-
-
-        // Lưu lịch sử
-        BaoCao reportRecord = BaoCao.builder()
-                .nguoiDung(user)
-                .loai(loai != null ? loai : "monthly")
-                .dinhDang("pdf")
-                .fileUrl(fileUrl)
-                .ngayTao(LocalDateTime.now())
-                .build();
-        baoCaoRepository.save(reportRecord);
-
-        return outToReturn;
+        return pdfExportService.exportExpenseReport(user, transactions, start, end);
     }
 
     public ByteArrayInputStream exportComparisonPdf(UUID nguoiDungId, LocalDateTime start1, LocalDateTime end1, LocalDateTime start2, LocalDateTime end2, String tenBaoCao, UUID viId) {
@@ -117,25 +56,7 @@ public class BaoCaoService {
             t2 = giaoDichRepository.findByNguoiDungIdAndNgayGiaoDichBetween(nguoiDungId, start2, end2);
         }
         
-        String baseName = (tenBaoCao != null && !tenBaoCao.isBlank()) ? tenBaoCao : "SoSanh_" + user.getHoVaTen();
-        String fileName = baseName + "_" + UUID.randomUUID().toString().substring(0, 8) + ".pdf";
-
-        ByteArrayInputStream out = pdfExportService.exportComparisonReportPdf(user, t1, t2, start1, end1, start2, end2);
-        byte[] content = out.readAllBytes();
-
-        ByteArrayInputStream outToReturn = new ByteArrayInputStream(content);
-        String fileUrl = saveFile(fileName, content);
-
-        BaoCao reportRecord = BaoCao.builder()
-                .nguoiDung(user)
-                .loai("comparison")
-                .dinhDang("pdf")
-                .fileUrl(fileUrl)
-                .ngayTao(LocalDateTime.now())
-                .build();
-        baoCaoRepository.save(reportRecord);
-
-        return outToReturn;
+        return pdfExportService.exportComparisonReportPdf(user, t1, t2, start1, end1, start2, end2);
     }
 
     public ByteArrayInputStream exportSingleTransactionPdf(UUID transactionId, UUID nguoiDungId) {
@@ -147,49 +68,10 @@ public class BaoCaoService {
         List<GiaoDich> transactions = List.of(gd);
         NguoiDung user = gd.getNguoiDung();
         
-        String baseName = "GiaoDich_" + (gd.getMoTa() != null ? gd.getMoTa().replace(" ", "_") : "Chi_Tiet");
-        String fileName = baseName + "_" + UUID.randomUUID().toString().substring(0, 8) + ".pdf";
-
-        ByteArrayInputStream out = pdfExportService.exportExpenseReport(user, transactions, gd.getNgayGiaoDich(), gd.getNgayGiaoDich());
-        byte[] content = out.readAllBytes();
-
-        ByteArrayInputStream outToReturn = new ByteArrayInputStream(content);
-        String fileUrl = saveFile(fileName, content);
-
-        BaoCao reportRecord = BaoCao.builder()
-                .nguoiDung(user)
-                .loai("Single Transaction")
-                .dinhDang("pdf")
-                .fileUrl(fileUrl)
-                .ngayTao(LocalDateTime.now())
-                .build();
-        baoCaoRepository.save(reportRecord);
-
-        return outToReturn;
+        return pdfExportService.exportExpenseReport(user, transactions, gd.getNgayGiaoDich(), gd.getNgayGiaoDich());
     }
 
-    private String saveFile(String fileName, byte[] content) {
-        try {
-            File directory = new File(EXPORT_DIR);
-            if (!directory.exists()) {
-                directory.mkdirs();
-            }
-            Path path = Paths.get(EXPORT_DIR + fileName);
-            Files.write(path, content);
-            return "/" + EXPORT_DIR + fileName;
-        } catch (IOException e) {
-            throw new RuntimeException("Lỗi khi lưu file báo cáo: " + e.getMessage());
-        }
-    }
 
-    public List<BaoCao> findByNguoiDung(UUID userId) {
-        return baoCaoRepository.findByNguoiDungIdOrderByNgayTaoDesc(userId);
-    }
-
-    public BaoCao findById(UUID id) {
-        return baoCaoRepository.findById(id).orElseThrow(() -> new RuntimeException("Report not found"));
-
-    }
 
     public void sendReportByEmail(UUID nguoiDungId, LocalDateTime start, LocalDateTime end, String loai, String dinhDang, String tenBaoCao, String emailNhan, String noiDung, UUID viId) {
         NguoiDung user = nguoiDungRepository.findById(nguoiDungId)
@@ -197,18 +79,15 @@ public class BaoCaoService {
         
         byte[] content;
         String fileName;
-        String mimeType;
 
         if ("xlsx".equalsIgnoreCase(dinhDang)) {
             ByteArrayInputStream in = exportExcel(nguoiDungId, start, end, loai, tenBaoCao, viId);
             content = in.readAllBytes();
             fileName = (tenBaoCao != null && !tenBaoCao.isBlank() ? tenBaoCao : "BaoCao") + ".xlsx";
-            mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
         } else {
             ByteArrayInputStream in = exportPdf(nguoiDungId, start, end, loai, tenBaoCao, viId);
             content = in.readAllBytes();
             fileName = (tenBaoCao != null && !tenBaoCao.isBlank() ? tenBaoCao : "BaoCao") + ".pdf";
-            mimeType = "application/pdf";
         }
 
         String recipient = (emailNhan != null && !emailNhan.isBlank()) ? emailNhan : user.getEmail();
@@ -245,17 +124,5 @@ public class BaoCaoService {
         emailService.guiEmailVoiDinhKem(recipient, subject, text, fileName, content);
     }
 
-    public void deleteReport(UUID id) {
-        BaoCao report = findById(id);
-        
-        // Deleting file
-        try {
-            Path path = Paths.get(report.getFileUrl().substring(1));
-            Files.deleteIfExists(path);
-        } catch (IOException e) {
-            System.err.println("Không thể xóa file report: " + e.getMessage());
-        }
 
-        baoCaoRepository.delete(report);
-    }
 }

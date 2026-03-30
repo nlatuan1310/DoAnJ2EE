@@ -21,10 +21,25 @@ import {
   ArrowUpRight,
   Mail,
   Sparkles,
-  Trash2
+  Eye
 } from "lucide-react"
-import { format } from "date-fns"
-import api, { reportsApi, getCurrentUserId } from "@/services/api";
+import { format, subDays, startOfMonth, endOfMonth, startOfYear, parseISO } from "date-fns"
+import { 
+  ResponsiveContainer, 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip as RechartsTooltip, 
+  PieChart, 
+  Pie, 
+  Cell, 
+  Legend,
+  BarChart,
+  Bar
+} from 'recharts';
+import api, { getCurrentUserId } from "@/services/api";
 import walletService, { Wallet } from "@/services/walletService";
 import { 
   Dialog, 
@@ -37,13 +52,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-interface Report {
-  id: string;
-  loai: string;
-  dinhDang: string;
-  fileUrl: string;
-  ngayTao: string;
-}
+
+
+
 
 
 interface GiaoDich {
@@ -91,14 +102,16 @@ export default function Reports() {
     text: '',
     type: null
   })
-  const [history, setHistory] = useState<Report[]>([])
+
   const [transactions, setTransactions] = useState<GiaoDich[]>([])
   const [searchKeyword, setSearchKeyword] = useState("")
   const [isExportingSingle, setIsExportingSingle] = useState<string | null>(null)
   const [showNameModal, setShowNameModal] = useState(false)
   const [pendingFormat, setPendingFormat] = useState<'excel' | 'pdf' | 'single' | null>(null)
   const [pendingSingleId, setPendingSingleId] = useState<string | null>(null)
-  const [deleteReportId, setDeleteReportId] = useState<string | null>(null)
+  const [selectedTransaction, setSelectedTransaction] = useState<GiaoDich | null>(null)
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false)
+
 
   // Advanced Filters for Single Transactions
   const [filterMonth, setFilterMonth] = useState<string>("all")
@@ -155,7 +168,6 @@ export default function Reports() {
       setReportName("")
       setReceiverEmail("")
       setCustomMessage("")
-      fetchHistory()
     } catch (error: any) {
       console.error(error)
       setMessage({ text: error.message || 'Lỗi gửi email báo cáo.', type: 'error' })
@@ -173,14 +185,37 @@ export default function Reports() {
     return isNaN(d.getTime()) ? "Ngày lỗi" : d.toLocaleDateString("vi-VN");
   };
 
-  const fetchHistory = async () => {
-    try {
-      const res = await reportsApi.getHistory();
-      setHistory(res.data);
-    } catch (err) {
-      console.error("Lỗi khi tải lịch sử báo cáo:", err);
+  const handleSetPresetRange = (range: 'today' | 'week' | 'month' | 'year' | 'last30') => {
+    const today = new Date();
+    let start = today;
+    let end = today;
+
+    switch (range) {
+      case 'today':
+        start = today;
+        break;
+      case 'week':
+        start = subDays(today, 7);
+        break;
+      case 'month':
+        start = startOfMonth(today);
+        end = endOfMonth(today);
+        break;
+      case 'year':
+        start = startOfYear(today);
+        break;
+      case 'last30':
+        start = subDays(today, 30);
+        break;
     }
+
+    setStartDate(start.toISOString().split('T')[0]);
+    setEndDate(end.toISOString().split('T')[0]);
   };
+
+
+
+
 
   const fetchTransactions = async () => {
     const uid = getCurrentUserId();
@@ -218,6 +253,85 @@ export default function Reports() {
     });
   }, [transactions, searchKeyword, filterMonth, filterYear, minAmount, maxAmount]);
 
+  // Data processing for charts
+  const chartData = useMemo(() => {
+    if (!filteredList.length) return { categoryData: [], dailyTrendData: [] };
+
+    // Group by category
+    const categoryStats: Record<string, number> = {};
+    filteredList.filter(t => t.loai === 'expense').forEach(t => {
+      const cat = t.danhMuc?.tenDanhMuc || "Khác";
+      categoryStats[cat] = (categoryStats[cat] || 0) + t.soTien;
+    });
+
+    const categoryData = Object.entries(categoryStats).map(([name, value]) => ({
+      name,
+      value
+    })).sort((a, b) => b.value - a.value);
+
+    // Group by day for trend
+    const dailyMap: Record<string, { date: string, thu: number, chi: number }> = {};
+    const dStart = parseISO(startDate);
+    const dEnd = parseISO(endDate);
+    
+    // Initialize days in range
+    let curr = dStart;
+    while (curr <= dEnd) {
+      const dayStr = format(curr, 'yyyy-MM-dd');
+      dailyMap[dayStr] = { date: format(curr, 'dd/MM'), thu: 0, chi: 0 };
+      curr = subDays(curr, -1);
+    }
+
+    filteredList.forEach(t => {
+      const dayStr = t.ngayGiaoDich.split('T')[0];
+      if (dailyMap[dayStr]) {
+        if (t.loai === 'income') dailyMap[dayStr].thu += t.soTien;
+        else dailyMap[dayStr].chi += t.soTien;
+      }
+    });
+
+    return { 
+      categoryData, 
+      dailyTrendData: Object.values(dailyMap)
+    };
+  }, [filteredList, startDate, endDate]);
+
+  const COLORS = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#06b6d4'];
+
+  const analysis503020 = useMemo(() => {
+    const expenses = filteredList.filter(t => t.loai === 'expense');
+    const totalExp = expenses.reduce((s, t) => s + t.soTien, 0);
+
+    if (totalExp === 0) return null;
+
+    const groups = {
+      needs: { label: "Thiết yếu (50%)", actual: 0, target: 0.5, color: "#6366f1", keywords: ["ăn uống", "nhà ở", "điện", "nước", "xăng", "học tập", "y tế", "siêu thị", "nhà", "gas", "internet", "di động"] },
+      wants: { label: "Sở thích (30%)", actual: 0, target: 0.3, color: "#ec4899", keywords: ["giải trí", "cafe", "mua sắm", "du lịch", "làm đẹp", "quà tặng", "game", "phim ảnh", "du lịch", "gym", "spa", "thể thao"] },
+      savings: { label: "Tích lũy (20%)", actual: 0, target: 0.2, color: "#10b981", keywords: ["tiết kiệm", "đầu tư", "bảo hiểm", "trả nợ", "chứng khoán", "vàng", "crypto", "nợ", "lãi", "tài chính"] }
+    };
+
+    expenses.forEach(t => {
+      const cat = (t.danhMuc?.tenDanhMuc || "").toLowerCase();
+      if (groups.needs.keywords.some(k => cat.includes(k))) groups.needs.actual += t.soTien;
+      else if (groups.savings.keywords.some(k => cat.includes(k))) groups.savings.actual += t.soTien;
+      else groups.wants.actual += t.soTien; // Default to wants or "other"
+    });
+
+    const result = Object.values(groups).map(g => ({
+      name: g.label,
+      value: g.actual,
+      percent: (g.actual / totalExp) * 100,
+      targetPercent: g.target * 100,
+      color: g.color,
+      status: (g.actual / totalExp) > g.target ? "Vượt ngưỡng" : "Ổn định",
+      advice: (g.actual / totalExp) > g.target 
+        ? `Bạn đang tiêu vượt ${( ( (g.actual / totalExp) - g.target ) * 100).toFixed(1)}% so với mục tiêu.`
+        : `Tuyệt vời! Bạn đang kiểm soát tốt nhóm này.`
+    }));
+
+    return { totalExp, result };
+  }, [filteredList]);
+
   const summary = useMemo(() => {
     const inc = filteredList.filter(t => t.loai === 'income').reduce((s: number, t: GiaoDich) => s + t.soTien, 0);
     const exp = filteredList.filter(t => t.loai === 'expense').reduce((s: number, t: GiaoDich) => s + t.soTien, 0);
@@ -238,7 +352,6 @@ export default function Reports() {
   };
 
   useEffect(() => {
-    fetchHistory();
     fetchTransactions();
     fetchWallets();
   }, [startDate, endDate, selectedWallet]);
@@ -305,7 +418,6 @@ export default function Reports() {
       setMessage({ text: `Xuất báo cáo thành công!`, type: 'success' })
       setReportName("") 
       setPendingFormat(null)
-      fetchHistory(); 
     } catch (error: any) {
       console.error(error)
       setMessage({ text: error.message || 'Có lỗi xảy ra khi tải báo cáo.', type: 'error' })
@@ -342,7 +454,6 @@ export default function Reports() {
       setReportName("")
       setPendingSingleId(null)
       setPendingFormat(null)
-      fetchHistory();
     } catch (err) {
       console.error(err);
       setMessage({ text: "Lỗi khi xuất báo cáo giao dịch.", type: 'error' })
@@ -387,7 +498,7 @@ export default function Reports() {
       document.body.removeChild(a)
 
       setMessage({ text: `Xuất báo cáo so sánh thành công!`, type: 'success' })
-      fetchHistory(); 
+
     } catch (error: any) {
       console.error(error)
       setMessage({ text: error.message || 'Có lỗi xảy ra khi tải báo cáo.', type: 'error' })
@@ -397,44 +508,8 @@ export default function Reports() {
   }
 
 
-  const handleDownload = async (report: Report) => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8080/api/reports/download/${report.id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) throw new Error("Không thể tải file");
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = report.fileUrl.split('/').pop() || "report";
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      setMessage({ text: "Lỗi khi tải lại báo cáo. File có thể không còn tồn tại trên server.", type: 'error' });
-    }
-  };
 
-  const handleDeleteReport = (e: React.MouseEvent, reportId: string) => {
-    e.stopPropagation(); // Ngăn sự kiện click vào card (tải file)
-    setDeleteReportId(reportId);
-  };
 
-  const confirmDeleteReport = async (reportId: string) => {
-    try {
-      await reportsApi.delete(reportId);
-      setMessage({ text: "Đã xóa lịch sử báo cáo thành công.", type: 'success' });
-      fetchHistory();
-    } catch (err) {
-      console.error(err);
-      setMessage({ text: "Không thể xóa báo cáo. Vui lòng thử lại.", type: 'error' });
-    } finally {
-      setDeleteReportId(null);
-    }
-  };
 
   // Auto-hide message
   useEffect(() => {
@@ -449,41 +524,85 @@ export default function Reports() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1200px] mx-auto">
-      {/* Delete Confirmation Modal */}
-      <Dialog open={!!deleteReportId} onOpenChange={(open) => !open && setDeleteReportId(null)}>
-        <DialogContent className="sm:max-w-[400px] rounded-[24px] p-6 bg-white overflow-hidden shadow-2xl border-0">
-          <div className="flex flex-col items-center justify-center text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center mb-2">
-              <AlertCircle className="w-8 h-8 text-rose-500" />
+
+      {/* Transaction Detail Modal */}
+      <Dialog open={!!selectedTransaction} onOpenChange={(open) => !open && setSelectedTransaction(null)}>
+        <DialogContent className="sm:max-w-[500px] rounded-[32px] p-0 overflow-hidden border-0 bg-white shadow-2xl">
+          {selectedTransaction && (
+            <div className="flex flex-col">
+              {/* Header with Color Accent */}
+              <div className={`px-8 py-10 text-white ${selectedTransaction.loai === 'income' ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-rose-500 to-pink-600'}`}>
+                <div className="flex justify-between items-start mb-6">
+                  <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
+                    <FileText className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="text-right">
+                    <p className="text-white/70 text-[10px] font-black uppercase tracking-widest mb-1">Mã tham chiếu</p>
+                    <p className="text-xs font-mono opacity-90">#{selectedTransaction.id.substring(0, 8).toUpperCase()}</p>
+                  </div>
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold opacity-80 uppercase tracking-tight mb-1">Số tiền giao dịch</h2>
+                  <p className="text-4xl font-black tracking-tighter">
+                    {selectedTransaction.loai === 'income' ? '+' : '-'}{fmtVND(selectedTransaction.soTien)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="px-8 py-8 space-y-6 bg-white relative -mt-6 rounded-t-[32px]">
+                <div className="grid grid-cols-2 gap-8">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Loại giao dịch</p>
+                    <div className="flex items-center gap-2">
+                       <div className={`w-2 h-2 rounded-full ${selectedTransaction.loai === 'income' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                       <p className="font-bold text-slate-800">{selectedTransaction.loai === 'income' ? 'Thu nhập' : 'Chi tiêu'}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ngày thực hiện</p>
+                    <p className="font-bold text-slate-800">{fmtDate(selectedTransaction.ngayGiaoDich)}</p>
+                  </div>
+                </div>
+
+                <div className="h-px bg-slate-100" />
+
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mô tả / Nội dung</p>
+                  <p className="text-slate-700 leading-relaxed font-semibold">{selectedTransaction.moTa || "Không có mô tả chi tiết."}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-8">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Danh mục</p>
+                    <span className="inline-flex px-3 py-1 bg-violet-50 text-violet-700 rounded-full text-xs font-black">
+                       {selectedTransaction.danhMuc?.tenDanhMuc || "Chưa phân loại"}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Từ ví tiền</p>
+                    <p className="font-bold text-slate-800">{selectedTransaction.viTien?.tenVi || "Mặc định"}</p>
+                  </div>
+                </div>
+
+                <div className="pt-4">
+                  <Button 
+                    className="w-full rounded-2xl h-14 bg-slate-900 hover:bg-black text-white font-black text-sm uppercase tracking-widest shadow-xl transition-all active:scale-95"
+                    onClick={() => {
+                        setSelectedTransaction(null);
+                        handleExportSingle(selectedTransaction.id, selectedTransaction.moTa);
+                    }}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Xuất chứng từ PDF
+                  </Button>
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <DialogTitle className="text-xl font-bold text-slate-800">Xác nhận xóa</DialogTitle>
-              <DialogDescription className="text-slate-500 text-sm">
-                Bạn có chắc chắn muốn xóa bản ghi báo cáo này không? Hành động này không thể hoàn tác.
-              </DialogDescription>
-            </div>
-            <div className="flex gap-3 w-full pt-4">
-              <Button 
-                variant="outline" 
-                onClick={() => setDeleteReportId(null)}
-                className="flex-1 rounded-xl h-12 font-bold text-slate-600 border-slate-200 hover:bg-slate-50 transition-all font-sans"
-              >
-                Hủy bỏ
-              </Button>
-              <Button 
-                onClick={() => {
-                  if (deleteReportId) {
-                    confirmDeleteReport(deleteReportId);
-                  }
-                }}
-                className="flex-1 rounded-xl h-12 font-bold bg-rose-500 hover:bg-rose-600 text-white shadow-sm shadow-rose-200 transition-all font-sans"
-              >
-                Xóa ngay
-              </Button>
-            </div>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
+
       {/* Report Name Modal */}
       <Dialog open={showNameModal} onOpenChange={setShowNameModal}>
         <DialogContent className="sm:max-w-[480px] rounded-[24px] p-0 overflow-hidden border-0 bg-white shadow-2xl flex flex-col max-h-[90vh]">
@@ -615,10 +734,327 @@ export default function Reports() {
           </div>
         </DialogContent>
       </Dialog>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Trung tâm Báo cáo</h1>
-        <p className="text-slate-500 mt-2">Xuất dữ liệu tài chính của bạn ra các định dạng phổ biến để lưu trữ hoặc phân tích sâu hơn.</p>
+      <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
+             Phân tích Tài chính
+            <span className="text-[10px] bg-violet-600 text-white px-2 py-0.5 rounded-full uppercase tracking-widest font-black">Pro</span>
+          </h1>
+          <p className="text-slate-500 mt-2">Theo dõi, phân tích và tối ưu hóa dòng tiền của bạn với dữ liệu trực quan.</p>
+        </div>
+        
+        <div className="flex flex-wrap gap-2 items-center">
+          <Button 
+            onClick={() => setShowAnalysisModal(true)}
+            className="px-4 py-2 text-[11px] font-bold uppercase tracking-widest rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-100 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2 mr-2"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            Phân tích 50/30/20
+          </Button>
+
+          {[
+            { label: 'Hôm nay', value: 'today' },
+            { label: '7 ngày qua', value: 'week' },
+            { label: 'Tháng này', value: 'month' },
+            { label: 'Từ đầu năm', value: 'year' },
+            { label: '30 ngày qua', value: 'last30' },
+          ].map((preset) => (
+            <button
+              key={preset.value}
+              onClick={() => handleSetPresetRange(preset.value as any)}
+              className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-lg border border-slate-200 bg-white text-slate-500 hover:border-violet-300 hover:text-violet-600 hover:bg-violet-50 transition-all"
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {/* 50/30/20 Analysis Modal */}
+      <Dialog open={showAnalysisModal} onOpenChange={setShowAnalysisModal}>
+        <DialogContent className="sm:max-w-[700px] rounded-[32px] p-0 overflow-hidden border-0 bg-white shadow-2xl flex flex-col max-h-[90vh]">
+          <div className="bg-slate-900 px-8 py-10 text-white flex-shrink-0 relative overflow-hidden">
+            <Sparkles className="absolute -top-10 -right-10 w-40 h-40 text-white/5 rotate-12" />
+            <DialogHeader className="p-0 text-left relative z-10">
+              <div className="flex items-center gap-3 mb-2">
+                 <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-md">
+                   <Sparkles className="w-5 h-5 text-violet-400" />
+                 </div>
+                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-300">Advanced Analytics</span>
+              </div>
+              <DialogTitle className="text-3xl font-black tracking-tight">Chiến lược Tài chính 50/30/20</DialogTitle>
+              <DialogDescription className="text-slate-400 text-sm mt-2 max-w-md">
+                Phân bổ thông minh giúp bạn cân bằng cuộc sống hiện tại và xây dựng nền tảng vững chắc cho tương lai.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-8 py-8 space-y-10 scrollbar-hide">
+            {!analysis503020 ? (
+               <div className="flex flex-col items-center justify-center py-20 text-slate-300">
+                  <AlertCircle className="w-12 h-12 mb-4 opacity-20" />
+                  <p className="font-bold text-lg">Chưa có dữ liệu chi tiêu</p>
+                  <p className="text-sm">Hãy thêm giao dịch chi tiêu để bắt đầu phân tích.</p>
+               </div>
+            ) : (
+              <>
+                {/* Visual Overview */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+                  <div className="h-[280px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={analysis503020.result}
+                          innerRadius={70}
+                          outerRadius={90}
+                          paddingAngle={8}
+                          dataKey="value"
+                        >
+                          {analysis503020.result.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip formatter={(v: number) => fmtVND(v)} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="text-center -mt-36">
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tổng chi tiêu</p>
+                       <p className="text-xl font-black text-slate-900">{fmtVND(analysis503020.totalExp)}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                     <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">So sánh Thực tế vs Mục tiêu</h4>
+                     {analysis503020.result.map((group, i) => (
+                       <div key={i} className="space-y-2">
+                          <div className="flex justify-between items-end">
+                             <div className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full" style={{backgroundColor: group.color}} />
+                                <p className="text-xs font-bold text-slate-700">{group.name}</p>
+                             </div>
+                             <p className="text-xs font-black text-slate-900">{group.percent.toFixed(1)}%</p>
+                          </div>
+                          <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden relative">
+                             <div className="absolute inset-0 bg-slate-200/50 w-[50%] z-0 border-r border-white/50" style={{width: `${group.targetPercent}%`}} />
+                             <div 
+                                className="h-full rounded-full relative z-10 transition-all duration-1000" 
+                                style={{width: `${group.percent}%`, backgroundColor: group.color}} 
+                             />
+                          </div>
+                       </div>
+                     ))}
+                     <p className="text-[10px] text-slate-400 italic mt-4">
+                        * Vùng màu xám nhạt thể hiện tỷ lệ mục tiêu (50% - 30% - 20%).
+                     </p>
+                  </div>
+                </div>
+
+                <div className="h-px bg-slate-100" />
+
+                {/* Intelligence & Advice */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Đánh giá Chiến thuật & Gợi ý</h4>
+                  <div className="grid grid-cols-1 gap-4">
+                    {analysis503020.result.map((group, i) => (
+                      <div key={i} className={`p-5 rounded-[24px] border transition-all ${group.status === 'Vượt ngưỡng' ? 'bg-rose-50/50 border-rose-100' : 'bg-emerald-50/50 border-emerald-100'}`}>
+                         <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                               <div className={`p-2 rounded-xl bg-white shadow-sm ${group.status === 'Vượt ngưỡng' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                  {group.status === 'Vượt ngưỡng' ? <AlertCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                               </div>
+                               <div>
+                                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{group.name.split(' (')[0]}</p>
+                                  <p className={`text-sm font-black ${group.status === 'Vượt ngưỡng' ? 'text-rose-600' : 'text-emerald-600'}`}>{group.status}</p>
+                               </div>
+                            </div>
+                            <div className="text-right">
+                               <p className="text-[10px] font-bold text-slate-400">Chi tiêu thực tế</p>
+                               <p className="text-sm font-black text-slate-800">{fmtVND(group.value)}</p>
+                            </div>
+                         </div>
+                         <p className="text-xs text-slate-600 leading-relaxed pl-12 font-medium">
+                            {group.advice}
+                         </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <Card className="bg-indigo-50 border-indigo-100 p-6 rounded-[24px]">
+                   <div className="flex gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-indigo-200">
+                         <Sparkles className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                         <h5 className="font-black text-indigo-900 text-sm mb-1 uppercase tracking-tight">Kế hoạch hành động kế tiếp</h5>
+                         <p className="text-xs text-indigo-700/80 leading-relaxed font-medium">
+                            {analysis503020.result[2].percent < 20 
+                              ? "Ưu tiên hàng đầu của bạn ngay lúc này là tăng tỷ lệ Tích lũy. Hãy thử cắt giảm 10% ngân sách ở phần 'Sở thích' để chuyển vào quỹ tiết kiệm."
+                              : "Bạn đang làm rất tốt! Hãy tiếp tục duy trì kỷ luật này và xem xét chuyển một phần tích lũy sang kênh đầu tư có lãi suất cao hơn."}
+                         </p>
+                      </div>
+                   </div>
+                </Card>
+              </>
+            )}
+          </div>
+
+          <div className="px-8 py-6 bg-slate-50 border-t border-slate-100 flex-shrink-0 flex justify-center">
+             <Button 
+                onClick={() => setShowAnalysisModal(false)}
+                className="rounded-2xl h-12 px-10 bg-slate-900 text-white font-black text-sm uppercase tracking-widest hover:bg-black transition-all"
+             >
+                Đã hiểu, tiếp tục
+             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Financial Status Overview Tiles */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {[
+          { 
+            label: "Thay đổi ròng", 
+            value: summary.income - summary.expense, 
+            color: (summary.income - summary.expense) >= 0 ? "text-emerald-600" : "text-rose-600",
+            bg: (summary.income - summary.expense) >= 0 ? "bg-emerald-50" : "bg-rose-50",
+            icon: <Sparkles className="w-4 h-4" />
+          },
+          { 
+            label: "Tổng thu nhập", 
+            value: summary.income, 
+            color: "text-emerald-600", 
+            bg: "bg-emerald-50",
+            icon: <ArrowDownLeft className="w-4 h-4" />
+          },
+          { 
+            label: "Tổng chi tiêu", 
+            value: summary.expense, 
+            color: "text-rose-600", 
+            bg: "bg-rose-50",
+            icon: <ArrowUpRight className="w-4 h-4" />
+          },
+          { 
+            label: "Hạng mục chi nhiều nhất", 
+            value: chartData.categoryData[0]?.name || "N/A", 
+            isCurrency: false,
+            color: "text-violet-600",
+            bg: "bg-violet-50",
+            icon: <FileText className="w-4 h-4" />
+          }
+        ].map((tile, i) => (
+          <Card key={i} className="border-0 shadow-sm bg-white overflow-hidden group hover:shadow-md transition-all">
+            <CardContent className="p-5 flex items-center gap-4">
+              <div className={`w-10 h-10 rounded-xl ${tile.bg} ${tile.color} flex items-center justify-center`}>
+                {tile.icon}
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{tile.label}</p>
+                <p className={`text-lg font-black ${tile.color}`}>
+                  {tile.isCurrency === false ? tile.value : fmtVND(tile.value as number)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Interactive Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Trend Chart */}
+        <Card className="lg:col-span-2 border-0 shadow-sm bg-white overflow-hidden">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2 uppercase tracking-tight">
+              <div className="w-1.5 h-4 bg-violet-600 rounded-full" />
+              Biến động dòng tiền (Thu vs Chi)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="h-[300px] w-full pt-4">
+            {chartData.dailyTrendData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData.dailyTrendData}>
+                  <defs>
+                    <linearGradient id="colorThu" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorChi" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis 
+                    dataKey="date" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fontSize: 10, fill: '#94a3b8'}}
+                    dy={10}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fontSize: 10, fill: '#94a3b8'}}
+                    tickFormatter={(val) => `${val/1000}k`}
+                  />
+                  <RechartsTooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    formatter={(val: number) => fmtVND(val)}
+                  />
+                  <Area type="monotone" dataKey="thu" name="Thu nhập" stroke="#10b981" fillOpacity={1} fill="url(#colorThu)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="chi" name="Chi tiêu" stroke="#ef4444" fillOpacity={1} fill="url(#colorChi)" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+                <div className="h-full flex flex-col items-center justify-center text-slate-300">
+                  <Loader2 className="w-8 h-8 animate-spin mb-2" />
+                  <p className="text-xs">Đang tải dữ liệu biểu đồ...</p>
+                </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Category Distribution Chart */}
+        <Card className="border-0 shadow-sm bg-white overflow-hidden">
+          <CardHeader className="pb-0">
+            <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2 uppercase tracking-tight">
+              <div className="w-1.5 h-4 bg-pink-500 rounded-full" />
+              Phân bổ chi tiêu
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="h-[300px] w-full pt-4 relative">
+            {chartData.categoryData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={chartData.categoryData}
+                    cx="50%"
+                    cy="45%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {chartData.categoryData.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip 
+                    formatter={(val: number) => fmtVND(val)}
+                    contentStyle={{ borderRadius: '12px', border: 'none' }}
+                  />
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{fontSize: 10, paddingTop: 10}} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-slate-300 italic text-xs text-center px-6">
+                Chưa có dữ liệu chi tiêu trong khoảng thời gian này để phân tích.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Report Options Selection */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         <Card className="lg:col-span-2 border-slate-200 shadow-sm">
@@ -703,124 +1139,134 @@ export default function Reports() {
         </Card>
       </div>
 
-      {/* Export Options */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Excel Export Card */}
-        <Card className="group hover:border-emerald-200 transition-all duration-300 shadow-sm hover:shadow-md">
-          <CardHeader>
-            <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <FileSpreadsheet className="w-7 h-7 text-emerald-600" />
-            </div>
-            <CardTitle className="text-xl">Báo cáo Excel (.xlsx)</CardTitle>
-            <CardDescription>
-              Bao gồm toàn bộ danh sách giao dịch chi tiết, phân loại và ghi chú. Thích hợp để tính toán và xử lý dữ liệu nâng cao.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <button
-              onClick={() => handleExport('excel')}
-              disabled={loading.excel}
-              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 rounded-lg transition-colors disabled:opacity-50"
-            >
-              {loading.excel ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  <Download className="w-5 h-5" />
-                  Tải xuống Excel
-                </>
-              )}
-            </button>
-          </CardContent>
-        </Card>
-
-        {/* PDF Export Card */}
-        <Card className="group hover:border-rose-200 transition-all duration-300 shadow-sm hover:shadow-md">
-          <CardHeader>
-            <div className="w-12 h-12 bg-rose-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <FileText className="w-7 h-7 text-rose-600" />
-            </div>
-            <CardTitle className="text-xl">Báo cáo PDF trực quan</CardTitle>
-            <CardDescription>
-              Báo cáo tổng hợp với các biểu đồ trực quan, phân tích thu chi và tóm tắt dòng tiền. Hoàn hảo để trình bày hoặc lưu trữ.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <button
-              onClick={() => handleExport('pdf')}
-              disabled={loading.pdf}
-              className="w-full flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-medium py-3 rounded-lg transition-colors disabled:opacity-50"
-            >
-              {loading.pdf ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  <Download className="w-5 h-5" />
-                  Tải xuống PDF
-                </>
-              )}
-            </button>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Comparison Report Section */}
-      <div className="mt-12">
-        <h3 className="text-xl font-bold text-slate-900">Báo cáo So sánh (Comparison Report)</h3>
-        <p className="text-sm text-slate-500 mb-6">So sánh dữ liệu thu chi giữa hai khoảng thời gian để đánh giá sự tăng trưởng hoặc giảm sút.</p>
-        
-        <Card className="border-slate-200 shadow-sm transition-all duration-300 hover:shadow-md">
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Kỳ 1 */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 bg-violet-50/50 p-3 rounded-lg border border-violet-100/50">
-                  <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold shadow-sm">1</div>
-                  <h4 className="font-bold text-slate-800">Khoảng thời gian thứ nhất</h4>
+      {/* Financial Tools & Exports */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
+        {/* Export Data Section */}
+        <div className="lg:col-span-8 space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <Download className="w-5 h-5 text-violet-600" />
+              Công cụ Xuất dữ liệu
+            </h3>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Excel Card */}
+            <Card className="group hover:border-emerald-200 transition-all duration-300 shadow-sm hover:shadow-md border border-slate-100">
+              <CardHeader className="pb-2">
+                <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                  <FileSpreadsheet className="w-6 h-6 text-emerald-600" />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-slate-700 ml-1">Từ ngày</label>
-                    <input type="date" value={compStart1} onChange={e => setCompStart1(e.target.value)} className="w-full h-11 px-4 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all shadow-sm" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-slate-700 ml-1">Đến ngày</label>
-                    <input type="date" value={compEnd1} onChange={e => setCompEnd1(e.target.value)} className="w-full h-11 px-4 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all shadow-sm" />
-                  </div>
+                <CardTitle className="text-base font-bold">Báo cáo Excel chi tiết</CardTitle>
+                <CardDescription className="text-xs">Phân tích chuyên sâu với số liệu thô.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  onClick={() => handleExport('excel')}
+                  disabled={loading.excel}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-11 font-bold transition-all shadow-lg shadow-emerald-100"
+                >
+                  {loading.excel ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+                  Tải xuống .XLSX
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* PDF Card */}
+            <Card className="group hover:border-rose-200 transition-all duration-300 shadow-sm hover:shadow-md border border-slate-100">
+              <CardHeader className="pb-2">
+                <div className="w-10 h-10 bg-rose-50 rounded-lg flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                  <FileText className="w-6 h-6 text-rose-600" />
                 </div>
+                <CardTitle className="text-base font-bold">Báo cáo PDF chuyên nghiệp</CardTitle>
+                <CardDescription className="text-xs">Trình bày đẹp mắt với biểu đồ tổng hợp.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  onClick={() => handleExport('pdf')}
+                  disabled={loading.pdf}
+                  className="w-full bg-rose-600 hover:bg-rose-700 text-white rounded-xl h-11 font-bold transition-all shadow-lg shadow-rose-100"
+                >
+                  {loading.pdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+                  Tải xuống .PDF
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="border-0 shadow-sm bg-slate-50/50 p-6">
+            <div className="flex flex-col sm:flex-row gap-6 items-end">
+              <div className="grid w-full sm:w-auto items-center gap-1.5 flex-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Lọc theo Ví</label>
+                <select
+                  value={selectedWallet}
+                  onChange={(e) => setSelectedWallet(e.target.value)}
+                  className="flex h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:ring-2 focus:ring-violet-500/20 outline-none transition-all font-bold text-slate-700"
+                >
+                  <option value="all">Tất cả ví tài chính</option>
+                  {wallets.map(w => (
+                    <option key={w.id} value={w.id}>{w.tenVi}</option>
+                  ))}
+                </select>
               </div>
-
-              {/* Kỳ 2 */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 bg-rose-50/50 p-3 rounded-lg border border-rose-100/50">
-                  <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 font-bold shadow-sm">2</div>
-                  <h4 className="font-bold text-slate-800">Khoảng thời gian thứ hai</h4>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-slate-700 ml-1">Từ ngày</label>
-                    <input type="date" value={compStart2} onChange={e => setCompStart2(e.target.value)} className="w-full h-11 px-4 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all shadow-sm" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-slate-700 ml-1">Đến ngày</label>
-                    <input type="date" value={compEnd2} onChange={e => setCompEnd2(e.target.value)} className="w-full h-11 px-4 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all shadow-sm" />
-                  </div>
+              <div className="grid w-full sm:w-auto items-center gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Kỳ báo cáo</label>
+                <div className="flex p-1 bg-white border border-slate-200 rounded-xl">
+                  <button onClick={() => setReportType('monthly')} className={`px-4 py-2 text-[11px] font-bold uppercase rounded-lg transition-all ${reportType === 'monthly' ? 'bg-violet-600 text-white shadow-md' : 'text-slate-400'}`}>Tháng</button>
+                  <button onClick={() => setReportType('yearly')} className={`px-4 py-2 text-[11px] font-bold uppercase rounded-lg transition-all ${reportType === 'yearly' ? 'bg-violet-600 text-white shadow-md' : 'text-slate-400'}`}>Năm</button>
                 </div>
               </div>
             </div>
+          </Card>
+        </div>
 
-            <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end">
-              <button
-                onClick={handleExportComparison}
-                disabled={loadingComparison}
-                className="flex items-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold px-8 py-3 rounded-xl transition-all shadow-lg shadow-violet-200 disabled:opacity-50 hover:-translate-y-0.5"
-              >
-                {loadingComparison ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileText className="w-5 h-5" />}
-                Tải xuống PDF So sánh
-              </button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Comparison Area */}
+        <div className="lg:col-span-4">
+          <div className="h-full flex flex-col space-y-6">
+            <h3 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-indigo-600" />
+              So sánh Kỳ
+            </h3>
+            
+            <Card className="flex-1 border border-indigo-100 shadow-sm bg-white overflow-hidden flex flex-col">
+              <CardContent className="p-5 flex flex-col h-full space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      <div className="w-4 h-4 rounded bg-violet-100 text-violet-600 flex items-center justify-center text-[8px]">1</div>
+                      Kỳ gốc
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input type="date" value={compStart1} onChange={e => setCompStart1(e.target.value)} className="w-full h-10 px-3 border border-slate-100 bg-slate-50/50 rounded-lg text-xs font-bold outline-none" />
+                      <input type="date" value={compEnd1} onChange={e => setCompEnd1(e.target.value)} className="w-full h-10 px-3 border border-slate-100 bg-slate-50/50 rounded-lg text-xs font-bold outline-none" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      <div className="w-4 h-4 rounded bg-rose-100 text-rose-600 flex items-center justify-center text-[8px]">2</div>
+                      Kỳ so sánh
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input type="date" value={compStart2} onChange={e => setCompStart2(e.target.value)} className="w-full h-10 px-3 border border-slate-100 bg-slate-50/50 rounded-lg text-xs font-bold outline-none" />
+                      <input type="date" value={compEnd2} onChange={e => setCompEnd2(e.target.value)} className="w-full h-10 px-3 border border-slate-100 bg-slate-50/50 rounded-lg text-xs font-bold outline-none" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-auto pt-6 border-t border-slate-50">
+                  <Button 
+                    onClick={handleExportComparison}
+                    disabled={loadingComparison}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-12 font-bold transition-all shadow-lg shadow-indigo-100"
+                  >
+                    {loadingComparison ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                    Xuất PDF So sánh
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
 
       {/* New Section: Individual Transaction Search & Export */}
@@ -936,7 +1382,14 @@ export default function Reports() {
                       <td className={`px-6 py-4 text-right font-bold ${gd.loai === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
                         {gd.loai === 'income' ? '+' : '-'}{fmtVND(gd.soTien)}
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 text-right space-x-2">
+                        <button
+                          onClick={() => setSelectedTransaction(gd)}
+                          className="p-2 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-all"
+                          title="Xem chi tiết"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => handleExportSingle(gd.id, gd.moTa)}
                           disabled={isExportingSingle === gd.id}
@@ -990,64 +1443,7 @@ export default function Reports() {
         </div>
       )}
 
-      {/* Preview Section - Mockup */}
-      {/* Recent Reports Section */}
-      <div className="mt-12">
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-6">Mẫu báo cáo gần đây</h3>
-        {history.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl text-slate-400">
-            <FileText className="w-10 h-10 mb-2 opacity-20" />
-            <p className="text-sm">Chưa có báo cáo nào được xuất.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {history.slice(0, 8).map(report => (
-              <div 
-                key={report.id} 
-                className="group relative p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:border-violet-200 hover:shadow-md transition-all cursor-pointer"
-                onClick={() => handleDownload(report)}
-              >
-                {/* Delete Button */}
-                <button
-                  onClick={(e) => handleDeleteReport(e, report.id)}
-                  className="absolute -top-2 -right-2 w-7 h-7 bg-white border border-rose-100 rounded-full shadow-lg flex items-center justify-center text-rose-500 hover:bg-rose-50 opacity-0 group-hover:opacity-100 transition-all z-10 scale-90 group-hover:scale-100"
-                  title="Xóa bản ghi này"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
 
-                <h4 className="font-bold text-slate-800 text-sm truncate pr-4">
-                  {(() => {
-                    if (!report.fileUrl) return `Báo cáo ${report.loai === 'monthly' ? 'Tháng' : 'Năm'}`;
-                    const fileName = report.fileUrl.split('/').pop() || "";
-                    const parts = fileName.split('_');
-                    if (parts.length > 1) {
-                      // Bỏ phần cuối cùng (thường là UUID + extension)
-                      return parts.slice(0, -1).join('_');
-                    }
-                    return fileName.split('.')[0] || `Báo cáo ${report.loai === 'monthly' ? 'Tháng' : 'Năm'}`;
-                  })()}
-                </h4>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  {report.ngayTao ? (
-                    (() => {
-                      const d = new Date(report.ngayTao);
-                      return isNaN(d.getTime()) ? "Ngày không hợp lệ" : format(d, 'dd/MM/yyyy HH:mm');
-                    })()
-                  ) : "Ngày không xác định"}
-                </p>
-                <div className="mt-3 flex items-center gap-1.5">
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase font-bold ${
-                    report.dinhDang === 'xlsx' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
-                  }`}>
-                    {report.dinhDang}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   )
 }
