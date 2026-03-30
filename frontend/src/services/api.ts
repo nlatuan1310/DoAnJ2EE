@@ -181,6 +181,7 @@ export const thongKeApi = {
 
 export const reportsApi = {
   getHistory: () => api.get('/reports'),
+  delete: (id: string) => api.delete(`/reports/${id}`),
 };
 
 export default api;

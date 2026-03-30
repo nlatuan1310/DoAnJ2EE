@@ -2,11 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import {
   Shield, Lock, KeyRound, CheckCircle2, AlertCircle,
-  Eye, EyeOff, Mail, ChevronRight, X
+  Eye, EyeOff, Mail, ChevronRight, X, FileText,
+  Calendar as CalendarIcon, Loader2
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type SidebarItem = 'bao-mat' | 'doi-mat-khau';
+type SidebarItem = 'bao-mat' | 'doi-mat-khau' | 'bao-cao';
 
 interface ConfirmPopup {
   open: boolean;
@@ -130,6 +131,22 @@ export default function Settings() {
   const [messagePw, setMessagePw] = useState<{ text: string; type: 'success' | 'error' | null }>({ text: '', type: null });
   const [pwErrors, setPwErrors] = useState<{ [k: string]: string }>({});
 
+  const [isPreviewEnabled, setIsPreviewEnabled] = useState(() => {
+    return localStorage.getItem('preview_report') !== 'false';
+  });
+
+  const togglePreview = () => {
+    const newVal = !isPreviewEnabled;
+    setIsPreviewEnabled(newVal);
+    localStorage.setItem('preview_report', String(newVal));
+  };
+
+  // ── Scheduled Report state ──
+  const [isScheduledEnabled, setIsScheduledEnabled] = useState(false);
+  const [scheduledEmail, setScheduledEmail] = useState("");
+  const [loadingScheduled, setLoadingScheduled] = useState(false);
+  const [messageScheduled, setMessageScheduled] = useState<{ text: string; type: 'success' | 'error' | null }>({ text: '', type: null });
+
   useEffect(() => { fetchUserData(); }, []);
 
   const fetchUserData = async () => {
@@ -138,8 +155,34 @@ export default function Settings() {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
-      if (res.ok) setIs2faEnabled(data.is2faEnabled);
+      if (res.ok) {
+        setIs2faEnabled(data.is2faEnabled);
+        setIsScheduledEnabled(data.isScheduledReportsEnabled);
+        setScheduledEmail(data.scheduledReportEmail || data.email);
+      }
     } catch { /* ignore */ }
+  };
+
+  const saveScheduledSettings = async () => {
+    setLoadingScheduled(true);
+    setMessageScheduled({ text: '', type: null });
+    try {
+      const res = await fetch('http://localhost:8080/api/auth/update-report-scheduled', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ enabled: isScheduledEnabled, email: scheduledEmail }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMessageScheduled({ text: data.message, type: 'success' });
+      } else {
+        setMessageScheduled({ text: data.message || 'Cập nhật thất bại', type: 'error' });
+      }
+    } catch {
+      setMessageScheduled({ text: 'Lỗi kết nối máy chủ', type: 'error' });
+    } finally {
+      setLoadingScheduled(false);
+    }
   };
 
   // ── 2FA toggle ──
@@ -233,6 +276,12 @@ export default function Settings() {
       label: 'Đổi mật khẩu',
       icon: <KeyRound className="w-5 h-5" />,
       desc: 'Cập nhật mật khẩu tài khoản',
+    },
+    {
+      id: 'bao-cao',
+      label: 'Cài đặt Báo cáo',
+      icon: <FileText className="w-5 h-5" />,
+      desc: 'Cấu hình xuất báo cáo',
     },
   ];
 
@@ -502,6 +551,121 @@ export default function Settings() {
                       </button>
                     </div>
                   </form>
+                </div>
+              </div>
+            )}
+
+            {/* ════ Báo cáo ════ */}
+            {activeTab === 'bao-cao' && (
+              <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-right-3 duration-200">
+                <div className="px-6 py-5 bg-slate-50 border-b border-slate-100 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-violet-50 flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-violet-600" />
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-slate-900 text-base">Cấu hình Báo cáo</h2>
+                    <p className="text-xs text-slate-500">Tùy chỉnh trải nghiệm xuất và gửi báo cáo.</p>
+                  </div>
+                </div>
+
+                <div className="p-6">
+                  <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-violet-100 rounded-full flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="w-5 h-5 text-violet-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-800 text-sm">Xem trước tóm tắt</h4>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Hiển thị số lượng giao dịch và tổng tiền trước khi xuất file.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={togglePreview}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 ${
+                        isPreviewEnabled ? 'bg-violet-600' : 'bg-slate-200'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                          isPreviewEnabled ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Monthly schedule */}
+                  <div className="mt-8 space-y-6">
+                    <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center shrink-0">
+                          <CalendarIcon className="w-5 h-5 text-indigo-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-slate-800 text-sm">Báo cáo định kỳ hàng tháng</h4>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Tự động gửi báo cáo tổng kết tháng vào ngày 01 mỗi tháng.
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => setIsScheduledEnabled(!isScheduledEnabled)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 ${
+                          isScheduledEnabled ? 'bg-indigo-600' : 'bg-slate-200'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                            isScheduledEnabled ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    {isScheduledEnabled && (
+                      <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="space-y-1.5 ml-1">
+                          <label className="text-sm font-semibold text-slate-700">Email nhận báo cáo định kỳ</label>
+                          <input
+                            type="email"
+                            value={scheduledEmail}
+                            onChange={(e) => setScheduledEmail(e.target.value)}
+                            placeholder="Nhập email dự phòng..."
+                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex flex-col gap-3">
+                      {messageScheduled.text && (
+                        <div className={`p-4 rounded-xl flex items-center gap-3 animate-in fade-in duration-300 ${
+                          messageScheduled.type === 'success'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                            : 'bg-rose-50 text-rose-700 border border-rose-100'
+                        }`}>
+                          {messageScheduled.type === 'success'
+                            ? <CheckCircle2 className="w-4 h-4 shrink-0" />
+                            : <AlertCircle className="w-4 h-4 shrink-0" />}
+                          <span className="text-sm font-medium">{messageScheduled.text}</span>
+                        </div>
+                      )}
+
+                      <div className="flex justify-end">
+                        <button
+                          onClick={saveScheduledSettings}
+                          disabled={loadingScheduled}
+                          className="px-6 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold shadow-lg shadow-violet-100 transition-all hover:-translate-y-0.5 flex items-center gap-2 "
+                        >
+                          {loadingScheduled && <Loader2 className="w-4 h-4 animate-spin" />}
+                          Lưu cấu hình báo cáo
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

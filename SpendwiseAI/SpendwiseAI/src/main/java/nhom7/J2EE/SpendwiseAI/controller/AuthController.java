@@ -82,4 +82,12 @@ public class AuthController {
         String status = request.isEnable() ? "Bật" : "Tắt";
         return ResponseEntity.ok(Map.of("message", status + " bảo mật 2 lớp thành công"));
     }
+
+    @PostMapping("/update-report-scheduled")
+    public ResponseEntity<Map<String, String>> updateReportScheduled(
+            Authentication authentication,
+            @RequestBody AuthDTO.UpdateReportScheduledRequest request) {
+        authService.updateReportScheduled(authentication.getName(), request);
+        return ResponseEntity.ok(Map.of("message", "Cập nhật đặt lịch báo cáo thành công"));
+    }
 }

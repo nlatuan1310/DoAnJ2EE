@@ -26,6 +26,9 @@ public interface GiaoDichRepository extends JpaRepository<GiaoDich, UUID>, JpaSp
     List<GiaoDich> findByNguoiDungIdAndNgayGiaoDichBetween(
             UUID nguoiDungId, LocalDateTime tuNgay, LocalDateTime denNgay);
 
+    List<GiaoDich> findByNguoiDungIdAndViTienIdAndNgayGiaoDichBetween(
+            UUID nguoiDungId, UUID viTienId, LocalDateTime tuNgay, LocalDateTime denNgay);
+
     List<GiaoDich> findByNguoiDungIdAndDanhMucId(UUID nguoiDungId, Integer danhMucId);
 
     @org.springframework.data.jpa.repository.Query("SELECT gd.danhMuc.id, gd.danhMuc.tenDanhMuc, gd.danhMuc.mauSac, gd.danhMuc.icon, SUM(gd.soTien) " +

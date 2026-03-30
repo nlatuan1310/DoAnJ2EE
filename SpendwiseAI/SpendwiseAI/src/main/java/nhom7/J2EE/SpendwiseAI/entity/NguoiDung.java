@@ -50,6 +50,16 @@ public class NguoiDung {
     @Column(name = "is_2fa_enabled")
     private boolean is2faEnabled;
 
+    @Column(name = "is_scheduled_reports_enabled")
+    private Boolean isScheduledReportsEnabled;
+
+    @Column(name = "scheduled_report_email")
+    private String scheduledReportEmail;
+
+    public boolean isScheduledReportsEnabled() {
+        return Boolean.TRUE.equals(this.isScheduledReportsEnabled);
+    }
+
     @PrePersist
     protected void onCreate() {
         ngayTao = LocalDateTime.now();

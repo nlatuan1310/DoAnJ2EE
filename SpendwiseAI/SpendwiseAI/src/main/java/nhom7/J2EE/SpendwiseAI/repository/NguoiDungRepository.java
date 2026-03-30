@@ -15,4 +15,6 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, UUID> {
     boolean existsByEmail(String email);
 
     long countByNgayTaoBetween(java.time.LocalDateTime tuNgay, java.time.LocalDateTime denNgay);
+
+    java.util.List<NguoiDung> findByIsScheduledReportsEnabledTrue();
 }
