@@ -39,7 +39,7 @@ function mapToSavingGoal(item: goalService.MucTieuTietKiem, index: number): Savi
     soTienHienTai: item.soTienHienTai,
     ngayMucTieu: item.ngayMucTieu,
     ngayTao: item.ngayTao,
-    viTien: item.viTien ? { id: item.viTien.id, tenVi: item.viTien.tenVi, soDu: item.viTien.soDu } : undefined,
+    viTien: item.viTien ? { id: item.viTien.id, tenVi: item.viTien.tenVi } : undefined,
     color: colors[index % colors.length],
   }
 }
@@ -144,11 +144,9 @@ export default function Goals() {
           ? { ...g, soTienHienTai: Math.min(g.soTienHienTai + amount, g.soTienMucTieu) }
           : g
       ))
-    } catch (err: any) {
+    } catch (err) {
       console.error("Lỗi đóng góp:", err)
-      const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message || "Xảy ra lỗi không xác định."
-      alert("Không thể đóng góp: " + errorMsg)
-      throw err; // throw to modal can stop closing
+      alert("Không thể đóng góp. Vui lòng thử lại.")
     }
   }
 
