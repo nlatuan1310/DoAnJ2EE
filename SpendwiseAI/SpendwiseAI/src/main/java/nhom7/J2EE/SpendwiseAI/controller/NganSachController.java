@@ -1,6 +1,6 @@
 package nhom7.J2EE.SpendwiseAI.controller;
 
-import nhom7.J2EE.SpendwiseAI.entity.NganSach;
+import nhom7.J2EE.SpendwiseAI.dto.NganSachDTO;
 import nhom7.J2EE.SpendwiseAI.service.NganSachService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,26 +19,23 @@ public class NganSachController {
     }
 
     @GetMapping("/nguoi-dung/{nguoiDungId}")
-    public ResponseEntity<List<NganSach>> layTheoNguoiDung(@PathVariable UUID nguoiDungId) {
+    public ResponseEntity<List<NganSachDTO.NganSachResponse>> layTheoNguoiDung(@PathVariable UUID nguoiDungId) {
         return ResponseEntity.ok(nganSachService.layTheoNguoiDung(nguoiDungId));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<NganSach> layTheoId(@PathVariable UUID id) {
+    public ResponseEntity<NganSachDTO.NganSachResponse> layTheoId(@PathVariable UUID id) {
         return ResponseEntity.ok(nganSachService.layTheoId(id));
     }
 
     @PostMapping
-    public ResponseEntity<NganSach> tao(@RequestParam UUID nguoiDungId,
-                                         @RequestParam UUID viId,
-                                         @RequestParam Integer danhMucId,
-                                         @RequestBody NganSach nganSach) {
-        return ResponseEntity.ok(nganSachService.tao(nguoiDungId, viId, danhMucId, nganSach));
+    public ResponseEntity<NganSachDTO.NganSachResponse> tao(@RequestBody NganSachDTO.NganSachRequest request) {
+        return ResponseEntity.ok(nganSachService.tao(request));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<NganSach> capNhat(@PathVariable UUID id, @RequestBody NganSach nganSach) {
-        return ResponseEntity.ok(nganSachService.capNhat(id, nganSach));
+    public ResponseEntity<NganSachDTO.NganSachResponse> capNhat(@PathVariable UUID id, @RequestBody NganSachDTO.NganSachRequest request) {
+        return ResponseEntity.ok(nganSachService.capNhat(id, request));
     }
 
     @DeleteMapping("/{id}")

@@ -16,15 +16,18 @@ public class MucTieuTietKiemService {
     private final DongGopTietKiemRepository dongGopRepository;
     private final NguoiDungRepository nguoiDungRepository;
     private final ViTienRepository viTienRepository;
+    private final GiaoDichRepository giaoDichRepository;
 
     public MucTieuTietKiemService(MucTieuTietKiemRepository mucTieuRepository,
                                    DongGopTietKiemRepository dongGopRepository,
                                    NguoiDungRepository nguoiDungRepository,
-                                   ViTienRepository viTienRepository) {
+                                   ViTienRepository viTienRepository,
+                                   GiaoDichRepository giaoDichRepository) {
         this.mucTieuRepository = mucTieuRepository;
         this.dongGopRepository = dongGopRepository;
         this.nguoiDungRepository = nguoiDungRepository;
         this.viTienRepository = viTienRepository;
+        this.giaoDichRepository = giaoDichRepository;
     }
 
     public List<MucTieuTietKiem> layTatCa() {
@@ -56,11 +59,37 @@ public class MucTieuTietKiemService {
     @Transactional
     public DongGopTietKiem dongGop(UUID mucTieuId, BigDecimal soTien) {
         MucTieuTietKiem mt = layTheoId(mucTieuId);
+        
+        // Cập nhật số tiền hiện tại của Mục tiêu
         mt.setSoTienHienTai(mt.getSoTienHienTai().add(soTien));
         mucTieuRepository.save(mt);
 
+        // Lấy Ví gắn với Mục tiêu để trừ tiền
+        ViTien vi = mt.getViTien();
+        if (vi != null) {
+            if (vi.getSoDu().compareTo(soTien) < 0) {
+                throw new RuntimeException("Số dư trong ví không đủ để nạp tiền.");
+            }
+            vi.setSoDu(vi.getSoDu().subtract(soTien));
+            viTienRepository.save(vi);
+        }
+
+        // Sinh ra 1 GiaoDich (Chi tiêu chuyển vào quỹ)
+        GiaoDich gd = GiaoDich.builder()
+                .viTien(vi)
+                .nguoiDung(mt.getNguoiDung())
+                .soTien(soTien)
+                .loai("expense")
+                .moTa("Nạp tiền vào quỹ: " + mt.getTenMucTieu())
+                .aiCategorized(false)
+                .ngayGiaoDich(java.time.LocalDateTime.now())
+                .build();
+        GiaoDich savedGd = giaoDichRepository.save(gd);
+
+        // Lưu lịch sử đóng góp báo nối với Giao dịch
         DongGopTietKiem dongGop = DongGopTietKiem.builder()
                 .mucTieu(mt)
+                .giaoDich(savedGd)
                 .soTien(soTien)
                 .build();
         return dongGopRepository.save(dongGop);

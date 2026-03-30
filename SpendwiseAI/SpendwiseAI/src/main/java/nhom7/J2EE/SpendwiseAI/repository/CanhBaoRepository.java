@@ -13,4 +13,6 @@ public interface CanhBaoRepository extends JpaRepository<CanhBao, UUID> {
     List<CanhBao> findByNguoiDungId(UUID nguoiDungId);
 
     List<CanhBao> findByNguoiDungIdAndDaDoc(UUID nguoiDungId, Boolean daDoc);
+
+    boolean existsByNguoiDungIdAndLoaiAndNoiDung(UUID nguoiDungId, String loai, String noiDung);
 }

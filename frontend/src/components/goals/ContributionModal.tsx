@@ -62,9 +62,16 @@ export default function ContributionModal({ isOpen, onClose, onSubmit, goal }: C
             <Target className="w-5 h-5 text-violet-500 mt-0.5 shrink-0" />
             <div>
               <p className="text-sm font-bold text-slate-800">{goal.tenMucTieu}</p>
-              <p className="text-xs text-slate-500 mt-1">
-                Còn thiếu: <span className="text-violet-600 font-bold">{formatCurrency(remaining)}</span>
-              </p>
+              <div className="flex flex-col gap-0.5 mt-1">
+                <p className="text-xs text-slate-500">
+                  Còn thiếu: <span className="text-violet-600 font-bold">{formatCurrency(remaining)}</span>
+                </p>
+                {goal.viTien?.soDu !== undefined && (
+                  <p className="text-xs text-slate-500">
+                    Số dư [{goal.viTien.tenVi}]: <span className="text-emerald-600 font-bold">{formatCurrency(goal.viTien.soDu)}</span>
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 

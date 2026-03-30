@@ -41,4 +41,10 @@ public class NganSach {
 
     @Column(name = "ngay_ket_thuc")
     private LocalDate ngayKetThuc;
+
+    @Transient
+    private BigDecimal spent;
+
+    @Transient
+    private Double progress;
 }
