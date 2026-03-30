@@ -9,7 +9,7 @@ export interface MucTieuTietKiem {
   ngayMucTieu: string;
   ngayTao: string;
   nguoiDung?: { id: string; hoVaTen: string };
-  viTien?: { id: string; tenVi: string };
+  viTien?: { id: string; tenVi: string; soDu?: number };
 }
 
 export interface DongGopTietKiem {
@@ -43,9 +43,11 @@ export async function getGoals(userId?: string): Promise<MucTieuTietKiem[]> {
   return res.data;
 }
 
-/** Lấy mục tiêu theo ID */
+/** Lấy chi tiết 1 mục tiêu theo ID */
 export async function getGoalById(mucTieuId: string): Promise<MucTieuTietKiem> {
-  const res = await api.get<MucTieuTietKiem>(`/muc-tieu-tiet-kiem/${mucTieuId}`);
+  const res = await api.get<MucTieuTietKiem>(
+    `/muc-tieu-tiet-kiem/${mucTieuId}`
+  );
   return res.data;
 }
 

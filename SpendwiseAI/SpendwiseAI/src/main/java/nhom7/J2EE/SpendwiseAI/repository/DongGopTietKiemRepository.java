@@ -11,4 +11,6 @@ import java.util.UUID;
 public interface DongGopTietKiemRepository extends JpaRepository<DongGopTietKiem, UUID> {
 
     List<DongGopTietKiem> findByMucTieuId(UUID mucTieuId);
+
+    List<DongGopTietKiem> findByMucTieuIdOrderByNgayTaoDesc(UUID mucTieuId);
 }
