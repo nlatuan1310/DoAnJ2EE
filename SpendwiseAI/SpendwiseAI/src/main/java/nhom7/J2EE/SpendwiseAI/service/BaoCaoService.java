@@ -4,7 +4,8 @@ import lombok.RequiredArgsConstructor;
 import nhom7.J2EE.SpendwiseAI.repository.GiaoDichRepository;
 import nhom7.J2EE.SpendwiseAI.repository.NguoiDungRepository;
 import org.springframework.stereotype.Service;
-
+import nhom7.J2EE.SpendwiseAI.entity.GiaoDich;
+import nhom7.J2EE.SpendwiseAI.entity.NguoiDung;
 import java.io.ByteArrayInputStream;
 import java.time.LocalDateTime;
 import java.util.List;

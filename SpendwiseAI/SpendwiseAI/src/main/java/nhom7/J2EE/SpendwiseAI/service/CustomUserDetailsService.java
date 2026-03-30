@@ -22,10 +22,15 @@ public class CustomUserDetailsService implements UserDetailsService {
         NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng: " + email));
 
+        String role = nguoiDung.getVaiTro();
+        if (role == null || role.isEmpty()) {
+            role = "user";
+        }
+
         return new User(
                 nguoiDung.getEmail(),
                 nguoiDung.getMatKhauHash(),
-                List.of(new SimpleGrantedAuthority("ROLE_" + nguoiDung.getVaiTro().toUpperCase()))
+                List.of(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
         );
     }
 }

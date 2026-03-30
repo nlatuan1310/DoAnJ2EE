@@ -58,5 +58,22 @@ public interface GiaoDichRepository extends JpaRepository<GiaoDich, UUID>, JpaSp
            "GROUP BY g.danhMuc.tenDanhMuc ORDER BY SUM(g.soTien) DESC")
     List<Object[]> findTopExpenseCategories(@Param("userId") UUID userId,
                                             @Param("fromDate") LocalDateTime fromDate);
+
+    // === Admin System-wide Statistics ===
+    @Query("SELECT COALESCE(SUM(g.soTien), 0) FROM GiaoDich g")
+    BigDecimal tongLuanChuyenHeThong();
+
+    @Query("SELECT COUNT(DISTINCT g.nguoiDung.id) FROM GiaoDich g WHERE g.ngayGiaoDich >= :fromDate")
+    long countDistinctActiveUsers(@Param("fromDate") LocalDateTime fromDate);
+
+    long countByNgayGiaoDichBetween(LocalDateTime tuNgay, LocalDateTime denNgay);
+
+    @Query("SELECT FUNCTION('TO_CHAR', g.ngayGiaoDich, 'YYYY-MM'), COUNT(g) FROM GiaoDich g " +
+           "WHERE g.ngayGiaoDich >= :fromDate GROUP BY FUNCTION('TO_CHAR', g.ngayGiaoDich, 'YYYY-MM') " +
+           "ORDER BY FUNCTION('TO_CHAR', g.ngayGiaoDich, 'YYYY-MM')")
+    List<Object[]> countGiaoDichTheoThang(@Param("fromDate") LocalDateTime fromDate);
+
+    @Query("SELECT g FROM GiaoDich g ORDER BY g.ngayTao DESC")
+    List<GiaoDich> findRecentGiaoDich(org.springframework.data.domain.Pageable pageable);
 }
 

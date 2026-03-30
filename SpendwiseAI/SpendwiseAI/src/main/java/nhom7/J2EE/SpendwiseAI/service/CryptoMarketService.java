@@ -15,8 +15,8 @@ public class CryptoMarketService {
     @Value("${crypto.exchange-rate.usd-to-vnd:25400}")
     private double usdTovndRate;
 
-    public CryptoMarketService() {
-        this.restTemplate = new RestTemplate();
+    public CryptoMarketService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
     }
 
     /**

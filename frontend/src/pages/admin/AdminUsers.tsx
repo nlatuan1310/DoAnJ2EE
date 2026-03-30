@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Search, Loader2, Trash2, ShieldAlert } from "lucide-react"
+import { Search, Loader2, Trash2, ShieldAlert, Shield, ShieldOff, Lock, Unlock, FileSpreadsheet } from "lucide-react"
 import api from "@/services/api"
+import { adminUserApi } from "@/services/adminService"
 
 interface User {
   id: string
@@ -9,6 +10,7 @@ interface User {
   hoVaTen: string
   dienThoai: string
   vaiTro: string
+  trangThai: boolean
   ngayTao: string
 }
 
@@ -17,6 +19,9 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [error, setError] = useState<string | null>(null)
+  
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const fetchUsers = async () => {
     setLoading(true)
@@ -57,13 +62,85 @@ export default function AdminUsers() {
     }
   }
 
+  const handleToggleRole = async (user: User) => {
+    const newRole = user.vaiTro === 'admin' ? 'user' : 'admin';
+    const action = newRole === 'admin' ? 'Cấp quyền Quản trị viên' : 'Gỡ quyền Quản trị viên';
+    if (!window.confirm(`Thao tác: ${action} cho tài khoản ${user.email}?`)) return;
+    
+    try {
+      await adminUserApi.doiVaiTro(user.id, newRole);
+      setUsers(users.map(u => u.id === user.id ? { ...u, vaiTro: newRole } : u));
+    } catch (err: any) {
+      alert("Lỗi đổi quyền: " + (err.response?.data?.message || err.message))
+    }
+  }
+
+  const handleToggleStatus = async (user: User) => {
+    const newStatus = !user.trangThai;
+    const action = newStatus ? 'Mở khóa' : 'Khóa';
+    if (!window.confirm(`Bạn có muốn ${action} tài khoản ${user.email}?`)) return;
+    
+    try {
+      await adminUserApi.doiTrangThai(user.id, newStatus);
+      setUsers(users.map(u => u.id === user.id ? { ...u, trangThai: newStatus } : u));
+    } catch (err: any) {
+      alert("Lỗi thay đổi trạng thái: " + (err.response?.data?.message || err.message))
+    }
+  }
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.xlsx')) {
+        alert("Chỉ chấp nhận file Excel (.xlsx)");
+        return;
+    }
+
+    setUploading(true);
+    try {
+        const resp = await adminUserApi.importExcel(file);
+        const data = resp.data;
+        if (data.success) {
+            alert(`Import thành công ${data.importedCount} tài khoản.\nPassword mặc định: SpendWise@2026\n\nLỗi: ${data.errors.length}`);
+            fetchUsers();
+        } else {
+            alert("Import thất bại: " + data.message);
+        }
+    } catch (err: any) {
+        alert("Lỗi hệ thống khi import: " + (err.response?.data?.message || err.message));
+    } finally {
+        setUploading(false);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Quản lý Người dùng</h1>
-          <p className="text-sm text-slate-500 mt-1">Danh sách thành viên đăng ký sử dụng hệ thống</p>
+          <p className="text-sm text-slate-500 mt-1">Danh sách thành viên và phân quyền hệ thống</p>
+        </div>
+        <div className="flex gap-2">
+            <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileUpload} 
+                accept=".xlsx" 
+                className="hidden" 
+            />
+            <button 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+            >
+                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
+                Import Excel
+            </button>
         </div>
       </div>
 
@@ -98,7 +175,7 @@ export default function AdminUsers() {
                 <thead>
                   <tr className="bg-slate-50/50 border-b border-slate-100">
                     <th className="text-left px-6 py-3 font-semibold text-slate-500">Người dùng</th>
-                    <th className="text-left px-6 py-3 font-semibold text-slate-500">Vai trò</th>
+                    <th className="text-left px-6 py-3 font-semibold text-slate-500">Vai trò / Trạng thái</th>
                     <th className="text-left px-6 py-3 font-semibold text-slate-500">SĐT</th>
                     <th className="text-left px-6 py-3 font-semibold text-slate-500">Ngày tham gia</th>
                     <th className="text-right px-6 py-3 font-semibold text-slate-500">Thao tác</th>
@@ -106,24 +183,33 @@ export default function AdminUsers() {
                 </thead>
                 <tbody>
                   {filteredUsers.map((user) => (
-                    <tr key={user.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                    <tr key={user.id} className={`border-b border-slate-50 transition-colors ${!user.trangThai ? 'bg-slate-50 opacity-60' : 'hover:bg-slate-50/50'}`}>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-bold text-xs uppercase">
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs uppercase ${!user.trangThai ? 'bg-slate-200 text-slate-400' : 'bg-violet-100 text-violet-600'}`}>
                             {user.hoVaTen ? user.hoVaTen.charAt(0) : "U"}
                           </div>
                           <div>
-                            <p className="font-medium text-slate-800">{user.hoVaTen || "Người dùng ẩn danh"}</p>
+                            <p className="font-medium text-slate-800">{user.hoVaTen || "Người dùng ẩn danh"}{!user.trangThai && " (Đã khóa)"}</p>
                             <p className="text-xs text-slate-500">{user.email}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded-md text-[11px] font-medium uppercase tracking-wider
-                          ${user.vaiTro === "ADMIN" || user.vaiTro === "admin" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}
-                        `}>
-                          {user.vaiTro}
-                        </span>
+                      <td className="px-6 py-4 min-w-[200px]">
+                        <div className="flex gap-2 items-center">
+                            <span className={`px-2 py-1 flex items-center gap-1 rounded-md text-[11px] font-medium uppercase tracking-wider
+                            ${user.vaiTro === "ADMIN" || user.vaiTro === "admin" ? "bg-amber-100 text-amber-700" : "bg-blue-50 text-blue-600"}
+                            `}>
+                            {user.vaiTro === "admin" ? <Shield className="w-3 h-3"/> : <ShieldOff className="w-3 h-3"/>}
+                            {user.vaiTro}
+                            </span>
+
+                            <span className={`px-2 py-1 rounded-md text-[11px] font-medium uppercase tracking-wider
+                            ${user.trangThai ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}
+                            `}>
+                            {user.trangThai ? "Active" : "Locked"}
+                            </span>
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-slate-500 text-sm">
                         {user.dienThoai || "—"}
@@ -131,11 +217,25 @@ export default function AdminUsers() {
                       <td className="px-6 py-4 text-slate-500 text-sm">
                         {user.ngayTao ? new Date(user.ngayTao).toLocaleDateString("vi-VN") : "—"}
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 text-right flex justify-end gap-1">
+                        <button
+                          onClick={() => handleToggleStatus(user)}
+                          className="p-1.5 rounded-md border border-slate-200 text-slate-500 hover:bg-slate-100 transition-colors"
+                          title={user.trangThai ? "Khóa tài khoản" : "Mở khóa tài khoản"}
+                        >
+                          {user.trangThai ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={() => handleToggleRole(user)}
+                          className="p-1.5 rounded-md border border-slate-200 text-slate-500 hover:bg-slate-100 transition-colors"
+                          title="Đổi vai trò"
+                        >
+                          <ShieldAlert className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => handleDelete(user.id, user.hoVaTen)}
-                          className="p-1.5 rounded-md border border-rose-200 text-rose-500 hover:bg-rose-50 transition-colors inline-block mr-2"
-                          title="Xoá tài khoản"
+                          className="p-1.5 rounded-md border border-rose-200 text-rose-500 hover:bg-rose-50 transition-colors"
+                          title="Xoá vĩnh viễn"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

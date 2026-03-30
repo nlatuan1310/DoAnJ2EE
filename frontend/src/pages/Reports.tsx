@@ -111,6 +111,7 @@ export default function Reports() {
   const [pendingSingleId, setPendingSingleId] = useState<string | null>(null)
   const [selectedTransaction, setSelectedTransaction] = useState<GiaoDich | null>(null)
   const [showAnalysisModal, setShowAnalysisModal] = useState(false)
+  const [isFetching, setIsFetching] = useState(false)
 
 
   // Advanced Filters for Single Transactions
@@ -220,6 +221,7 @@ export default function Reports() {
   const fetchTransactions = async () => {
     const uid = getCurrentUserId();
     if (!uid) return;
+    setIsFetching(true);
     try {
       const res = await api.get(`/giao-dich/nguoi-dung/${uid}`);
       let list = Array.isArray(res.data) ? res.data : [];
@@ -237,6 +239,8 @@ export default function Reports() {
       setTransactions(list);
     } catch (err) {
       console.error("Lỗi khi tải giao dịch:", err);
+    } finally {
+      setIsFetching(false);
     }
   };
 
@@ -255,7 +259,8 @@ export default function Reports() {
 
   // Data processing for charts
   const chartData = useMemo(() => {
-    if (!filteredList.length) return { categoryData: [], dailyTrendData: [] };
+    // We remove the early return to allow dailyTrendData to be initialized even if list is empty
+    // but categoryData will be empty.
 
     // Group by category
     const categoryStats: Record<string, number> = {};
@@ -970,7 +975,12 @@ export default function Reports() {
             </CardTitle>
           </CardHeader>
           <CardContent className="h-[300px] w-full pt-4">
-            {chartData.dailyTrendData.length > 0 ? (
+            {isFetching ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-300">
+                <Loader2 className="w-8 h-8 animate-spin mb-2" />
+                <p className="text-xs">Đang tải dữ liệu biểu đồ...</p>
+              </div>
+            ) : filteredList.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData.dailyTrendData}>
                   <defs>
@@ -995,10 +1005,10 @@ export default function Reports() {
                     axisLine={false} 
                     tickLine={false} 
                     tick={{fontSize: 10, fill: '#94a3b8'}}
-                    tickFormatter={(val) => `${val/1000}k`}
+                    tickFormatter={(val) => val >= 1000 ? `${val/1000}k` : val.toString()}
                   />
                   <RechartsTooltip 
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0(0 / 0.1)' }}
                     formatter={(val: number) => fmtVND(val)}
                   />
                   <Area type="monotone" dataKey="thu" name="Thu nhập" stroke="#10b981" fillOpacity={1} fill="url(#colorThu)" strokeWidth={2} />
@@ -1006,10 +1016,10 @@ export default function Reports() {
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-                <div className="h-full flex flex-col items-center justify-center text-slate-300">
-                  <Loader2 className="w-8 h-8 animate-spin mb-2" />
-                  <p className="text-xs">Đang tải dữ liệu biểu đồ...</p>
-                </div>
+              <div className="h-full flex flex-col items-center justify-center text-slate-300 italic text-xs text-center px-6">
+                <AlertCircle className="w-8 h-8 mb-2 opacity-20" />
+                Không có dữ liệu thu chi trong khoảng thời gian này.
+              </div>
             )}
           </CardContent>
         </Card>
@@ -1023,7 +1033,12 @@ export default function Reports() {
             </CardTitle>
           </CardHeader>
           <CardContent className="h-[300px] w-full pt-4 relative">
-            {chartData.categoryData.length > 0 ? (
+            {isFetching ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-300">
+                <Loader2 className="w-4 h-4 animate-spin mb-2" />
+                <p className="text-[10px]">Đang xử lý...</p>
+              </div>
+            ) : chartData.categoryData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie

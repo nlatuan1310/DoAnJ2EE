@@ -1,15 +1,14 @@
-import { Outlet } from "react-router-dom"
+import { Navigate, Outlet } from "react-router-dom"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function AdminRoute() {
-  // Lấy vai trò (role) từ localStorage
-  // const role = localStorage.getItem("role")
-
-  // Tạm thời cho phép bypass luôn để thiết kế UI
-  const isAdmin = true;
+  const { user } = useAuth()
+  
+  const isAdmin = user?.vaiTro === "admin" || user?.vaiTro === "ADMIN";
 
   if (!isAdmin) {
     // Nếu không phải admin, đá về trang chủ
-    // return <Navigate to="/" replace />
+    return <Navigate to="/" replace />
   }
 
   // Nếu là admin, render component con (giao diện Admin)
