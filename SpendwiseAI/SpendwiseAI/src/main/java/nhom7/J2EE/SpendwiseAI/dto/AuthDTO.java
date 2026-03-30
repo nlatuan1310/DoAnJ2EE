@@ -108,6 +108,14 @@ public class AuthDTO {
         private boolean enable;
     }
 
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class UpdateReportScheduledRequest {
+        private boolean enabled;
+        private String email;
+    }
+
     // ===== RESPONSE =====
 
     @Data
@@ -139,5 +147,10 @@ public class AuthDTO {
         private String tienTe;
         @com.fasterxml.jackson.annotation.JsonProperty("is2faEnabled")
         private boolean is2faEnabled;
+
+        @com.fasterxml.jackson.annotation.JsonProperty("isScheduledReportsEnabled")
+        private boolean isScheduledReportsEnabled;
+
+        private String scheduledReportEmail;
     }
 }

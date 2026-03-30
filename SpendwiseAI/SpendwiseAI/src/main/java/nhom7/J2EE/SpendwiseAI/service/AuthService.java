@@ -135,6 +135,8 @@ public class AuthService {
                 .anhDaiDien(nguoiDung.getAnhDaiDien())
                 .tienTe(nguoiDung.getTienTe())
                 .is2faEnabled(nguoiDung.is2faEnabled())
+                .isScheduledReportsEnabled(nguoiDung.isScheduledReportsEnabled())
+                .scheduledReportEmail(nguoiDung.getScheduledReportEmail())
                 .build();
     }
 
@@ -244,6 +246,14 @@ public class AuthService {
         NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
         nguoiDung.set2faEnabled(enable);
+        nguoiDungRepository.save(nguoiDung);
+    }
+
+    public void updateReportScheduled(String email, AuthDTO.UpdateReportScheduledRequest request) {
+        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+        nguoiDung.setIsScheduledReportsEnabled(request.isEnabled());
+        nguoiDung.setScheduledReportEmail(request.getEmail());
         nguoiDungRepository.save(nguoiDung);
     }
 }

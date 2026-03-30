@@ -4,6 +4,9 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { Outlet, useNavigate } from "react-router-dom"
 import { Search, Bell, Info, Sun, LogOut, User, CheckCheck, AlertTriangle } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
+
+import LandingPage from "@/pages/LandingPage"
+
 import {
   layThongBao,
   demChuaDoc,
@@ -15,6 +18,9 @@ import {
 export default function MainLayout() {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+
+
+
 
   /* ── Notification state ── */
   const [notifications, setNotifications] = useState<ThongBao[]>([]);
@@ -69,6 +75,18 @@ export default function MainLayout() {
     }
   };
 
+
+  const handleLogout = () => {
+    // Điều hướng ngay lập tức về trang landing page
+    navigate("/", { replace: true });
+    
+    // Xóa state đăng nhập trong hàng đợi (setTimeout) 
+    // để tránh việc React Router render <Navigate to="/login" /> ở trang cũ
+    setTimeout(() => {
+      logout();
+    }, 10);
+  }
+
   const formatTime = (dateStr: string) => {
     const d = new Date(dateStr);
     const now = new Date();
@@ -79,10 +97,13 @@ export default function MainLayout() {
     return `${Math.floor(diff / 1440)} ngày trước`;
   };
 
+    if (!isAuthenticated) {
+    return <LandingPage />;
+  }
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset className="bg-slate-100 min-w-0 flex-1 flex flex-col min-h-screen transition-[margin,width] duration-200 ease-linear">
+      <SidebarInset className="bg-slate-100 min-w-0 flex-1 flex flex-col h-screen overflow-hidden transition-[margin,width] duration-200 ease-linear">
         
         {/* Top Header */}
         <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-end border-b border-slate-200 bg-white px-4 sm:px-6">
@@ -210,7 +231,7 @@ export default function MainLayout() {
                 </button>
                 
                 <button 
-                  onClick={logout}
+                  onClick={handleLogout}
                   title="Đăng xuất"
                   className="p-2 rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                 >
@@ -229,9 +250,9 @@ export default function MainLayout() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-100">
           <Outlet />
-        </main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   )

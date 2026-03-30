@@ -158,6 +158,26 @@ export const financialAdvisorApi = {
     api.delete(`/co-van-ai/lich-su/${id}`),
 };
 
+
+// ===== Statistics API (Thống kê - dùng cho Analytics.tsx) =====
+
+export const thongKeApi = {
+  getCategoryStats: (start: string, end: string, nguoiDungId?: string) => {
+    const uid = nguoiDungId || getCurrentUserId();
+    return api.get(`/thong-ke/category?nguoiDungId=${uid}&start=${start}&end=${end}`);
+  },
+
+  getTagStats: (start: string, end: string, nguoiDungId?: string) => {
+    const uid = nguoiDungId || getCurrentUserId();
+    return api.get(`/thong-ke/tag?nguoiDungId=${uid}&start=${start}&end=${end}`);
+  },
+
+  getTrend: (start: string, end: string, nguoiDungId?: string) => {
+    const uid = nguoiDungId || getCurrentUserId();
+    return api.get(`/thong-ke/trend?nguoiDungId=${uid}&start=${start}&end=${end}`);
+  }
+  };
+
 // ===== Crypto & Investment API =====
 
 export const cryptoApi = {
@@ -216,6 +236,7 @@ export const viTienApi = {
   /** Lấy chi tiết một ví */
   getById: (id: string) => {
     return api.get(`/vi-tien/${id}`);
+
   },
 };
 
