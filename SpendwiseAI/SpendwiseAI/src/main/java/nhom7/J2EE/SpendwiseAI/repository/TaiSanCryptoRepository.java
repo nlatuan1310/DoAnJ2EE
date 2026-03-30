@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface TaiSanCryptoRepository extends JpaRepository<TaiSanCrypto, Integer> {
 
     Optional<TaiSanCrypto> findByKyHieu(String kyHieu);
+
+    Optional<TaiSanCrypto> findByCoingeckoId(String coingeckoId);
 }

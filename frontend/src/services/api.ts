@@ -158,4 +158,65 @@ export const financialAdvisorApi = {
     api.delete(`/co-van-ai/lich-su/${id}`),
 };
 
+// ===== Crypto & Investment API =====
+
+export const cryptoApi = {
+  /** Lấy danh mục đầu tư của người dùng */
+  getPortfolio: (nguoiDungId?: string) => {
+    const uid = nguoiDungId || getCurrentUserId();
+    return api.get(`/crypto/danh-muc/nguoi-dung/${uid}`);
+  },
+
+  /** Lấy giá thị trường hiện tại (CoinGecko) */
+  getMarketPrices: (symbols: string) => {
+    return api.get(`/crypto/market-prices?symbols=${symbols}`);
+  },
+
+  /** Lấy danh sách các đồng coin được hỗ trợ */
+  getAvailableAssets: () => {
+    return api.get('/tai-san-crypto');
+  },
+
+  /** Thêm coin mới vào danh mục */
+  addCoin: (taiSanId: string, data: any, nguoiDungId?: string) => {
+    const uid = nguoiDungId || getCurrentUserId();
+    return api.post(`/crypto/danh-muc/${uid}/${taiSanId}`, data);
+  },
+
+  /** Xóa coin khỏi danh mục */
+  deleteCoin: (id: string) => {
+    return api.delete(`/crypto/danh-muc/${id}`);
+  },
+
+  /** Lấy lịch sử giao dịch của một đồng coin trong danh mục */
+  getTransactions: (danhMucId: string) => {
+    return api.get(`/crypto/giao-dich/danh-muc/${danhMucId}`);
+  },
+
+  /** Ghi lệnh giao dịch mới (Mua/Bán) */
+  addTransaction: (danhMucId: string, data: any) => {
+    return api.post(`/crypto/giao-dich/${danhMucId}`, data);
+  },
+
+  /** Xóa một lệnh giao dịch */
+  deleteTransaction: (id: string) => {
+    return api.delete(`/crypto/giao-dich/${id}`);
+  },
+};
+
+// ===== Wallet API (Vi Tien) =====
+
+export const viTienApi = {
+  /** Lấy danh sách ví của người dùng */
+  getAll: (nguoiDungId?: string) => {
+    const uid = nguoiDungId || getCurrentUserId();
+    return api.get(`/vi-tien/nguoi-dung/${uid}`);
+  },
+
+  /** Lấy chi tiết một ví */
+  getById: (id: string) => {
+    return api.get(`/vi-tien/${id}`);
+  },
+};
+
 export default api;

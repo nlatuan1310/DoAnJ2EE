@@ -8,6 +8,7 @@ import nhom7.J2EE.SpendwiseAI.repository.DanhMucCryptoRepository;
 import nhom7.J2EE.SpendwiseAI.repository.GiaoDichCryptoRepository;
 import nhom7.J2EE.SpendwiseAI.repository.NguoiDungRepository;
 import nhom7.J2EE.SpendwiseAI.repository.TaiSanCryptoRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,9 @@ public class CryptoService {
     private final TaiSanCryptoRepository taiSanCryptoRepository;
     private final ViTienService viTienService;
     private final nhom7.J2EE.SpendwiseAI.repository.ViTienRepository viTienRepository;
+    
+    @Value("${crypto.exchange-rate.usd-to-vnd:25400}")
+    private double usdVndRate;
 
     public CryptoService(DanhMucCryptoRepository danhMucCryptoRepository,
                          GiaoDichCryptoRepository giaoDichCryptoRepository,
@@ -69,9 +73,15 @@ public class CryptoService {
         history.sort((a,b) -> a.getNgayGiaoDich().compareTo(b.getNgayGiaoDich()));
 
         for (GiaoDichCrypto tx : history) {
+            BigDecimal txGia = tx.getGia();
+            // CHUẨN HÓA VỀ VND: Nếu giao dịch là USD, quy đổi sang VND để tính Avg Price đồng nhất
+            if ("USD".equalsIgnoreCase(tx.getTienTe())) {
+                txGia = txGia.multiply(BigDecimal.valueOf(usdVndRate));
+            }
+
             if ("buy".equalsIgnoreCase(tx.getLoai())) {
                 BigDecimal oldTotalCost = currentQty.multiply(avgPrice);
-                BigDecimal newTxCost = tx.getSoLuong().multiply(tx.getGia());
+                BigDecimal newTxCost = tx.getSoLuong().multiply(txGia);
                 currentQty = currentQty.add(tx.getSoLuong());
                 if (currentQty.compareTo(BigDecimal.ZERO) > 0) {
                     avgPrice = oldTotalCost.add(newTxCost).divide(currentQty, 8, RoundingMode.HALF_UP);
@@ -79,7 +89,6 @@ public class CryptoService {
             } else if ("sell".equalsIgnoreCase(tx.getLoai())) {
                 currentQty = currentQty.subtract(tx.getSoLuong());
                 if (currentQty.compareTo(BigDecimal.ZERO) <= 0) {
-                    currentQty = BigDecimal.ZERO;
                     avgPrice = BigDecimal.ZERO;
                 }
             }
@@ -102,7 +111,34 @@ public class CryptoService {
         if (duLieu.getSoLuong() == null) duLieu.setSoLuong(BigDecimal.ZERO);
         if (duLieu.getGiaMuaTrungBinh() == null) duLieu.setGiaMuaTrungBinh(BigDecimal.ZERO);
 
-        return danhMucCryptoRepository.save(duLieu);
+        // Lưu danh mục trước
+        DanhMucCrypto savedDm = danhMucCryptoRepository.save(duLieu);
+
+        // NẾU CÓ SỐ LƯỢNG BAN ĐẦU > 0, TỰ ĐỘNG TẠO GIAO DỊCH 'BUY' ĐỂ LỊCH SỬ CHÍNH XÁC
+        if (savedDm.getSoLuong().compareTo(BigDecimal.ZERO) > 0) {
+            GiaoDichCrypto initialTx = GiaoDichCrypto.builder()
+                    .danhMucCrypto(savedDm)
+                    .loai("buy")
+                    .soLuong(savedDm.getSoLuong())
+                    .gia(savedDm.getGiaMuaTrungBinh())
+                    .ngayGiaoDich(LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0)) 
+                    .viId(duLieu.getViId()) 
+                    .tienTe(duLieu.getTienTe()) // Set loại tiền từ frontend
+                    .build();
+
+            // Cập nhật ví tiền nếu có link viId (Khấu trừ vốn đầu tư ban đầu)
+            if (initialTx.getViId() != null) {
+                BigDecimal totalAmount = initialTx.getSoLuong().multiply(initialTx.getGia());
+                capNhatSoDuVi(initialTx.getViId(), totalAmount, initialTx.getTienTe(), "buy");
+            }
+
+            giaoDichCryptoRepository.save(initialTx);
+        }
+
+        // Tính toán lại Portfolio (thực ra không cần nếu vừa tạo nhưng để chắc chắn)
+        tinhLaiPortfolio(savedDm.getId());
+
+        return savedDm;
     }
 
     @Transactional
@@ -130,18 +166,34 @@ public class CryptoService {
         return giaoDichCryptoRepository.findByDanhMucCryptoId(danhMucId);
     }
 
-    private void capNhatSoDuVi(UUID viId, BigDecimal amount, String type) {
+    private void capNhatSoDuVi(UUID viId, BigDecimal amount, String txCurrency, String type) {
         if (viId == null) return;
         nhom7.J2EE.SpendwiseAI.entity.ViTien vi = viTienService.layTheoId(viId);
         
-        // Cập nhật số dư: Mua thì trừ, Bán thì cộng
-        if ("buy".equalsIgnoreCase(type)) {
-            if (vi.getSoDu().compareTo(amount) < 0) {
-                throw new RuntimeException("Số dư ví " + vi.getTenVi() + " không đủ để thực hiện giao dịch.");
+        String walletCurrency = vi.getTienTe() != null ? vi.getTienTe().toUpperCase() : "VND";
+        String transactionCurrency = txCurrency != null ? txCurrency.toUpperCase() : "USD";
+        
+        BigDecimal amountToUpdate = amount;
+
+        // Xử lý quy đổi tỷ giá
+        if (!walletCurrency.equals(transactionCurrency)) {
+            if ("USD".equals(transactionCurrency) && "VND".equals(walletCurrency)) {
+                // Nhập giá USD, ví là VND -> Nhân tỷ giá
+                amountToUpdate = amount.multiply(BigDecimal.valueOf(usdVndRate)).setScale(0, RoundingMode.HALF_UP);
+            } else if ("VND".equals(transactionCurrency) && "USD".equals(walletCurrency)) {
+                // Nhập giá VND, ví là USD -> Chia tỷ giá
+                amountToUpdate = amount.divide(BigDecimal.valueOf(usdVndRate), 2, RoundingMode.HALF_UP);
             }
-            vi.setSoDu(vi.getSoDu().subtract(amount));
+        }
+
+        if ("buy".equalsIgnoreCase(type)) {
+            if (vi.getSoDu().compareTo(amountToUpdate) < 0) {
+                throw new RuntimeException("Số dư ví (" + vi.getTenVi() + ") không đủ. Cần: " + 
+                        amountToUpdate + " " + walletCurrency + ", Hiện có: " + vi.getSoDu() + " " + walletCurrency);
+            }
+            vi.setSoDu(vi.getSoDu().subtract(amountToUpdate));
         } else {
-            vi.setSoDu(vi.getSoDu().add(amount));
+            vi.setSoDu(vi.getSoDu().add(amountToUpdate));
         }
         viTienRepository.save(vi);
     }
@@ -163,7 +215,7 @@ public class CryptoService {
         // Cập nhật ví tiền nếu có link viId
         if (duLieu.getViId() != null) {
             BigDecimal totalAmount = duLieu.getSoLuong().multiply(duLieu.getGia());
-            capNhatSoDuVi(duLieu.getViId(), totalAmount, duLieu.getLoai());
+            capNhatSoDuVi(duLieu.getViId(), totalAmount, duLieu.getTienTe(), duLieu.getLoai());
         }
 
         // Lưu giao dịch trước khi tính lại
@@ -186,7 +238,7 @@ public class CryptoService {
             BigDecimal totalAmount = tx.getSoLuong().multiply(tx.getGia());
             // Nếu là Buy, xóa đi nghĩa là cộng lại tiền. Nếu là Sell, xóa đi nghĩa là trừ lại tiền.
             String reverseType = "buy".equalsIgnoreCase(tx.getLoai()) ? "sell" : "buy";
-            capNhatSoDuVi(tx.getViId(), totalAmount, reverseType);
+            capNhatSoDuVi(tx.getViId(), totalAmount, tx.getTienTe(), reverseType);
         }
 
         giaoDichCryptoRepository.deleteById(id);
