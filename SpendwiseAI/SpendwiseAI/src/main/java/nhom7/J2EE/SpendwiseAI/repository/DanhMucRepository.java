@@ -13,4 +13,6 @@ public interface DanhMucRepository extends JpaRepository<DanhMuc, Integer> {
     List<DanhMuc> findByNguoiDungId(UUID nguoiDungId);
 
     List<DanhMuc> findByNguoiDungIdAndLoai(UUID nguoiDungId, String loai);
+
+    List<DanhMuc> findByIsSystemTrue();
 }

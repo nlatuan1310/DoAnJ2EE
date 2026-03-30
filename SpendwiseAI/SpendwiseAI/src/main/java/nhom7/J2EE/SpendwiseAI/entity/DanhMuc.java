@@ -30,4 +30,8 @@ public class DanhMuc {
 
     @Column(name = "mau_sac")
     private String mauSac;
+
+    @Column(name = "is_system")
+    @Builder.Default
+    private Boolean isSystem = false; // true = danh mục hệ thống (admin quản lý)
 }

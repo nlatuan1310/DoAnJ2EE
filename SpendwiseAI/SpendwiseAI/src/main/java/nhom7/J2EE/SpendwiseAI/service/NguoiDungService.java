@@ -2,6 +2,7 @@ package nhom7.J2EE.SpendwiseAI.service;
 
 import nhom7.J2EE.SpendwiseAI.entity.NguoiDung;
 import nhom7.J2EE.SpendwiseAI.repository.NguoiDungRepository;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,10 +13,12 @@ public class NguoiDungService {
 
     private final NguoiDungRepository nguoiDungRepository;
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+    private final NhatKyAdminService nhatKyAdminService;
 
-    public NguoiDungService(NguoiDungRepository nguoiDungRepository, org.springframework.jdbc.core.JdbcTemplate jdbcTemplate) {
+    public NguoiDungService(NguoiDungRepository nguoiDungRepository, org.springframework.jdbc.core.JdbcTemplate jdbcTemplate, @Lazy NhatKyAdminService nhatKyAdminService) {
         this.nguoiDungRepository = nguoiDungRepository;
         this.jdbcTemplate = jdbcTemplate;
+        this.nhatKyAdminService = nhatKyAdminService;
     }
 
     public List<NguoiDung> layTatCa() {
@@ -57,5 +60,34 @@ public class NguoiDungService {
         jdbcTemplate.update("DELETE FROM vi_tien WHERE chu_so_huu_id = ?", id);
         
         nguoiDungRepository.deleteById(id);
+        
+        try {
+            nhatKyAdminService.ghiNhatKy("XOA_NGUOI_DUNG", "nguoi_dung", id);
+        } catch (Exception e) {}
+    }
+
+    public NguoiDung doiVaiTro(UUID id, String vaiTroMoi) {
+        NguoiDung nguoiDung = layTheoId(id);
+        nguoiDung.setVaiTro(vaiTroMoi);
+        NguoiDung saved = nguoiDungRepository.save(nguoiDung);
+        
+        try {
+            nhatKyAdminService.ghiNhatKy("DOI_VAI_TRO_" + vaiTroMoi.toUpperCase(), "nguoi_dung", id);
+        } catch (Exception e) {}
+        
+        return saved;
+    }
+
+    public NguoiDung doiTrangThai(UUID id, boolean trangThai) {
+        NguoiDung nguoiDung = layTheoId(id);
+        nguoiDung.setTrangThai(trangThai);
+        NguoiDung saved = nguoiDungRepository.save(nguoiDung);
+        
+        try {
+            String hanhDong = trangThai ? "MO_KHOA_TAI_KHOAN" : "KHOA_TAI_KHOAN";
+            nhatKyAdminService.ghiNhatKy(hanhDong, "nguoi_dung", id);
+        } catch (Exception e) {}
+        
+        return saved;
     }
 }
