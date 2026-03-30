@@ -125,7 +125,7 @@ export default function GoalDetail() {
         viTien: goalData.viTien ? { id: goalData.viTien.id, tenVi: goalData.viTien.tenVi, soDu: goalData.viTien.soDu } : undefined,
         color: "violet",
       })
-      setContributions(contribData.map((c) => ({
+      setContributions(contribData.map((c: any) => ({
         id: c.id,
         soTien: c.soTien,
         ngayTao: c.ngayTao,

@@ -32,8 +32,7 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogDescription, 
-  DialogFooter 
+  DialogDescription,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { danhMucApi, theTagApi, getCurrentUserId } from "@/services/api"
