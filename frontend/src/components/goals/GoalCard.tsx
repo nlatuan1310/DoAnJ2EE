@@ -16,7 +16,7 @@ export interface SavingGoal {
   soTienHienTai: number
   ngayMucTieu: string
   ngayTao: string
-  viTien?: { id: string; tenVi: string; soDu?: number }
+  viTien?: { id: string; tenVi: string }
   color?: string
 }
 
