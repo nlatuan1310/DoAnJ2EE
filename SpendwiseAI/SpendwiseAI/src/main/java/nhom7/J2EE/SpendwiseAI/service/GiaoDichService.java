@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -22,6 +23,9 @@ public class GiaoDichService {
     private final NguoiDungRepository nguoiDungRepository;
     private final DanhMucRepository danhMucRepository;
     private final AutoCategorizationService autoCategorizationService;
+    private final HoaDonGiaoDichRepository hoaDonGiaoDichRepository;
+    private final NganSachRepository nganSachRepository;
+    private final ThongBaoService thongBaoService;
     private final ViTienService viTienService;
 
     public GiaoDichService(GiaoDichRepository giaoDichRepository,
@@ -29,12 +33,18 @@ public class GiaoDichService {
                            NguoiDungRepository nguoiDungRepository,
                            DanhMucRepository danhMucRepository,
                            AutoCategorizationService autoCategorizationService,
+                           HoaDonGiaoDichRepository hoaDonGiaoDichRepository,
+                           NganSachRepository nganSachRepository,
+                           ThongBaoService thongBaoService) {
                            ViTienService viTienService) {
         this.giaoDichRepository = giaoDichRepository;
         this.viTienRepository = viTienRepository;
         this.nguoiDungRepository = nguoiDungRepository;
         this.danhMucRepository = danhMucRepository;
         this.autoCategorizationService = autoCategorizationService;
+        this.hoaDonGiaoDichRepository = hoaDonGiaoDichRepository;
+        this.nganSachRepository = nganSachRepository;
+        this.thongBaoService = thongBaoService;
         this.viTienService = viTienService;
     }
 
@@ -87,7 +97,14 @@ public class GiaoDichService {
         }
         viTienRepository.save(vi);
 
-        return giaoDichRepository.save(giaoDich);
+        GiaoDich saved = giaoDichRepository.save(giaoDich);
+
+        // Kiểm tra ngân sách sau khi tạo giao dịch chi tiêu
+        if ("expense".equalsIgnoreCase(giaoDich.getLoai())) {
+            kiemTraNganSach(nguoiDung, danhMucId);
+        }
+
+        return saved;
     }
 
     /**
@@ -108,12 +125,14 @@ public class GiaoDichService {
         var suggestion = autoCategorizationService.goiYDanhMuc(
                 giaoDich.getMoTa(), giaoDich.getLoai(), nguoiDungId);
 
+        Integer danhMucId = null;
         if (suggestion != null && suggestion.getDanhMucId() != null) {
             DanhMuc danhMuc = danhMucRepository.findById(suggestion.getDanhMucId())
                     .orElse(null);
             if (danhMuc != null) {
                 giaoDich.setDanhMuc(danhMuc);
                 giaoDich.setAiCategorized(true);
+                danhMucId = danhMuc.getId();
             }
         }
 
@@ -125,7 +144,14 @@ public class GiaoDichService {
         }
         viTienRepository.save(vi);
 
-        return giaoDichRepository.save(giaoDich);
+        GiaoDich saved = giaoDichRepository.save(giaoDich);
+
+        // Kiểm tra ngân sách sau khi tạo giao dịch chi tiêu
+        if ("expense".equalsIgnoreCase(giaoDich.getLoai()) && danhMucId != null) {
+            kiemTraNganSach(nguoiDung, danhMucId);
+        }
+
+        return saved;
     }
 
     @Transactional
@@ -193,4 +219,79 @@ public class GiaoDichService {
 
         return giaoDichRepository.findAll(spec, pageable);
     }
+
+    // ========================================
+    // Hóa đơn giao dịch (Invoice line items)
+    // ========================================
+
+    /**
+     * Lưu chi tiết hóa đơn (ảnh + nội dung OCR) đính kèm giao dịch.
+     */
+    @Transactional
+    public HoaDonGiaoDich luuHoaDon(UUID giaoDichId, String anhHoaDon, String noiDungOcr) {
+        GiaoDich gd = layTheoId(giaoDichId);
+        HoaDonGiaoDich hoaDon = HoaDonGiaoDich.builder()
+                .giaoDich(gd)
+                .anhHoaDon(anhHoaDon)
+                .noiDungOcr(noiDungOcr)
+                .build();
+        return hoaDonGiaoDichRepository.save(hoaDon);
+    }
+
+    /**
+     * Lấy danh sách hóa đơn đính kèm của 1 giao dịch.
+     */
+    public List<HoaDonGiaoDich> layHoaDon(UUID giaoDichId) {
+        return hoaDonGiaoDichRepository.findByGiaoDichId(giaoDichId);
+    }
+
+    // ========================================
+    // Kiểm tra Ngân sách (Budget Alert)
+    // ========================================
+
+    /**
+     * Kiểm tra ngân sách: tính tổng chi tiêu tháng hiện tại cho danh mục,
+     * so sánh với giới hạn ngân sách. Nếu vượt -> sinh ThongBao.
+     */
+    private void kiemTraNganSach(NguoiDung nguoiDung, Integer danhMucId) {
+        try {
+            // Tìm ngân sách cho danh mục này
+            List<NganSach> danhSach = nganSachRepository
+                    .findByNguoiDungIdAndDanhMucId(nguoiDung.getId(), danhMucId);
+
+            if (danhSach.isEmpty()) return;
+
+            // Lấy ngân sách đang active (ngày hiện tại nằm trong khoảng)
+            LocalDate today = LocalDate.now();
+            for (NganSach ns : danhSach) {
+                if (ns.getNgayBatDau() != null && ns.getNgayKetThuc() != null
+                        && !today.isBefore(ns.getNgayBatDau())
+                        && !today.isAfter(ns.getNgayKetThuc())) {
+
+                    // Tính tổng chi tiêu trong khoảng ngân sách
+                    LocalDateTime startDT = ns.getNgayBatDau().atStartOfDay();
+                    LocalDateTime endDT = ns.getNgayKetThuc().atTime(23, 59, 59);
+
+                    List<GiaoDich> chiTieuList = giaoDichRepository
+                            .findByNguoiDungIdAndNgayGiaoDichBetween(
+                                    nguoiDung.getId(), startDT, endDT);
+
+                    BigDecimal tongDaChi = chiTieuList.stream()
+                            .filter(gd -> "expense".equalsIgnoreCase(gd.getLoai()))
+                            .filter(gd -> gd.getDanhMuc() != null
+                                    && gd.getDanhMuc().getId().equals(danhMucId))
+                            .map(GiaoDich::getSoTien)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                    // So sánh: nếu vượt ngân sách -> tạo thông báo
+                    if (tongDaChi.compareTo(ns.getGioiHanTien()) > 0) {
+                        thongBaoService.taoCanhBaoVuotNganSach(nguoiDung, ns, tongDaChi);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Không block giao dịch chính nếu kiểm tra ngân sách lỗi
+        }
+    }
 }
+

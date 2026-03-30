@@ -4,6 +4,7 @@ import nhom7.J2EE.SpendwiseAI.dto.ai.AutoCategorizeDTO;
 import nhom7.J2EE.SpendwiseAI.entity.GiaoDich;
 import nhom7.J2EE.SpendwiseAI.service.AutoCategorizationService;
 import nhom7.J2EE.SpendwiseAI.service.GiaoDichService;
+import nhom7.J2EE.SpendwiseAI.service.LichSuTimKiemService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,15 +24,19 @@ public class GiaoDichController {
 
     private final GiaoDichService giaoDichService;
     private final AutoCategorizationService autoCategorizationService;
+    private final LichSuTimKiemService lichSuTimKiemService;
 
     public GiaoDichController(GiaoDichService giaoDichService,
-                              AutoCategorizationService autoCategorizationService) {
+                              AutoCategorizationService autoCategorizationService,
+                              LichSuTimKiemService lichSuTimKiemService) {
         this.giaoDichService = giaoDichService;
         this.autoCategorizationService = autoCategorizationService;
+        this.lichSuTimKiemService = lichSuTimKiemService;
     }
 
     /**
      * Tìm kiếm nâng cao (Advanced Search) — phân trang + đa điều kiện.
+     * Tự động lưu lịch sử tìm kiếm khi có keyword.
      */
     @GetMapping("/tim-kiem")
     public ResponseEntity<Page<GiaoDich>> timKiemNangCao(
@@ -52,6 +57,15 @@ public class GiaoDichController {
                 ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
+
+        // Lưu lịch sử tìm kiếm nếu có keyword
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            try {
+                lichSuTimKiemService.luuLichSu(nguoiDungId, keyword, null);
+            } catch (Exception e) {
+                // Không block request chính nếu lưu lịch sử thất bại
+            }
+        }
 
         Page<GiaoDich> result = giaoDichService.timKiemNangCao(
                 nguoiDungId, keyword, loai, tuNgay, denNgay,
@@ -129,6 +143,29 @@ public class GiaoDichController {
             @RequestParam UUID viId,
             @RequestBody GiaoDich giaoDich) {
         return ResponseEntity.ok(giaoDichService.taoVoiAutoCategory(nguoiDungId, viId, giaoDich));
+    }
+
+    // =============================================
+    // Hóa đơn đính kèm giao dịch
+    // =============================================
+
+    /**
+     * Lưu chi tiết hóa đơn (ảnh + nội dung OCR) đính kèm 1 giao dịch.
+     */
+    @PostMapping("/{giaoDichId}/hoa-don")
+    public ResponseEntity<?> luuHoaDon(
+            @PathVariable UUID giaoDichId,
+            @RequestParam(required = false) String anhHoaDon,
+            @RequestParam(required = false) String noiDungOcr) {
+        return ResponseEntity.ok(giaoDichService.luuHoaDon(giaoDichId, anhHoaDon, noiDungOcr));
+    }
+
+    /**
+     * Lấy danh sách hóa đơn đính kèm của 1 giao dịch.
+     */
+    @GetMapping("/{giaoDichId}/hoa-don")
+    public ResponseEntity<?> layHoaDon(@PathVariable UUID giaoDichId) {
+        return ResponseEntity.ok(giaoDichService.layHoaDon(giaoDichId));
     }
 }
 
