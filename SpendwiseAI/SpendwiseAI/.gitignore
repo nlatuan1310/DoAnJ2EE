@@ -37,4 +37,5 @@ application-dev.yml
 .env
 
 reports_export/
+uploads/
 *.txt

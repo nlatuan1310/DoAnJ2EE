@@ -414,7 +414,7 @@ export default function Reports() {
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      alert("Lỗi khi tải lại báo cáo");
+      setMessage({ text: "Lỗi khi tải lại báo cáo. File có thể không còn tồn tại trên server.", type: 'error' });
     }
   };
 
@@ -435,6 +435,16 @@ export default function Reports() {
       setDeleteReportId(null);
     }
   };
+
+  // Auto-hide message
+  useEffect(() => {
+    if (message.text) {
+      const timer = setTimeout(() => {
+        setMessage({ text: '', type: null });
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
 
 
   return (
@@ -951,13 +961,32 @@ export default function Reports() {
         </Card>
       </div>
 
-      {/* Notification Message */}
+      {/* Floating Notification Popup */}
       {message.text && (
-        <div className={`mt-8 p-4 rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300 ${
-          message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
+        <div className={`fixed top-8 right-8 z-[100] min-w-[320px] max-w-md p-4 rounded-[20px] shadow-2xl border flex items-center gap-4 animate-in fade-in slide-in-from-top-8 duration-500 ease-out backdrop-blur-md ${
+          message.type === 'success' 
+            ? 'bg-emerald-50/95 text-emerald-800 border-emerald-100 shadow-emerald-200/40' 
+            : 'bg-rose-50/95 text-rose-800 border-rose-100 shadow-rose-200/40'
         }`}>
-          {message.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-          <span className="text-sm font-medium">{message.text}</span>
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+            message.type === 'success' ? 'bg-emerald-100' : 'bg-rose-100'
+          }`}>
+            {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 text-emerald-600" /> : <AlertCircle className="w-5 h-5 text-rose-600" />}
+          </div>
+          <div className="flex-1">
+            <p className="text-[10px] uppercase font-bold tracking-widest opacity-60 mb-0.5">
+              {message.type === 'success' ? 'Thành công' : 'Thông báo lỗi'}
+            </p>
+            <p className="text-sm font-bold leading-tight">{message.text}</p>
+          </div>
+          <button 
+            onClick={() => setMessage({ text: '', type: null })}
+            className="hover:bg-black/5 p-1.5 rounded-full transition-colors"
+          >
+            <svg className="w-4 h-4 opacity-40 hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       )}
 

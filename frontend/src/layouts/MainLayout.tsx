@@ -3,10 +3,15 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { Outlet, useNavigate } from "react-router-dom"
 import { Search, Bell, Info, Sun, LogOut, User } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
+import LandingPage from "@/pages/LandingPage"
 
 export default function MainLayout() {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+
+  if (!isAuthenticated) {
+    return <LandingPage />;
+  }
 
   const handleProfileClick = () => {
     if (!isAuthenticated) {
