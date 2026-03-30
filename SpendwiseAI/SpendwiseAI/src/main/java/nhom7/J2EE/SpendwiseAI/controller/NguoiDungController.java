@@ -14,9 +14,11 @@ import java.util.UUID;
 public class NguoiDungController {
 
     private final NguoiDungService nguoiDungService;
+    private final nhom7.J2EE.SpendwiseAI.service.UserExcelImportService userExcelImportService;
 
-    public NguoiDungController(NguoiDungService nguoiDungService) {
+    public NguoiDungController(NguoiDungService nguoiDungService, nhom7.J2EE.SpendwiseAI.service.UserExcelImportService userExcelImportService) {
         this.nguoiDungService = nguoiDungService;
+        this.userExcelImportService = userExcelImportService;
     }
 
     @GetMapping
@@ -40,5 +42,31 @@ public class NguoiDungController {
     public ResponseEntity<Void> xoa(@PathVariable UUID id) {
         nguoiDungService.xoa(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/vai-tro")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<NguoiDung> doiVaiTro(@PathVariable UUID id, @RequestBody java.util.Map<String, String> body) {
+        String vaiTroMoi = body.get("vaiTro");
+        if (vaiTroMoi == null || (!vaiTroMoi.equals("admin") && !vaiTroMoi.equals("user"))) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(nguoiDungService.doiVaiTro(id, vaiTroMoi));
+    }
+
+    @PatchMapping("/{id}/trang-thai")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<NguoiDung> doiTrangThai(@PathVariable UUID id, @RequestBody java.util.Map<String, Boolean> body) {
+        Boolean trangThai = body.get("trangThai");
+        if (trangThai == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(nguoiDungService.doiTrangThai(id, trangThai));
+    }
+
+    @PostMapping("/import-excel")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<java.util.Map<String, Object>> importExcel(@RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        return ResponseEntity.ok(userExcelImportService.importUsersFromExcel(file));
     }
 }

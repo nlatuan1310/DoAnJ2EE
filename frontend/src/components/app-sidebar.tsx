@@ -24,9 +24,11 @@ import {
   Settings,
   BrainCircuit,
   CreditCard,
+  ShieldCheck,
 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { useState } from "react"
+import { useAuth } from "@/hooks/useAuth"
 
 interface MenuItem {
   title: string
@@ -101,6 +103,7 @@ const mainMenuItems: MenuItem[] = [
 
 export function AppSidebar() {
   const location = useLocation()
+  const { user } = useAuth()
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({ Dashboard: true })
 
   const toggleMenu = (title: string) => {
@@ -149,16 +152,12 @@ export function AppSidebar() {
             <SidebarMenuSub className="ml-6 mt-1 border-l border-slate-200 pl-0">
               {item.subItems.map((sub) => (
                 <SidebarMenuSubItem key={sub.title}>
-                  <Link
-                    to={sub.url}
-                    className="block w-full"
-                  >
                     <SidebarMenuSubButton
+                      render={<Link to={sub.url} />}
                       isActive={isActive(sub.url)}
                     >
-                      {sub.title}
+                        {sub.title}
                     </SidebarMenuSubButton>
-                  </Link>
                 </SidebarMenuSubItem>
               ))}
             </SidebarMenuSub>
@@ -171,8 +170,8 @@ export function AppSidebar() {
 
     return (
       <SidebarMenuItem key={item.title}>
-        <Link to={item.url} className="w-full">
           <SidebarMenuButton
+            render={<Link to={item.url} />}
             tooltip={item.title}
             isActive={active}
             className={`
@@ -183,10 +182,9 @@ export function AppSidebar() {
               }
             `}
           >
-            <item.icon className={`w-4 h-4 ${active ? "text-violet-500" : "text-slate-400"}`} />
-            <span>{item.title}</span>
+              <item.icon className={`w-4 h-4 ${active ? "text-violet-500" : "text-slate-400"}`} />
+              <span>{item.title}</span>
           </SidebarMenuButton>
-        </Link>
       </SidebarMenuItem>
     )
   }
@@ -210,10 +208,17 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu className="space-y-0.5 px-2">
               {mainMenuItems.map((item) => renderMenuItem(item))}
+              {user?.vaiTro?.toLowerCase() === 'admin' && (
+                <SidebarMenuItem>
+                    <SidebarMenuButton render={<Link to="/admin" />} className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors text-amber-600 bg-amber-50 hover:bg-amber-100 hover:text-amber-700 mt-4">
+                        <ShieldCheck className="w-4 h-4 text-amber-500" />
+                        <span>Admin Portal</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
 
       </SidebarContent>
     </Sidebar>

@@ -42,7 +42,7 @@ export default function Login() {
             hoVaTen: data.hoVaTen,
             vaiTro: data.vaiTro
           });
-          navigate('/');
+          navigate(data.vaiTro?.toLowerCase() === 'admin' ? '/admin' : '/');
         }
       } else {
         setError(data.message || 'Email hoặc mật khẩu không chính xác');
@@ -75,7 +75,7 @@ export default function Login() {
           hoVaTen: data.hoVaTen,
           vaiTro: data.vaiTro
         });
-        navigate('/');
+        navigate(data.vaiTro?.toLowerCase() === 'admin' ? '/admin' : '/');
       } else {
         setError(data.message || 'Mã OTP không chính xác hoặc đã hết hạn.');
       }

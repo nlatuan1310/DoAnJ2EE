@@ -11,7 +11,9 @@ import {
 import {
   Users,
   LayoutDashboard,
-  ShieldCheck
+  ShieldCheck,
+  FolderCog,
+  ScrollText
 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 
@@ -25,6 +27,16 @@ const adminMenuItems = [
     title: "Quản lý Người dùng",
     url: "/admin/users",
     icon: Users,
+  },
+  {
+    title: "Danh mục Hệ thống",
+    url: "/admin/categories",
+    icon: FolderCog,
+  },
+  {
+    title: "Nhật ký Hoạt động",
+    url: "/admin/audit-log",
+    icon: ScrollText,
   },
 ]
 

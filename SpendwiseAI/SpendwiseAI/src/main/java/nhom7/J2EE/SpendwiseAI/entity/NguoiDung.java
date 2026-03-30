@@ -48,10 +48,26 @@ public class NguoiDung {
     private LocalDateTime otpExpiry;
 
     @Column(name = "is_2fa_enabled")
-    private boolean is2faEnabled;
+    @Builder.Default
+    private Boolean twoFactorEnabled = false;
+
+    // Custom getter to return primitive boolean safely for backward compatibility
+    public boolean is2faEnabled() {
+        return Boolean.TRUE.equals(this.twoFactorEnabled);
+    }
+
+    // Custom setter for backward compatibility
+    public void set2faEnabled(boolean is2faEnabled) {
+        this.twoFactorEnabled = is2faEnabled;
+    }
+
+    @Column(name = "trang_thai")
+    @Builder.Default
+    private Boolean trangThai = true; // true = active, false = disabled
 
     @PrePersist
     protected void onCreate() {
         ngayTao = LocalDateTime.now();
+        if (trangThai == null) trangThai = true;
     }
 }
