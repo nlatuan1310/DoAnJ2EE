@@ -35,3 +35,6 @@ build/
 ### Secrets ###
 application-dev.yml
 .env
+
+reports_export/
+*.txt

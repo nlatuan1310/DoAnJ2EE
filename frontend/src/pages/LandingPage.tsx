@@ -12,7 +12,11 @@ import {
   Lock,
   Shield,
   Key,
-  Users
+  Users,
+  TrendingUp,
+  Wallet,
+  PieChart,
+  Scan
 } from "lucide-react"
 
 export default function LandingPage() {
@@ -91,41 +95,66 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="relative">
-              <div className="relative z-10 p-2 bg-white/50 backdrop-blur-sm border border-white/20 rounded-[2.5rem] shadow-2xl">
-                <Link to="/login" className="block cursor-pointer">
-                  <img 
-                    src="/spendwise_hero_bg.png" 
-                    alt="Dashboard Preview" 
-                    className="rounded-[2rem] shadow-lg animate-float"
-                    onError={(e) => {
-                      e.currentTarget.src = "https://images.unsplash.com/photo-1551288049-bbbda536639a?q=80&w=2070&auto=format&fit=crop";
-                    }}
-                  />
-                </Link>
+            <div className="relative group perspective-1000">
+              <div className="relative z-10 w-full aspect-[4/3] bg-gradient-to-br from-violet-600/10 via-white/50 to-indigo-600/10 backdrop-blur-xl border border-white/40 rounded-[3rem] shadow-2xl flex items-center justify-center p-8 lg:p-12 overflow-hidden animate-float">
+                {/* Decorative Background for the box */}
+                <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,rgba(124,58,237,0.1),transparent)] pointer-events-none"></div>
+                <div className="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-indigo-500/10 blur-[100px] rounded-full"></div>
+                
+                {/* Visual Icons to represent the app */}
+                <div className="relative z-20 grid grid-cols-2 gap-6 lg:gap-8 w-full max-w-md">
+                   <div className="bg-white/80 p-6 rounded-3xl shadow-lg border border-white/60 hover:translate-y-[-8px] transition-transform duration-500">
+                      <div className="w-12 h-12 bg-violet-100 rounded-2xl flex items-center justify-center text-violet-600 mb-4">
+                        <TrendingUp className="w-6 h-6" />
+                      </div>
+                      <div className="h-2 w-16 bg-slate-100 rounded-full mb-2"></div>
+                      <div className="h-2 w-full bg-slate-50 rounded-full"></div>
+                   </div>
+                   <div className="bg-white/80 p-6 rounded-3xl shadow-lg border border-white/60 translate-y-8 hover:translate-y-[0px] transition-transform duration-500 delay-75">
+                      <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 mb-4">
+                        <Wallet className="w-6 h-6" />
+                      </div>
+                      <div className="h-2 w-16 bg-slate-100 rounded-full mb-2"></div>
+                      <div className="h-2 w-full bg-slate-50 rounded-full"></div>
+                   </div>
+                   <div className="bg-white/80 p-6 rounded-3xl shadow-lg border border-white/60 translate-y-[-8px] hover:translate-y-[-16px] transition-transform duration-500 delay-150">
+                      <div className="w-12 h-12 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600 mb-4">
+                        <PieChart className="w-6 h-6" />
+                      </div>
+                      <div className="h-2 w-16 bg-slate-100 rounded-full mb-2"></div>
+                      <div className="h-2 w-full bg-slate-50 rounded-full"></div>
+                   </div>
+                   <div className="bg-white/80 p-6 rounded-3xl shadow-lg border border-white/60 translate-y-[40px] hover:translate-y-[32px] transition-transform duration-500 delay-200">
+                      <div className="w-12 h-12 bg-rose-100 rounded-2xl flex items-center justify-center text-rose-600 mb-4">
+                        <Scan className="w-6 h-6" />
+                      </div>
+                      <div className="h-2 w-16 bg-slate-100 rounded-full mb-2"></div>
+                      <div className="h-2 w-full bg-slate-50 rounded-full"></div>
+                   </div>
+                </div>
               </div>
               
-              {/* Floating UI Elements */}
-              <Link to="/login" className="absolute -top-6 -right-6 lg:-top-12 lg:-right-12 bg-white p-4 rounded-2xl shadow-xl border border-slate-100 animate-bounce-slow hidden sm:block hover:scale-110 transition-transform">
+              {/* Floating UI Elements (Stay) */}
+              <Link to="/login" className="absolute -top-6 -right-6 lg:-top-12 lg:-right-12 bg-white/95 p-5 rounded-2xl shadow-xl border border-slate-100 animate-bounce-slow hidden sm:block hover:scale-110 transition-transform z-30 backdrop-blur-sm">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
-                    <Bot className="w-6 h-6" />
+                  <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
+                    <Bot className="w-7 h-7" />
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-slate-400">AI Advisor</p>
-                    <p className="text-sm font-bold text-slate-800">Cần tư vấn ngay?</p>
+                    <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">AI Advisor</div>
+                    <div className="text-sm font-bold text-slate-700">Cần tư vấn ngay?</div>
                   </div>
                 </div>
               </Link>
 
-              <Link to="/login" className="absolute -bottom-10 -left-6 lg:-bottom-20 lg:-left-12 bg-white p-5 rounded-2xl shadow-xl border border-slate-100 animate-float-delayed hidden sm:block hover:scale-110 transition-transform">
+              <Link to="/login" className="absolute -bottom-10 -left-6 lg:-bottom-20 lg:-left-12 bg-white/95 p-6 rounded-2xl shadow-xl border border-slate-100 animate-float-delayed hidden sm:block hover:scale-110 transition-transform z-30 backdrop-blur-sm">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-rose-100 rounded-xl flex items-center justify-center text-rose-600">
-                    <ScanText className="w-8 h-8" />
+                  <div className="w-14 h-14 bg-rose-100 rounded-xl flex items-center justify-center text-rose-600">
+                    <ScanText className="w-10 h-10" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-800">Quét hóa đơn AI</p>
-                    <p className="text-[10px] text-slate-500 font-medium tracking-wide">Trích xuất ngay</p>
+                    <div className="text-sm font-bold text-slate-800">Quét hóa đơn AI</div>
+                    <div className="text-xs text-slate-500 mt-0.5">Xử lý trong 2 giây</div>
                   </div>
                 </div>
               </Link>

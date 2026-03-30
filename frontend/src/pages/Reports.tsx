@@ -16,12 +16,12 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
-  X,
   Search,
   ArrowDownLeft,
   ArrowUpRight,
   Mail,
-  Sparkles
+  Sparkles,
+  Trash2
 } from "lucide-react"
 import { format } from "date-fns"
 import api, { reportsApi, getCurrentUserId } from "@/services/api";
@@ -962,7 +962,8 @@ export default function Reports() {
       )}
 
       {/* Preview Section - Mockup */}
-      <div className="mt-12 opacity-50 grayscale select-none pointer-events-none">
+      {/* Recent Reports Section */}
+      <div className="mt-12">
         <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-6">Mẫu báo cáo gần đây</h3>
         {history.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl text-slate-400">
@@ -980,10 +981,10 @@ export default function Reports() {
                 {/* Delete Button */}
                 <button
                   onClick={(e) => handleDeleteReport(e, report.id)}
-                  className="absolute -top-2 -right-2 w-6 h-6 bg-white border border-slate-100 rounded-full shadow-md flex items-center justify-center text-slate-400 hover:text-rose-500 hover:border-rose-100 opacity-0 group-hover:opacity-100 transition-all z-10"
+                  className="absolute -top-2 -right-2 w-7 h-7 bg-white border border-rose-100 rounded-full shadow-lg flex items-center justify-center text-rose-500 hover:bg-rose-50 opacity-0 group-hover:opacity-100 transition-all z-10 scale-90 group-hover:scale-100"
                   title="Xóa bản ghi này"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
 
                 <h4 className="font-bold text-slate-800 text-sm truncate pr-4">

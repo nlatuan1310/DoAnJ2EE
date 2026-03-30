@@ -10,6 +10,11 @@ import nhom7.J2EE.SpendwiseAI.repository.NguoiDungRepository;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -51,16 +56,16 @@ public class BaoCaoService {
 
 
         // Lưu lịch sử
-        NguoiDung user = nguoiDungRepository.findById(nguoiDungId).orElse(null);
         BaoCao reportRecord = BaoCao.builder()
                 .nguoiDung(user)
-                .loai("monthly")
+                .loai(loai != null ? loai : "monthly")
                 .dinhDang("excel")
+                .fileUrl(fileUrl)
                 .ngayTao(LocalDateTime.now())
                 .build();
         baoCaoRepository.save(reportRecord);
 
-        return excelExportService.exportGiaoDichToExcel(transactions);
+        return outToReturn;
     }
 
 
@@ -90,8 +95,9 @@ public class BaoCaoService {
         // Lưu lịch sử
         BaoCao reportRecord = BaoCao.builder()
                 .nguoiDung(user)
-                .loai("monthly")
+                .loai(loai != null ? loai : "monthly")
                 .dinhDang("pdf")
+                .fileUrl(fileUrl)
                 .ngayTao(LocalDateTime.now())
                 .build();
         baoCaoRepository.save(reportRecord);

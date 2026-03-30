@@ -1,6 +1,7 @@
 package nhom7.J2EE.SpendwiseAI.controller;
 
 import lombok.RequiredArgsConstructor;
+import nhom7.J2EE.SpendwiseAI.entity.BaoCao;
 import nhom7.J2EE.SpendwiseAI.entity.NguoiDung;
 import nhom7.J2EE.SpendwiseAI.repository.NguoiDungRepository;
 import nhom7.J2EE.SpendwiseAI.service.BaoCaoService;
@@ -10,13 +11,18 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.ByteArrayInputStream;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
 
 @RestController
 @RequestMapping("/api/reports")
