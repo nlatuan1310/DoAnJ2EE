@@ -73,18 +73,22 @@ public class CryptoService {
         history.sort((a,b) -> a.getNgayGiaoDich().compareTo(b.getNgayGiaoDich()));
 
         for (GiaoDichCrypto tx : history) {
+            BigDecimal txGia = tx.getGia();
+            // CHUẨN HÓA VỀ VND: Nếu giao dịch là USD, quy đổi sang VND để tính Avg Price đồng nhất
+            if ("USD".equalsIgnoreCase(tx.getTienTe())) {
+                txGia = txGia.multiply(BigDecimal.valueOf(usdVndRate));
+            }
+
             if ("buy".equalsIgnoreCase(tx.getLoai())) {
                 BigDecimal oldTotalCost = currentQty.multiply(avgPrice);
-                BigDecimal newTxCost = tx.getSoLuong().multiply(tx.getGia());
+                BigDecimal newTxCost = tx.getSoLuong().multiply(txGia);
                 currentQty = currentQty.add(tx.getSoLuong());
                 if (currentQty.compareTo(BigDecimal.ZERO) > 0) {
                     avgPrice = oldTotalCost.add(newTxCost).divide(currentQty, 8, RoundingMode.HALF_UP);
                 }
             } else if ("sell".equalsIgnoreCase(tx.getLoai())) {
                 currentQty = currentQty.subtract(tx.getSoLuong());
-                // Không gạt về 0 ở đây để hỗ trợ việc nhập giao dịch lùi ngày (backdated transactions)
                 if (currentQty.compareTo(BigDecimal.ZERO) <= 0) {
-                    // Nếu hết coin thì reset giá trung bình (đã bán hết hoặc bán khống)
                     avgPrice = BigDecimal.ZERO;
                 }
             }
@@ -117,14 +121,15 @@ public class CryptoService {
                     .loai("buy")
                     .soLuong(savedDm.getSoLuong())
                     .gia(savedDm.getGiaMuaTrungBinh())
-                    .ngayGiaoDich(LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0)) // Đặt đầu ngày hôm nay để ưu tiên trước các lệnh trong cùng ngày
-                    .viId(duLieu.getViId()) // Nếu frontend gửi viId, gán vào đây
+                    .ngayGiaoDich(LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0)) 
+                    .viId(duLieu.getViId()) 
+                    .tienTe(duLieu.getTienTe()) // Set loại tiền từ frontend
                     .build();
 
             // Cập nhật ví tiền nếu có link viId (Khấu trừ vốn đầu tư ban đầu)
             if (initialTx.getViId() != null) {
                 BigDecimal totalAmount = initialTx.getSoLuong().multiply(initialTx.getGia());
-                capNhatSoDuVi(initialTx.getViId(), totalAmount, "buy");
+                capNhatSoDuVi(initialTx.getViId(), totalAmount, initialTx.getTienTe(), "buy");
             }
 
             giaoDichCryptoRepository.save(initialTx);
@@ -161,21 +166,30 @@ public class CryptoService {
         return giaoDichCryptoRepository.findByDanhMucCryptoId(danhMucId);
     }
 
-    private void capNhatSoDuVi(UUID viId, BigDecimal amount, String type) {
+    private void capNhatSoDuVi(UUID viId, BigDecimal amount, String txCurrency, String type) {
         if (viId == null) return;
         nhom7.J2EE.SpendwiseAI.entity.ViTien vi = viTienService.layTheoId(viId);
         
-        // Cập nhật số dư: Mua thì trừ, Bán thì cộng
-        BigDecimal amountToUpdate = amount;
+        String walletCurrency = vi.getTienTe() != null ? vi.getTienTe().toUpperCase() : "VND";
+        String transactionCurrency = txCurrency != null ? txCurrency.toUpperCase() : "USD";
         
-        // NẾU VÍ LÀ USD, CHIA CHO TỶ GIÁ (vì amount truyền vào đang là VNĐ)
-        if ("USD".equalsIgnoreCase(vi.getTienTe())) {
-            amountToUpdate = amount.divide(BigDecimal.valueOf(usdVndRate), 2, RoundingMode.HALF_UP);
+        BigDecimal amountToUpdate = amount;
+
+        // Xử lý quy đổi tỷ giá
+        if (!walletCurrency.equals(transactionCurrency)) {
+            if ("USD".equals(transactionCurrency) && "VND".equals(walletCurrency)) {
+                // Nhập giá USD, ví là VND -> Nhân tỷ giá
+                amountToUpdate = amount.multiply(BigDecimal.valueOf(usdVndRate)).setScale(0, RoundingMode.HALF_UP);
+            } else if ("VND".equals(transactionCurrency) && "USD".equals(walletCurrency)) {
+                // Nhập giá VND, ví là USD -> Chia tỷ giá
+                amountToUpdate = amount.divide(BigDecimal.valueOf(usdVndRate), 2, RoundingMode.HALF_UP);
+            }
         }
 
         if ("buy".equalsIgnoreCase(type)) {
             if (vi.getSoDu().compareTo(amountToUpdate) < 0) {
-                throw new RuntimeException("Số dư ví " + vi.getTenVi() + " không đủ để thực hiện giao dịch.");
+                throw new RuntimeException("Số dư ví (" + vi.getTenVi() + ") không đủ. Cần: " + 
+                        amountToUpdate + " " + walletCurrency + ", Hiện có: " + vi.getSoDu() + " " + walletCurrency);
             }
             vi.setSoDu(vi.getSoDu().subtract(amountToUpdate));
         } else {
@@ -201,7 +215,7 @@ public class CryptoService {
         // Cập nhật ví tiền nếu có link viId
         if (duLieu.getViId() != null) {
             BigDecimal totalAmount = duLieu.getSoLuong().multiply(duLieu.getGia());
-            capNhatSoDuVi(duLieu.getViId(), totalAmount, duLieu.getLoai());
+            capNhatSoDuVi(duLieu.getViId(), totalAmount, duLieu.getTienTe(), duLieu.getLoai());
         }
 
         // Lưu giao dịch trước khi tính lại
@@ -224,7 +238,7 @@ public class CryptoService {
             BigDecimal totalAmount = tx.getSoLuong().multiply(tx.getGia());
             // Nếu là Buy, xóa đi nghĩa là cộng lại tiền. Nếu là Sell, xóa đi nghĩa là trừ lại tiền.
             String reverseType = "buy".equalsIgnoreCase(tx.getLoai()) ? "sell" : "buy";
-            capNhatSoDuVi(tx.getViId(), totalAmount, reverseType);
+            capNhatSoDuVi(tx.getViId(), totalAmount, tx.getTienTe(), reverseType);
         }
 
         giaoDichCryptoRepository.deleteById(id);

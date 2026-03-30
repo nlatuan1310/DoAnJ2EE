@@ -36,4 +36,8 @@ public class GiaoDichCrypto {
 
     @Column(name = "vi_id")
     private UUID viId;
+
+    @Builder.Default
+    @Column(name = "tien_te")
+    private String tienTe = "USD";
 }

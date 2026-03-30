@@ -36,4 +36,8 @@ public class DanhMucCrypto {
 
     @Transient
     private UUID viId;
+
+    @Transient
+    @Builder.Default
+    private String tienTe = "USD";
 }

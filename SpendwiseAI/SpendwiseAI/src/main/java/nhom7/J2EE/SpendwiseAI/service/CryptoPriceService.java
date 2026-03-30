@@ -1,5 +1,7 @@
 package nhom7.J2EE.SpendwiseAI.service;
 
+import nhom7.J2EE.SpendwiseAI.repository.TaiSanCryptoRepository;
+import nhom7.J2EE.SpendwiseAI.entity.TaiSanCrypto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -15,6 +17,7 @@ public class CryptoPriceService {
 
     private final RestTemplate restTemplate;
     private final CryptoMarketService cryptoMarketService;
+    private final TaiSanCryptoRepository taiSanCryptoRepository;
     
     @Value("${crypto.exchange-rate.usd-to-vnd:25400}")
     private double usdVndRate;
@@ -37,44 +40,29 @@ public class CryptoPriceService {
         }
     }
     
-    // Ánh xạ Ký hiệu (Symbol) -> CoinGecko ID
+    // Ánh xạ Ký hiệu (Symbol) -> CoinGecko ID (Dùng làm fallback hoặc cho các đồng mặc định)
     private static final Map<String, String> SYMBOL_TO_ID = new HashMap<>();
 
     static {
+        // Chỉ giữ lại các đồng coin cốt lõi làm fallback an toàn
         SYMBOL_TO_ID.put("BTC", "bitcoin");
         SYMBOL_TO_ID.put("ETH", "ethereum");
         SYMBOL_TO_ID.put("USDT", "tether");
         SYMBOL_TO_ID.put("BNB", "binancecoin");
         SYMBOL_TO_ID.put("SOL", "solana");
-        SYMBOL_TO_ID.put("XRP", "ripple");
-        SYMBOL_TO_ID.put("USDC", "usd-coin");
-        SYMBOL_TO_ID.put("ADA", "cardano");
-        SYMBOL_TO_ID.put("DOGE", "dogecoin");
-        SYMBOL_TO_ID.put("AVAX", "avalanche-2");
-        SYMBOL_TO_ID.put("DOT", "polkadot");
-        SYMBOL_TO_ID.put("MATIC", "matic-network");
-        SYMBOL_TO_ID.put("TRX", "tron");
-        SYMBOL_TO_ID.put("LINK", "chainlink");
-        SYMBOL_TO_ID.put("PEPE", "pepe");
-        SYMBOL_TO_ID.put("SHIB", "shiba-inu");
-        SYMBOL_TO_ID.put("DAI", "dai");
-        SYMBOL_TO_ID.put("LTC", "litecoin");
-        SYMBOL_TO_ID.put("NEAR", "near");
-        SYMBOL_TO_ID.put("BCH", "bitcoin-cash");
-        SYMBOL_TO_ID.put("UNI", "uniswap");
-        SYMBOL_TO_ID.put("APT", "aptos");
-        SYMBOL_TO_ID.put("SUI", "sui");
-        SYMBOL_TO_ID.put("POL", "polygon-ecosystem-token");
-        SYMBOL_TO_ID.put("TON", "the-open-network");
-        SYMBOL_TO_ID.put("HBAR", "hedera-hashgraph");
-        SYMBOL_TO_ID.put("IMX", "immutable-x");
-        SYMBOL_TO_ID.put("VET", "vechain");
-        SYMBOL_TO_ID.put("ICP", "internet-computer");
     }
 
-    public CryptoPriceService(RestTemplate restTemplate, CryptoMarketService cryptoMarketService) {
+    public CryptoPriceService(RestTemplate restTemplate, CryptoMarketService cryptoMarketService, TaiSanCryptoRepository taiSanCryptoRepository) {
         this.restTemplate = restTemplate;
         this.cryptoMarketService = cryptoMarketService;
+        this.taiSanCryptoRepository = taiSanCryptoRepository;
+    }
+
+    private String getCoinGeckoId(String symbol) {
+        // 1. Kiểm tra trong DB trước
+        return taiSanCryptoRepository.findByKyHieu(symbol.toUpperCase())
+                .map(TaiSanCrypto::getCoingeckoId)
+                .orElse(SYMBOL_TO_ID.get(symbol.toUpperCase()));
     }
 
     /**
@@ -110,7 +98,7 @@ public class CryptoPriceService {
 
         // 2. Fetch from External API (CoinGecko)
         List<String> idsToFetch = symbolsToFetch.stream()
-                .map(SYMBOL_TO_ID::get)
+                .map(this::getCoinGeckoId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
@@ -144,23 +132,24 @@ public class CryptoPriceService {
             Map<String, Map<String, Object>> response = restTemplate.getForObject(url, Map.class);
 
             if (response != null) {
-                for (Map.Entry<String, String> entry : SYMBOL_TO_ID.entrySet()) {
-                    String symbol = entry.getKey();
-                    String id = entry.getValue();
+                // Chúng ta sẽ duyệt qua các ID được trả về từ response thay vì duyệt qua Symbol Map cố định
+                for (String id : response.keySet()) {
+                    Map<String, Object> coinData = (Map<String, Object>) response.get(id);
+                    Object usdPriceObj = coinData.get("usd");
                     
-                    if (ids.contains(id) && response.containsKey(id)) {
-                        Map<String, Object> coinData = (Map<String, Object>) response.get(id);
-                        Object usdPriceObj = coinData.get("usd");
+                    if (usdPriceObj != null) {
+                        double usdPrice = Double.parseDouble(usdPriceObj.toString());
+                        Map<String, Double> priceMap = new HashMap<>();
+                        priceMap.put("usd", usdPrice);
+                        priceMap.put("vnd", usdPrice * usdVndRate);
                         
-                        if (usdPriceObj != null) {
-                            double usdPrice = Double.parseDouble(usdPriceObj.toString());
-                            Map<String, Double> priceMap = new HashMap<>();
-                            priceMap.put("usd", usdPrice);
-                            priceMap.put("vnd", usdPrice * usdVndRate);
-                            
-                            result.put(symbol, priceMap);
-                            result.put(id, priceMap); // Compatibility for ID lookup
-                        }
+                        // Ánh xạ lại kết quả cho cả ID và Symbol tương ứng
+                        result.put(id, priceMap);
+                        
+                        // Tìm symbol tương ứng với ID này để lưu vào result
+                        taiSanCryptoRepository.findByCoingeckoId(id).ifPresent(asset -> {
+                            result.put(asset.getKyHieu(), priceMap);
+                        });
                     }
                 }
             }
@@ -185,7 +174,7 @@ public class CryptoPriceService {
                 result.put(symbol, priceMap);
                 
                 // Cũng ánh xạ ID nếu có để đồng bộ
-                String id = SYMBOL_TO_ID.get(symbol);
+                String id = getCoinGeckoId(symbol);
                 if (id != null) {
                     result.put(id, priceMap);
                 }

@@ -65,6 +65,8 @@ const CRYPTO_COLORS: Record<string, string> = {
 
 const getCryptoGradient = (kyHieu: string) =>
   CRYPTO_COLORS[kyHieu?.toUpperCase()] ?? "from-slate-400 to-slate-600";
+  
+const USD_VND_RATE = 25400; // Tỷ giá mặc định
 
 const formatNumber = (n: number, maxDecimals = 6) =>
   new Intl.NumberFormat("vi-VN", {
@@ -80,29 +82,54 @@ const formatCurrency = (n: number, currency = "VND") => {
   }).format(n);
 };
 
-const formatVnCurrencyInput = (val: string | number) => {
+const formatPriceInput = (val: string | number, currency = "VND") => {
   if (val === undefined || val === null || val === "") return "";
   
-  // Trường hợp 1: Nhận vào một số từ API (vd: 15460980.0000002)
+  if (currency === "USD") {
+    // 1. Trường hợp là SỐ (Giá từ API về)
+    if (typeof val === 'number') {
+      return new Intl.NumberFormat("vi-VN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 8
+      }).format(val);
+    }
+
+    // 2. Trường hợp là CHUỖI (Đang nhập liệu)
+    // - Xóa các ký tự không phải số và dấu phẩy (làm decimal)
+    // - Lưu ý: Ở VN-style, ta dùng dấu phẩy làm thập phân.
+    let sVal = val.toString();
+    
+    // Nếu người dùng gõ dấu chấm (.) chúng ta coi như họ muốn gõ phân cách hàng ngàn (ignore) hoặc gõ nhầm thập phân
+    // Để đơn giản, ta chuẩn hóa: xóa hết dấu chấm, giữ lại dấu phẩy
+    let cleanVal = sVal.replace(/\./g, "");
+    const parts = cleanVal.split(",");
+    
+    let whole = parts[0].replace(/[^0-9]/g, "") || "0";
+    let decimal = parts.length > 1 ? parts[1].replace(/[^0-9]/g, "") : null;
+    
+    // Định dạng phần nguyên
+    const formattedWhole = new Intl.NumberFormat("vi-VN").format(parseInt(whole, 10) || 0);
+    
+    return decimal !== null ? `${formattedWhole},${decimal}` : formattedWhole;
+  }
+
+  // Với VND: Giữ nguyên (dùng dấu chấm làm phân cách hàng ngàn, không lẻ)
   if (typeof val === 'number') {
     return new Intl.NumberFormat("vi-VN").format(Math.round(val));
   }
-
-  // Trường hợp 2: Nhận vào một chuỗi số có lẻ thập phân từ toString() (vd: "15460980.00002")
-  // Chúng ta kiểm tra nếu chuỗi chứa dấu chấm và parse được thành số không phải định dạng VN
-  if (val.includes('.') && !val.includes(',') && val.match(/^\d+\.\d+$/)) {
-      const n = parseFloat(val);
-      if (!isNaN(n)) return new Intl.NumberFormat("vi-VN").format(Math.round(n));
-  }
-
-  // Trường hợp 3: Nhận vào input người dùng (vd: "2.000.000" hoặc "123456")
-  const numericVal = val.toString().replace(/[^0-9]/g, "");
+  let sVal = val.toString().replace(/\./g, "");
+  const numericVal = sVal.replace(/[^0-9]/g, "");
   if (!numericVal) return "";
   return new Intl.NumberFormat("vi-VN").format(parseInt(numericVal, 10));
 };
 
-const parseVnCurrency = (val: string) => {
-  return parseFloat(val.replace(/\./g, "")) || 0;
+const parsePriceInput = (val: string, currency = "VND") => {
+  if (currency === "USD") {
+    // Xóa dấu chấm (hàng ngàn), đổi dấu phẩy (thập phân) thành dấu chấm để parseFloat
+    const machineVal = val.replace(/\./g, "").replace(/,/g, ".");
+    return parseFloat(machineVal) || 0;
+  }
+  return parseFloat(val.toString().replace(/\./g, "")) || 0;
 };
 
 export default function Investments() {
@@ -123,6 +150,7 @@ export default function Investments() {
     giaMuaTrungBinh: "",
     diaChiVi: "",
     viId: "",
+    tienTe: "VND", // Thêm loại tiền tệ nhập liệu
   });
 
   // Modal: Transaction history & add transaction
@@ -136,6 +164,7 @@ export default function Investments() {
     gia: "",
     ngayGiaoDich: new Date().toISOString().slice(0, 16),
     viId: "",
+    tienTe: "VND", // Thêm loại tiền tệ nhập liệu
   });
 
   const fetchMarketPrices = useCallback(async (coins: DanhMucCrypto[]) => {
@@ -198,13 +227,10 @@ export default function Investments() {
   // ========================
   //  AUTO-FETCH LIVE PRICE
   // ========================
-  const fetchLivePrice = async (symbol: string) => {
+  const fetchLivePrice = async (symbol: string, currency = "VND") => {
     const s = symbol.toUpperCase();
-    // 1. Kiểm tra nếu đã có sẵn trong marketPrices rồi thì dùng luôn
     if (marketPrices[s]) {
       const prices = marketPrices[s];
-      const walletRef = userWallets.find(w => w.id === txForm.viId);
-      const currency = walletRef?.tienTe || "VND";
       return currency === "USD" ? (prices?.usd || 0) : (prices?.vnd || 0);
     }
 
@@ -218,9 +244,6 @@ export default function Investments() {
       if (prices) {
         setMarketPrices(prev => ({ ...prev, [s]: prices }));
       }
-
-      const walletRef = userWallets.find(w => w.id === txForm.viId);
-      const currency = walletRef?.tienTe || "VND";
       return currency === "USD" ? (prices?.usd || 0) : (prices?.vnd || 0);
     } catch (e) {
       console.error("Lỗi khi lấy giá live:", e);
@@ -234,22 +257,22 @@ export default function Investments() {
     const coin = availableAssets.find(c => c.id.toString() === addCoinForm.taiSanId);
     if (!coin) return;
 
-    fetchLivePrice(coin.kyHieu).then(price => {
+    fetchLivePrice(coin.kyHieu, addCoinForm.tienTe).then(price => {
       if (price > 0) {
-        setAddCoinForm(prev => ({ ...prev, giaMuaTrungBinh: formatVnCurrencyInput(price) }));
+        setAddCoinForm(prev => ({ ...prev, giaMuaTrungBinh: formatPriceInput(price, addCoinForm.tienTe) }));
       }
     });
-  }, [addCoinForm.taiSanId, isAddCoinOpen, availableAssets]);
+  }, [addCoinForm.taiSanId, isAddCoinOpen, availableAssets, addCoinForm.tienTe]);
 
   // Tự động điền giá hiện tại khi mở Modal Ghi Lệnh
   useEffect(() => {
     if (!selectedCoin || !isTxModalOpen) return;
-    fetchLivePrice(selectedCoin.taiSan.kyHieu).then(price => {
+    fetchLivePrice(selectedCoin.taiSan.kyHieu, txForm.tienTe).then(price => {
       if (price > 0) {
-        setTxForm(prev => ({ ...prev, gia: formatVnCurrencyInput(price.toString()) }));
+        setTxForm(prev => ({ ...prev, gia: formatPriceInput(price, txForm.tienTe) }));
       }
     });
-  }, [selectedCoin, isTxModalOpen]);
+  }, [selectedCoin, isTxModalOpen, txForm.tienTe]);
 
   // ========================
   //  ADD COIN TO PORTFOLIO
@@ -262,13 +285,21 @@ export default function Investments() {
     try {
       await cryptoApi.addCoin(addCoinForm.taiSanId, {
           soLuong: parseFloat(addCoinForm.soLuong) || 0,
-          giaMuaTrungBinh: parseVnCurrency(addCoinForm.giaMuaTrungBinh),
+          giaMuaTrungBinh: parsePriceInput(addCoinForm.giaMuaTrungBinh, addCoinForm.tienTe),
           diaChiVi: addCoinForm.diaChiVi || "",
-          viId: addCoinForm.viId || null, // Gửi thêm viId để khấu trừ tiền
+          viId: addCoinForm.viId || null, 
+          tienTe: addCoinForm.tienTe, // Gửi loại tiền tệ nhập liệu
       });
       showSuccess("Đã thêm coin vào danh mục!");
       setIsAddCoinOpen(false);
-      setAddCoinForm({ taiSanId: availableAssets[0]?.id.toString() || "", soLuong: "", giaMuaTrungBinh: "", diaChiVi: "", viId: "" });
+      setAddCoinForm({ 
+        taiSanId: availableAssets[0]?.id.toString() || "", 
+        soLuong: "", 
+        giaMuaTrungBinh: "0", 
+        diaChiVi: "", 
+        viId: "",
+        tienTe: "VND" 
+      });
       fetchPortfolio();
     } catch (e: any) {
       setError(e.response?.data?.message || e.message);
@@ -315,9 +346,10 @@ export default function Investments() {
       await cryptoApi.addTransaction(selectedCoin.id, {
         loai: txForm.loai,
         soLuong: parseFloat(txForm.soLuong),
-        gia: parseVnCurrency(txForm.gia),
+        gia: parsePriceInput(txForm.gia, txForm.tienTe),
         ngayGiaoDich: txForm.ngayGiaoDich,
-        viId: txForm.viId, // Gửi mã ví thanh toán lên backend
+        viId: txForm.viId, 
+        tienTe: txForm.tienTe, // Gửi loại tiền tệ nhập liệu
       });
       showSuccess(txForm.loai === "buy" ? "Ghi nhận lệnh Mua thành công!" : "Ghi nhận lệnh Bán thành công!");
       setIsTxModalOpen(false);
@@ -350,23 +382,14 @@ export default function Investments() {
   //  Stats (Optimized with useMemo)
   // ========================
   const stats = useMemo(() => {
-    const vdt = portfolio.reduce((s, c) => {
-      const cost = (c.soLuong || 0) * (c.giaMuaTrungBinh || 0);
-      const walletRef = userWallets.find(w => w.tenVi === c.diaChiVi);
-      return s + (walletRef?.tienTe === "USD" ? cost * 25400 : cost);
-    }, 0);
+    // Backend đã chuẩn hóa giaMuaTrungBinh về VND, nên tính trực tiếp
+    const vdt = portfolio.reduce((s, c) => s + (c.soLuong || 0) * (c.giaMuaTrungBinh || 0), 0);
 
     const gtht = portfolio.reduce((s, c) => {
       const symbol = c.taiSan.kyHieu.toUpperCase();
       const prices = marketPrices[symbol];
-      if (!prices || (prices.usd === undefined && prices.vnd === undefined)) return s;
-      
-      const walletRef = userWallets.find(w => w.tenVi === c.diaChiVi);
-      const giaHienTaiVnd = walletRef?.tienTe === "USD" 
-        ? (prices.usd || 0) * 25400 
-        : (prices.vnd || 0);
-        
-      return s + (c.soLuong || 0) * giaHienTaiVnd;
+      if (!prices || prices.vnd === undefined) return s;
+      return s + (c.soLuong || 0) * (prices.vnd || 0);
     }, 0);
 
     const ll = Number.isNaN(gtht) ? 0 : gtht - vdt;
@@ -539,13 +562,16 @@ export default function Investments() {
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="bg-slate-50 rounded-xl p-3 relative group/price">
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Giá thị trường</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Giá thị trường ({currency})</p>
                         <div className="flex items-center justify-between">
                           <p className="font-black text-indigo-600 text-base">
                             {marketPrices[coin.taiSan.kyHieu.toUpperCase()] 
-                              ? (currency === "USD" 
-                                  ? formatNumber(marketPrices[coin.taiSan.kyHieu.toUpperCase()].usd || 0, 0)
-                                  : formatNumber(marketPrices[coin.taiSan.kyHieu.toUpperCase()].vnd || 0, 0))
+                              ? formatCurrency(
+                                  currency === "USD" 
+                                    ? marketPrices[coin.taiSan.kyHieu.toUpperCase()].usd || 0 
+                                    : marketPrices[coin.taiSan.kyHieu.toUpperCase()].vnd || 0, 
+                                  currency
+                                )
                               : "---"}
                           </p>
                           <button onClick={() => fetchMarketPrices([coin])} className="text-slate-200 hover:text-indigo-400 p-0.5 transition-colors">
@@ -554,25 +580,30 @@ export default function Investments() {
                         </div>
                       </div>
                       <div className="bg-slate-50 rounded-xl p-3">
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Lãi / Lỗ</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Lãi / Lỗ ({currency})</p>
                         {(() => {
                           const prices = marketPrices[coin.taiSan.kyHieu.toUpperCase()];
-                          if (!prices || (currency === "USD" && prices.usd === undefined) || (currency === "VND" && prices.vnd === undefined)) {
+                          if (!prices || prices.vnd === undefined) {
                             return <p className="font-black text-slate-400 text-base">---</p>;
                           }
-                          const marketPrice = currency === "USD" ? (prices.usd || 0) : (prices.vnd || 0);
-                          const buyPrice = coin.giaMuaTrungBinh || 0;
-                          const profit = (marketPrice - buyPrice) * (coin.soLuong || 0);
-                          const profitPct = buyPrice > 0 ? ((marketPrice - buyPrice) / buyPrice) * 100 : 0;
-                          const isProfit = profit >= 0;
+                          // Luôn dùng VND để tính P&L vì giaMuaTrungBinh là VND
+                          const marketPriceVnd = prices.vnd || 0;
+                          const buyPriceVnd = coin.giaMuaTrungBinh || 0;
+                          
+                          let profitVnd = (marketPriceVnd - buyPriceVnd) * (coin.soLuong || 0);
+                          const profitPct = buyPriceVnd > 0 ? ((marketPriceVnd - buyPriceVnd) / buyPriceVnd) * 100 : 0;
+                          
+                          // Quy đổi hiển thị Lãi Lỗ theo đơn vị ví
+                          const profitToDisplay = currency === "USD" ? profitVnd / 25400 : profitVnd;
+                          const isProfit = profitToDisplay >= 0;
                           return (
                             <div className="flex flex-col">
                               <p className={`font-black text-base ${isProfit ? "text-emerald-500" : "text-rose-500"}`}>
-                                {isProfit ? "+" : ""}{formatNumber(profit, 0)}
+                                {isProfit ? "+" : ""}{formatCurrency(profitToDisplay, currency)}
                               </p>
-                              <p className={`text-[10px] font-bold ${isProfit ? "text-emerald-400" : "text-rose-400"}`}>
-                                {isProfit ? "+" : ""}{profitPct.toFixed(2)}%
-                              </p>
+                              <span className={`text-[10px] font-bold ${isProfit ? "text-emerald-500" : "text-rose-500"}`}>
+                                {isProfit ? "↑" : "↓"} {Math.abs(profitPct).toFixed(2)}%
+                              </span>
                             </div>
                           );
                         })()}
@@ -652,15 +683,39 @@ export default function Investments() {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
-                    GIÁ MUA TB ({userWallets.find(w => w.id === addCoinForm.viId)?.tienTe || "VNĐ"})
+                    Giá mua TB ({addCoinForm.tienTe})
                   </label>
-                  <Input
-                    type="text"
-                    placeholder="0"
-                    value={addCoinForm.giaMuaTrungBinh}
-                    onChange={(e) => setAddCoinForm({ ...addCoinForm, giaMuaTrungBinh: formatVnCurrencyInput(e.target.value) })}
-                    className="h-11 rounded-xl bg-slate-50 border-none font-bold text-slate-800"
-                  />
+                  <div className="relative group">
+                    <Input
+                      type="text"
+                      placeholder="0"
+                      value={addCoinForm.giaMuaTrungBinh}
+                      onChange={(e) => setAddCoinForm({ ...addCoinForm, giaMuaTrungBinh: formatPriceInput(e.target.value, addCoinForm.tienTe) })}
+                      className="h-11 rounded-xl bg-slate-50 border-none font-bold text-slate-800 pr-16"
+                    />
+                    <div className="absolute right-1 top-1 bottom-1 flex items-center bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden">
+                      {["USD", "VND"].map((curr) => (
+                        <button
+                          key={curr}
+                          onClick={() => {
+                            const currentVal = parsePriceInput(addCoinForm.giaMuaTrungBinh, addCoinForm.tienTe);
+                            let newVal = currentVal;
+                            if (addCoinForm.tienTe === "VND" && curr === "USD") newVal = currentVal / USD_VND_RATE;
+                            if (addCoinForm.tienTe === "USD" && curr === "VND") newVal = currentVal * USD_VND_RATE;
+                            
+                            setAddCoinForm({ 
+                              ...addCoinForm, 
+                              tienTe: curr,
+                              giaMuaTrungBinh: formatPriceInput(newVal, curr)
+                            });
+                          }}
+                          className={`px-2 h-full text-[9px] font-black transition-all ${addCoinForm.tienTe === curr ? "bg-amber-500 text-white" : "text-slate-400 hover:bg-slate-50"}`}
+                        >
+                          {curr}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
               <div className="space-y-1.5">
@@ -672,7 +727,8 @@ export default function Investments() {
                     setAddCoinForm({ 
                       ...addCoinForm, 
                       viId: e.target.value, 
-                      diaChiVi: wallet ? wallet.tenVi : "" 
+                      diaChiVi: wallet ? wallet.tenVi : "",
+                      tienTe: wallet?.tienTe || "VND" // Tự động nhảy theo ví
                     });
                   }}
                   className="w-full h-11 pl-4 pr-8 rounded-xl bg-slate-50 border-none font-bold text-slate-800 text-sm focus:ring-2 focus:ring-amber-100 appearance-none"
@@ -757,13 +813,37 @@ export default function Investments() {
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
-                      GIÁ ({userWallets.find(w => w.id === txForm.viId)?.tienTe || "VNĐ"})
+                      GIÁ ({txForm.tienTe})
                     </label>
-                    <Input type="text" placeholder="0"
-                      value={txForm.gia}
-                      onChange={(e) => setTxForm({ ...txForm, gia: formatVnCurrencyInput(e.target.value) })}
-                      className="h-11 rounded-xl bg-white border-slate-100 font-bold text-slate-800"
-                    />
+                    <div className="relative group">
+                      <Input type="text" placeholder="0"
+                        value={txForm.gia}
+                        onChange={(e) => setTxForm({ ...txForm, gia: formatPriceInput(e.target.value, txForm.tienTe) })}
+                        className="h-11 rounded-xl bg-white border-slate-100 font-bold text-slate-800 pr-16"
+                      />
+                      <div className="absolute right-1 top-1 bottom-1 flex items-center bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden">
+                        {["USD", "VND"].map((curr) => (
+                          <button
+                            key={curr}
+                            onClick={() => {
+                              const currentVal = parsePriceInput(txForm.gia, txForm.tienTe);
+                              let newVal = currentVal;
+                              if (txForm.tienTe === "VND" && curr === "USD") newVal = currentVal / USD_VND_RATE;
+                              if (txForm.tienTe === "USD" && curr === "VND") newVal = currentVal * USD_VND_RATE;
+
+                              setTxForm({ 
+                                ...txForm, 
+                                tienTe: curr,
+                                gia: formatPriceInput(newVal, curr)
+                              });
+                            }}
+                            className={`px-2 h-full text-[9px] font-black transition-all ${txForm.tienTe === curr ? "bg-amber-500 text-white" : "text-slate-400 hover:bg-slate-50"}`}
+                          >
+                            {curr}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-1">
@@ -778,7 +858,14 @@ export default function Investments() {
                   <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-1">Ví thanh toán</label>
                   <select
                     value={txForm.viId}
-                    onChange={(e) => setTxForm({ ...txForm, viId: e.target.value })}
+                    onChange={(e) => {
+                      const wallet = userWallets.find(w => w.id === e.target.value);
+                      setTxForm({ 
+                        ...txForm, 
+                        viId: e.target.value,
+                        tienTe: wallet?.tienTe || "VND" // Tự động nhảy theo ví
+                      });
+                    }}
                     className="w-full h-11 pl-4 pr-8 rounded-xl bg-white border-slate-100 font-bold text-slate-800 text-sm focus:ring-2 focus:ring-amber-100 appearance-none"
                   >
                     <option value="">-- Chọn ví giao dịch --</option>
