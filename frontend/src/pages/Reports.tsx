@@ -128,8 +128,6 @@ export default function Reports() {
     setIsSendingEmail(true)
     setMessage({ text: '', type: null })
     try {
-      const token = localStorage.getItem("token")
-      
       let url = "";
       if (pendingFormat === 'single') {
         if (!pendingSingleId) throw new Error("ID giao dịch không hợp lệ");
@@ -137,7 +135,7 @@ export default function Reports() {
           emailNhan: receiverEmail,
           noiDung: customMessage
         }).toString();
-        url = `http://localhost:8080/api/reports/export/transaction/${pendingSingleId}/email?${queryParams}`;
+        url = `/reports/export/transaction/${pendingSingleId}/email?${queryParams}`;
       } else {
         const startDateTime = `${startDate}T00:00:00`
         const endDateTime = `${endDate}T23:59:59`
@@ -154,15 +152,10 @@ export default function Reports() {
         if (selectedWallet !== 'all') {
           queryParams.append('viId', selectedWallet);
         }
-        url = `http://localhost:8080/api/reports/export/email?${queryParams.toString()}`;
+        url = `/reports/export/email?${queryParams.toString()}`;
       }
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      
-      if (!response.ok) throw new Error("Gửi email thất bại");
+      await api.get(url);
       
       setMessage({ text: receiverEmail ? `Báo cáo đã được gửi tới ${receiverEmail}!` : "Báo cáo đã được gửi tới email của bạn!", type: 'success' })
       setShowNameModal(false)
@@ -385,25 +378,16 @@ export default function Reports() {
     setMessage({ text: '', type: null })
 
     try {
-      const token = localStorage.getItem("token")
       const startDateTime = `${startDate}T00:00:00`
       const endDateTime = `${endDate}T23:59:59`
       const viParam = selectedWallet !== 'all' ? `&viId=${selectedWallet}` : ''
       
-      const response = await fetch(
-        `http://localhost:8080/api/reports/export/${formatType}?start=${startDateTime}&end=${endDateTime}&loai=${reportType}&tenBaoCao=${encodeURIComponent(reportName)}${viParam}`,
-
-        {
-          method: 'GET',
-          headers: { 'Authorization': `Bearer ${token}` }
-        }
+      const response = await api.get(
+        `/reports/export/${formatType}?start=${startDateTime}&end=${endDateTime}&loai=${reportType}&tenBaoCao=${encodeURIComponent(reportName)}${viParam}`,
+        { responseType: 'blob' }
       )
 
-      if (!response.ok) {
-        throw new Error(`Lỗi khi xuất báo cáo: ${response.statusText}`)
-      }
-
-      const blob = await response.blob()
+      const blob = new Blob([response.data])
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -436,16 +420,11 @@ export default function Reports() {
     const gdId = pendingSingleId;
     setIsExportingSingle(gdId);
     try {
-      const token = localStorage.getItem("token")
-      const response = await fetch(
-        `http://localhost:8080/api/reports/export/transaction/${gdId}?tenBaoCao=${encodeURIComponent(reportName)}`,
-        {
-          method: 'GET',
-          headers: { 'Authorization': `Bearer ${token}` }
-        }
+      const response = await api.get(
+        `/reports/export/transaction/${gdId}?tenBaoCao=${encodeURIComponent(reportName)}`,
+        { responseType: 'blob' }
       )
-      if (!response.ok) throw new Error("Thao tác thất bại");
-      const blob = await response.blob()
+      const blob = new Blob([response.data])
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -472,26 +451,18 @@ export default function Reports() {
     setMessage({ text: '', type: null })
 
     try {
-      const token = localStorage.getItem("token")
       const startDateTime1 = `${compStart1}T00:00:00`
       const endDateTime1 = `${compEnd1}T23:59:59`
       const startDateTime2 = `${compStart2}T00:00:00`
       const endDateTime2 = `${compEnd2}T23:59:59`
       const viParam = selectedWallet !== 'all' ? `&viId=${selectedWallet}` : ''
       
-      const response = await fetch(
-        `http://localhost:8080/api/reports/export/comparison/pdf?start1=${startDateTime1}&end1=${endDateTime1}&start2=${startDateTime2}&end2=${endDateTime2}${viParam}`,
-        {
-          method: 'GET',
-          headers: { 'Authorization': `Bearer ${token}` }
-        }
+      const response = await api.get(
+        `/reports/export/comparison/pdf?start1=${startDateTime1}&end1=${endDateTime1}&start2=${startDateTime2}&end2=${endDateTime2}${viParam}`,
+        { responseType: 'blob' }
       )
 
-      if (!response.ok) {
-        throw new Error(`Lỗi khi xuất báo cáo so sánh`)
-      }
-
-      const blob = await response.blob()
+      const blob = new Blob([response.data])
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url

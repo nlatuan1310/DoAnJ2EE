@@ -595,7 +595,7 @@ export default function Transactions() {
             <AlertCircle className="w-10 h-10 text-rose-400 mx-auto mb-3" />
             <p className="text-rose-500 font-medium mb-1">{error}</p>
             <p className="text-xs text-slate-400 mb-4">
-              Kiểm tra Backend đang chạy tại http://localhost:8080
+              Kiểm tra Backend đang chạy và kết nối đúng cổng
             </p>
             <button
               onClick={() => window.location.reload()}

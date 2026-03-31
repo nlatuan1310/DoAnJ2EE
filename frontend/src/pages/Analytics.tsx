@@ -80,6 +80,7 @@ export default function Analytics() {
   const [catStats, setCatStats] = useState<any[]>([]);
   const [tagStats, setTagStats] = useState<any[]>([]);
   const [trendData, setTrendData] = useState<any[]>([]);
+  const [lastMonthSpending, setLastMonthSpending] = useState(0);
 
   const fetchStats = async () => {
     setLoading(true);
@@ -87,15 +88,27 @@ export default function Analytics() {
     try {
       const start = `${startDate}T00:00:00`;
       const end = `${endDate}T23:59:59`;
+
+      // Tính khoảng tháng trước dựa trên startDate
+      const startD = new Date(startDate);
+      const prevStart = new Date(startD.getFullYear(), startD.getMonth() - 1, 1);
+      const prevEnd = new Date(startD.getFullYear(), startD.getMonth(), 0, 23, 59, 59);
+      const prevStartStr = prevStart.toISOString().slice(0, 19);
+      const prevEndStr = prevEnd.toISOString().slice(0, 19);
       
-      const [catRes, tagRes, trendRes] = await Promise.all([
+      const [catRes, tagRes, trendRes, prevCatRes] = await Promise.all([
         thongKeApi.getCategoryStats(start, end),
         thongKeApi.getTagStats(start, end),
-        thongKeApi.getTrend(start, end)
+        thongKeApi.getTrend(start, end),
+        thongKeApi.getCategoryStats(prevStartStr, prevEndStr),
       ]);
       
       setCatStats(catRes.data);
       setTagStats(tagRes.data);
+
+      // Tổng chi tiêu tháng trước
+      const prevTotal = (prevCatRes.data || []).reduce((sum: number, c: any) => sum + (c.tongTien || 0), 0);
+      setLastMonthSpending(prevTotal);
       
       // Transform trend data: [date, amount] -> {date, amount}
       const transformedTrend = trendRes.data.map((item: any) => ({
@@ -117,6 +130,9 @@ export default function Analytics() {
   }, [startDate, endDate]);
 
   const totalSpending = catStats.reduce((sum, item) => sum + item.tongTien, 0);
+  const spendingChangePercent = lastMonthSpending > 0
+    ? ((totalSpending - lastMonthSpending) / lastMonthSpending) * 100
+    : null;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-700">
@@ -212,12 +228,19 @@ export default function Analytics() {
               <CardContent className="p-6">
                 <p className="text-violet-100 text-xs font-bold uppercase tracking-widest mb-1">Tổng chi tiêu</p>
                 <h3 className="text-3xl font-black">{fmtVND(totalSpending)}</h3>
-                <div className="mt-4 flex items-center gap-2 text-sm text-violet-100">
-                  <div className="flex items-center bg-white/20 px-1.5 py-0.5 rounded-md">
-                    <ArrowUpRight className="w-3.5 h-3.5 mr-1" /> 12%
+                {spendingChangePercent !== null && (
+                  <div className="mt-4 flex items-center gap-2 text-sm text-violet-100">
+                    <div className="flex items-center bg-white/20 px-1.5 py-0.5 rounded-md">
+                      {spendingChangePercent >= 0 ? (
+                        <ArrowUpRight className="w-3.5 h-3.5 mr-1" />
+                      ) : (
+                        <ArrowDownRight className="w-3.5 h-3.5 mr-1" />
+                      )}
+                      {Math.abs(spendingChangePercent).toFixed(0)}%
+                    </div>
+                    <span>so với tháng trước</span>
                   </div>
-                  <span>so với tháng trước</span>
-                </div>
+                )}
               </CardContent>
             </Card>
 
