@@ -240,4 +240,51 @@ export const viTienApi = {
   },
 };
 
+// ===== Budget API (Ngân Sách) =====
+
+export const nganSachApi = {
+  /** Lấy danh sách ngân sách của người dùng */
+  getAll: (nguoiDungId?: string) => {
+    const uid = nguoiDungId || getCurrentUserId();
+    return api.get(`/ngan-sach/nguoi-dung/${uid}`);
+  },
+};
+
+// ===== Notification API (Thông Báo) =====
+
+export const thongBaoApi = {
+  /** Lấy toàn bộ thông báo (mới nhất trước) */
+  getAll: (nguoiDungId?: string) => {
+    const uid = nguoiDungId || getCurrentUserId();
+    return api.get(`/thong-bao/nguoi-dung/${uid}`);
+  },
+};
+
+// ===== Subscription API (Đăng ký dịch vụ) =====
+
+export const dangKyDichVuApi = {
+  /** Lấy danh sách đăng ký dịch vụ định kỳ */
+  getAll: (nguoiDungId?: string) => {
+    const uid = nguoiDungId || getCurrentUserId();
+    return api.get(`/dang-ky-dich-vu/nguoi-dung/${uid}`);
+  },
+};
+
+// ===== Transaction API (Giao dịch) =====
+
+export const giaoDichApi = {
+  /** Lấy giao dịch theo khoảng thời gian */
+  getByTimeRange: (start: string, end: string, nguoiDungId?: string) => {
+    const uid = nguoiDungId || getCurrentUserId();
+    return api.get(`/giao-dich/nguoi-dung/${uid}/thoi-gian`, {
+      params: { tuNgay: start, denNgay: end },
+    });
+  },
+  /** Lấy tất cả giao dịch của người dùng */
+  getAll: (nguoiDungId?: string) => {
+    const uid = nguoiDungId || getCurrentUserId();
+    return api.get(`/giao-dich/nguoi-dung/${uid}`);
+  },
+};
+
 export default api;
