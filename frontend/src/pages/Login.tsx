@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Mail, Lock, ShieldCheck, ArrowRight, CheckCircle2 } from 'lucide-react';
+import api from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -23,32 +24,23 @@ export default function Login() {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8080/api/auth/dang-nhap', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, matKhau: password }),
-      });
+      const res = await api.post('/auth/dang-nhap', { email, matKhau: password });
+      const data = res.data;
 
-      const data = await response.json();
-
-      if (response.ok) {
-        if (data.requires2FA) {
-          setStep(2);
-          setLoading(false);
-        } else {
-          login(data.token, {
-            id: data.id,
-            email: data.email,
-            hoVaTen: data.hoVaTen,
-            vaiTro: data.vaiTro
-          });
-          navigate(data.vaiTro?.toLowerCase() === 'admin' ? '/admin' : '/');
-        }
+      if (data.requires2FA) {
+        setStep(2);
+        setLoading(false);
       } else {
-        setError(data.message || 'Email hoặc mật khẩu không chính xác');
+        login(data.token, {
+          id: data.id,
+          email: data.email,
+          hoVaTen: data.hoVaTen,
+          vaiTro: data.vaiTro
+        });
+        navigate(data.vaiTro?.toLowerCase() === 'admin' ? '/admin' : '/');
       }
-    } catch (err) {
-      setError('Lỗi kết nối máy chủ');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Email hoặc mật khẩu không chính xác');
     } finally {
       if (step === 1) setLoading(false);
     }
@@ -60,27 +52,18 @@ export default function Login() {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8080/api/auth/verify-2fa', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp }),
+      const res = await api.post('/auth/verify-2fa', { email, otp });
+      const data = res.data;
+
+      login(data.token, {
+        id: data.id,
+        email: data.email,
+        hoVaTen: data.hoVaTen,
+        vaiTro: data.vaiTro
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        login(data.token, {
-          id: data.id,
-          email: data.email,
-          hoVaTen: data.hoVaTen,
-          vaiTro: data.vaiTro
-        });
-        navigate(data.vaiTro?.toLowerCase() === 'admin' ? '/admin' : '/');
-      } else {
-        setError(data.message || 'Mã OTP không chính xác hoặc đã hết hạn.');
-      }
-    } catch (err) {
-      setError('Lỗi kết nối máy chủ');
+      navigate(data.vaiTro?.toLowerCase() === 'admin' ? '/admin' : '/');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Mã OTP không chính xác hoặc đã hết hạn.');
     } finally {
       setLoading(false);
     }

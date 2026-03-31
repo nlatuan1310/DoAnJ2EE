@@ -5,6 +5,7 @@ import {
   Eye, EyeOff, Mail, ChevronRight, X, FileText,
   Calendar as CalendarIcon, Loader2
 } from 'lucide-react';
+import api from '@/services/api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type SidebarItem = 'bao-mat' | 'doi-mat-khau' | 'bao-cao';
@@ -103,7 +104,7 @@ function ConfirmDialog({
 
 // ─── Main Settings Page ───────────────────────────────────────────────────────
 export default function Settings() {
-  const { token, user } = useAuth();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<SidebarItem>('bao-mat');
 
   // ── Popup state ──
@@ -151,15 +152,11 @@ export default function Settings() {
 
   const fetchUserData = async () => {
     try {
-      const res = await fetch('http://localhost:8080/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setIs2faEnabled(data.is2faEnabled);
-        setIsScheduledEnabled(data.isScheduledReportsEnabled);
-        setScheduledEmail(data.scheduledReportEmail || data.email);
-      }
+      const res = await api.get('/auth/me');
+      const data = res.data;
+      setIs2faEnabled(data.is2faEnabled);
+      setIsScheduledEnabled(data.isScheduledReportsEnabled);
+      setScheduledEmail(data.scheduledReportEmail || data.email);
     } catch { /* ignore */ }
   };
 
@@ -167,19 +164,10 @@ export default function Settings() {
     setLoadingScheduled(true);
     setMessageScheduled({ text: '', type: null });
     try {
-      const res = await fetch('http://localhost:8080/api/auth/update-report-scheduled', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ enabled: isScheduledEnabled, email: scheduledEmail }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setMessageScheduled({ text: data.message, type: 'success' });
-      } else {
-        setMessageScheduled({ text: data.message || 'Cập nhật thất bại', type: 'error' });
-      }
-    } catch {
-      setMessageScheduled({ text: 'Lỗi kết nối máy chủ', type: 'error' });
+      const res = await api.post('/auth/update-report-scheduled', { enabled: isScheduledEnabled, email: scheduledEmail });
+      setMessageScheduled({ text: res.data.message, type: 'success' });
+    } catch (err: any) {
+      setMessageScheduled({ text: err.response?.data?.message || 'Cập nhật thất bại', type: 'error' });
     } finally {
       setLoadingScheduled(false);
     }
@@ -190,20 +178,11 @@ export default function Settings() {
     setLoading2fa(true);
     setMessage2fa({ text: '', type: null });
     try {
-      const res = await fetch('http://localhost:8080/api/auth/toggle-2fa', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ enable: !is2faEnabled }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setIs2faEnabled(v => !v);
-        setMessage2fa({ text: data.message, type: 'success' });
-      } else {
-        setMessage2fa({ text: data.message || 'Cập nhật thất bại', type: 'error' });
-      }
-    } catch {
-      setMessage2fa({ text: 'Lỗi kết nối máy chủ', type: 'error' });
+      const res = await api.post('/auth/toggle-2fa', { enable: !is2faEnabled });
+      setIs2faEnabled(v => !v);
+      setMessage2fa({ text: res.data.message, type: 'success' });
+    } catch (err: any) {
+      setMessage2fa({ text: err.response?.data?.message || 'Cập nhật thất bại', type: 'error' });
     } finally {
       setLoading2fa(false);
     }
@@ -224,21 +203,14 @@ export default function Settings() {
   const doChangePassword = async () => {
     setLoadingPw(true);
     try {
-      const res = await fetch('http://localhost:8080/api/auth/doi-mat-khau', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ matKhauCu: pwForm.matKhauCu, matKhauMoi: pwForm.matKhauMoi }),
-      });
-      const data = await res.json();
-      if (res.ok) {
+      const res = await api.post('/auth/doi-mat-khau', { matKhauCu: pwForm.matKhauCu, matKhauMoi: pwForm.matKhauMoi });
+      if (res.data) {
         setMessagePw({ text: 'Đổi mật khẩu thành công!', type: 'success' });
         setPwForm({ matKhauCu: '', matKhauMoi: '', xacNhan: '' });
         setPwErrors({});
-      } else {
-        setMessagePw({ text: data.message || 'Đổi mật khẩu thất bại', type: 'error' });
       }
-    } catch {
-      setMessagePw({ text: 'Lỗi kết nối máy chủ', type: 'error' });
+    } catch (err: any) {
+      setMessagePw({ text: err.response?.data?.message || 'Đổi mật khẩu thất bại', type: 'error' });
     } finally {
       setLoadingPw(false);
     }

@@ -91,20 +91,11 @@ export default function ReceiptScanner() {
     d.append("file", file);
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:8080/api/ai/receipt/scan", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-        body: d,
+      const response = await api.post("/ai/receipt/scan", d, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
-      if (!response.ok) {
-        throw new Error("Lỗi khi kết nối với máy chủ AI. Vui lòng kiểm tra lại Spring Boot.");
-      }
-
-      const data = await response.json();
+      const data = response.data;
       setResult(data);
       setFormData({
         tenCuaHang: data.tenCuaHang || "",
@@ -113,7 +104,7 @@ export default function ReceiptScanner() {
         ghiChu: data.ghiChu || ""
       });
     } catch (err: any) {
-      setError(err.message || "Có lỗi xảy ra");
+      setError(err.response?.data?.message || err.message || "Lỗi khi kết nối với máy chủ AI.");
     } finally {
       setLoading(false);
     }

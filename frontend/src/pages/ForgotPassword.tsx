@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft, CheckCircle2, ShieldQuestion } from 'lucide-react';
+import api from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,21 +26,10 @@ export default function ForgotPassword() {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8080/api/auth/quen-mat-khau', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setStep(2);
-      } else {
-        setError(data.message || 'Không tìm thấy tài khoản với email này.');
-      }
-    } catch (err) {
-      setError('Lỗi kết nối máy chủ');
+      await api.post('/auth/quen-mat-khau', { email });
+      setStep(2);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Không tìm thấy tài khoản với email này.');
     } finally {
       setLoading(false);
     }
@@ -51,21 +41,10 @@ export default function ForgotPassword() {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8080/api/auth/xac-thuc-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setStep(3);
-      } else {
-        setError(data.message || 'Mã OTP không chính xác hoặc đã hết hạn.');
-      }
-    } catch (err) {
-      setError('Lỗi kết nối máy chủ');
+      await api.post('/auth/xac-thuc-otp', { email, otp });
+      setStep(3);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Mã OTP không chính xác hoặc đã hết hạn.');
     } finally {
       setLoading(false);
     }
@@ -82,23 +61,12 @@ export default function ForgotPassword() {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8080/api/auth/dat-lai-mat-khau', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp, matKhauMoi }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setLoading(false);
-        alert('Đổi mật khẩu thành công!');
-        navigate('/login');
-      } else {
-        setError(data.message || 'Có lỗi xảy ra, vui lòng thử lại.');
-      }
-    } catch (err) {
-      setError('Lỗi kết nối máy chủ');
+      await api.post('/auth/dat-lai-mat-khau', { email, otp, matKhauMoi });
+      setLoading(false);
+      alert('Đổi mật khẩu thành công!');
+      navigate('/login');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại.');
     } finally {
       setLoading(false);
     }

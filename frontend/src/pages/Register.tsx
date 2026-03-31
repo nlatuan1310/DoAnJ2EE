@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, Phone, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import api from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,21 +28,12 @@ export default function Register() {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8080/api/auth/dang-ky', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      const res = await api.post('/auth/dang-ky', formData);
+      if (res.data) {
         navigate('/login');
-      } else {
-        setError(data.message || 'Họ và tên hoặc Email đã được sử dụng');
       }
-    } catch (err) {
-      setError('Lỗi kết nối máy chủ');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Họ và tên hoặc Email đã được sử dụng');
     } finally {
       setLoading(false);
     }
