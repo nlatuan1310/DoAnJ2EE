@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -58,31 +59,42 @@ public class FinancialAdvisorService {
         this.cauHoiAIRepository = cauHoiAIRepository;
     }
 
+    private static final int MAX_QUESTION_LENGTH = 1000;
+
     /**
      * Hỏi cố vấn tài chính AI — Main RAG entry point.
      */
     public FinancialAdvisorDTO.AdvisorResponse hoiCoVan(UUID userId, String cauHoi) {
+        // Validate input
+        if (cauHoi == null || cauHoi.trim().isEmpty()) {
+            throw new IllegalArgumentException("Câu hỏi không được để trống.");
+        }
+        if (cauHoi.length() > MAX_QUESTION_LENGTH) {
+            throw new IllegalArgumentException("Câu hỏi quá dài. Tối đa " + MAX_QUESTION_LENGTH + " ký tự.");
+        }
+
         log.info("RAG Financial Advisor — User {} hỏi: {}", userId, cauHoi);
 
         // 1. RETRIEVE — Lấy dữ liệu tài chính từ DB
         FinancialAdvisorDTO.FinancialContext context = buildFinancialContext(userId);
 
-        // 2. AUGMENT — Xây dựng prompt
-        String prompt = buildPrompt(context, cauHoi);
+        // 2. AUGMENT — Xây dựng prompt (system + user riêng biệt)
+        String systemPrompt = buildSystemPrompt();
+        String userPrompt = buildUserPrompt(context, cauHoi);
 
         // 3. GENERATE — Gọi Llama qua Ollama
         String traLoi;
         try {
             traLoi = ollamaChatClient.prompt()
-                    .user(prompt)
+                    .system(systemPrompt)
+                    .user(userPrompt)
                     .call()
                     .content();
             log.info("Ollama response length: {} chars", traLoi != null ? traLoi.length() : 0);
         } catch (Exception e) {
             log.error("Lỗi khi gọi Ollama: {}", e.getMessage(), e);
             traLoi = "Xin lỗi, hiện tại tôi không thể xử lý yêu cầu của bạn. " +
-                     "Vui lòng kiểm tra Ollama đang chạy (http://localhost:11434) " +
-                     "và model llama3.1:8b đã được tải. Lỗi: " + e.getMessage();
+                     "Vui lòng kiểm tra kết nối đến máy chủ AI và thử lại sau.";
         }
 
         // 4. Lưu lịch sử vào CauHoiAI
@@ -118,10 +130,59 @@ public class FinancialAdvisorService {
     }
 
     /**
-     * Xóa một câu hỏi trong lịch sử.
+     * Xóa một câu hỏi trong lịch sử — chỉ cho phép xóa câu hỏi của chính user.
      */
-    public void xoaCauHoi(UUID id) {
+    public void xoaCauHoi(UUID id, UUID userId) {
+        CauHoiAI cauHoi = cauHoiAIRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy câu hỏi."));
+
+        if (cauHoi.getNguoiDung() == null || !cauHoi.getNguoiDung().getId().equals(userId)) {
+            throw new RuntimeException("Bạn không có quyền xóa câu hỏi này.");
+        }
+
         cauHoiAIRepository.deleteById(id);
+    }
+
+    /**
+     * Hỏi cố vấn tài chính AI — Streaming version (trả về từng token).
+     */
+    public Flux<String> hoiCoVanStream(UUID userId, String cauHoi) {
+        // Validate input
+        if (cauHoi == null || cauHoi.trim().isEmpty()) {
+            return Flux.error(new IllegalArgumentException("Câu hỏi không được để trống."));
+        }
+        if (cauHoi.length() > MAX_QUESTION_LENGTH) {
+            return Flux.error(new IllegalArgumentException("Câu hỏi quá dài. Tối đa " + MAX_QUESTION_LENGTH + " ký tự."));
+        }
+
+        log.info("RAG Financial Advisor (Stream) — User {} hỏi: {}", userId, cauHoi);
+
+        // 1. RETRIEVE
+        FinancialAdvisorDTO.FinancialContext context = buildFinancialContext(userId);
+
+        // 2. AUGMENT
+        String systemPrompt = buildSystemPrompt();
+        String userPrompt = buildUserPrompt(context, cauHoi);
+
+        // 3. GENERATE — Stream từng token từ Ollama
+        return ollamaChatClient.prompt()
+                .system(systemPrompt)
+                .user(userPrompt)
+                .stream()
+                .content();
+    }
+
+    /**
+     * Lưu lịch sử hội thoại (dùng sau khi stream hoàn tất).
+     */
+    public CauHoiAI luuLichSu(UUID userId, String cauHoi, String traLoi) {
+        NguoiDung nguoiDung = nguoiDungRepository.findById(userId).orElse(null);
+        CauHoiAI cauHoiAI = CauHoiAI.builder()
+                .nguoiDung(nguoiDung)
+                .cauHoi(cauHoi)
+                .traLoi(traLoi)
+                .build();
+        return cauHoiAIRepository.save(cauHoiAI);
     }
 
     // ========================================================================
@@ -189,13 +250,10 @@ public class FinancialAdvisorService {
     }
 
     /**
-     * AUGMENT: Xây dựng prompt với system role + financial context + câu hỏi.
+     * AUGMENT: Xây dựng system prompt (instruction cho AI).
      */
-    private String buildPrompt(FinancialAdvisorDTO.FinancialContext ctx, String cauHoi) {
-        StringBuilder sb = new StringBuilder();
-
-        // System instruction
-        sb.append("""
+    private String buildSystemPrompt() {
+        return """
                 Bạn là một cố vấn tài chính cá nhân thông minh tên SpendWise AI. \
                 Nhiệm vụ của bạn là phân tích dữ liệu tài chính thực tế của người dùng \
                 và đưa ra lời khuyên cụ thể, hữu ích bằng tiếng Việt.
@@ -207,32 +265,44 @@ public class FinancialAdvisorService {
                 - Không bịa số liệu, chỉ dùng dữ liệu được cung cấp
                 - Nếu thiếu dữ liệu, nói rõ và đưa lời khuyên chung
                 - Sử dụng emoji phù hợp để làm câu trả lời sinh động
+                - Nếu câu hỏi KHÔNG liên quan đến tài chính cá nhân, ngân sách, tiết kiệm, \
+                đầu tư, chi tiêu hoặc quản lý tiền bạc, hãy lịch sự từ chối và nhắc người dùng \
+                rằng bạn chỉ hỗ trợ về lĩnh vực tài chính. Tuyệt đối KHÔNG trả lời câu hỏi ngoài phạm vi.
+                """;
+    }
 
-                """);
+    /**
+     * AUGMENT: Xây dựng user prompt với financial context + câu hỏi.
+     */
+    private String buildUserPrompt(FinancialAdvisorDTO.FinancialContext ctx, String cauHoi) {
+        StringBuilder sb = new StringBuilder();
 
         // Financial context
         sb.append("=== DỮ LIỆU TÀI CHÍNH CỦA NGƯỜI DÙNG (30 ngày gần nhất) ===\n\n");
 
-        sb.append("💰 Tổng thu nhập: ").append(formatMoney(ctx.getTongThuNhap())).append("\n");
-        sb.append("💸 Tổng chi tiêu: ").append(formatMoney(ctx.getTongChiTieu())).append("\n");
+        BigDecimal thuNhap = nullSafe(ctx.getTongThuNhap());
+        BigDecimal chiTieu = nullSafe(ctx.getTongChiTieu());
 
-        BigDecimal chenhLech = ctx.getTongThuNhap().subtract(ctx.getTongChiTieu());
+        sb.append("💰 Tổng thu nhập: ").append(formatMoney(thuNhap)).append("\n");
+        sb.append("💸 Tổng chi tiêu: ").append(formatMoney(chiTieu)).append("\n");
+
+        BigDecimal chenhLech = thuNhap.subtract(chiTieu);
         sb.append("📊 Chênh lệch (thu - chi): ").append(formatMoney(chenhLech)).append("\n");
-        sb.append("🏦 Tổng số dư các ví: ").append(formatMoney(ctx.getSoDuTongVi())).append("\n\n");
+        sb.append("🏦 Tổng số dư các ví: ").append(formatMoney(nullSafe(ctx.getSoDuTongVi()))).append("\n\n");
 
-        if (!ctx.getTopChiTieu().isEmpty()) {
+        if (ctx.getTopChiTieu() != null && !ctx.getTopChiTieu().isEmpty()) {
             sb.append("📋 Top danh mục chi tiêu:\n");
             ctx.getTopChiTieu().forEach(item -> sb.append("  - ").append(item).append("\n"));
             sb.append("\n");
         }
 
-        if (!ctx.getNganSachInfo().isEmpty()) {
+        if (ctx.getNganSachInfo() != null && !ctx.getNganSachInfo().isEmpty()) {
             sb.append("📌 Ngân sách đã thiết lập:\n");
             ctx.getNganSachInfo().forEach(item -> sb.append("  - ").append(item).append("\n"));
             sb.append("\n");
         }
 
-        if (!ctx.getMucTieuInfo().isEmpty()) {
+        if (ctx.getMucTieuInfo() != null && !ctx.getMucTieuInfo().isEmpty()) {
             sb.append("🎯 Mục tiêu tiết kiệm:\n");
             ctx.getMucTieuInfo().forEach(item -> sb.append("  - ").append(item).append("\n"));
             sb.append("\n");
@@ -242,6 +312,13 @@ public class FinancialAdvisorService {
         sb.append(cauHoi).append("\n");
 
         return sb.toString();
+    }
+
+    /**
+     * Null-safe BigDecimal — trả về ZERO nếu null.
+     */
+    private BigDecimal nullSafe(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
     }
 
     /**
