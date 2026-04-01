@@ -43,9 +43,15 @@ public class MucTieuTietKiemController {
     }
 
     @PostMapping("/{id}/dong-gop")
-    public ResponseEntity<DongGopTietKiem> dongGop(@PathVariable UUID id,
-                                                    @RequestParam BigDecimal soTien) {
-        return ResponseEntity.ok(mucTieuService.dongGop(id, soTien));
+    public ResponseEntity<?> dongGop(@PathVariable UUID id,
+                                     @RequestParam BigDecimal soTien) {
+        try {
+            return ResponseEntity.ok(mucTieuService.dongGop(id, soTien));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Lỗi hệ thống: " + e.getMessage());
+        }
     }
 
     @GetMapping("/{id}/dong-gop")

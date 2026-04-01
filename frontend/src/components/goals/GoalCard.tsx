@@ -16,7 +16,7 @@ export interface SavingGoal {
   soTienHienTai: number
   ngayMucTieu: string
   ngayTao: string
-  viTien?: { id: string; tenVi: string }
+  viTien?: { id: string; tenVi: string; soDu?: number }
   color?: string
 }
 
@@ -116,7 +116,7 @@ export default function GoalCard({ goal, onView, onEdit, onDelete, onContribute 
 
         {/* Goal info */}
         <h3 className="text-sm font-semibold text-slate-800 mb-1 truncate">{goal.tenMucTieu}</h3>
-        <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-4">
+        <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-2">
           <CalendarDays className="w-3 h-3" />
           <span>{formatDate(goal.ngayMucTieu)}</span>
           {isCompleted && (
@@ -125,6 +125,13 @@ export default function GoalCard({ goal, onView, onEdit, onDelete, onContribute 
             </span>
           )}
         </div>
+
+        {goal.viTien && (
+          <div className="flex justify-between items-center text-[11px] text-slate-500 mb-4 bg-slate-50 px-2 py-1.5 rounded-lg border border-slate-100">
+            <span className="font-medium text-slate-600 truncate max-w-[50%]">Ví: {goal.viTien.tenVi}</span>
+            <span>Số dư: <span className="font-semibold text-slate-700">{formatCurrency(goal.viTien.soDu || 0)}</span></span>
+          </div>
+        )}
 
         {/* Amount */}
         <div className="flex items-baseline justify-between mb-3">

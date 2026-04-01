@@ -9,7 +9,7 @@ export interface MucTieuTietKiem {
   ngayMucTieu: string;
   ngayTao: string;
   nguoiDung?: { id: string; hoVaTen: string };
-  viTien?: { id: string; tenVi: string };
+  viTien?: { id: string; tenVi: string; soDu?: number };
 }
 
 export interface DongGopTietKiem {
