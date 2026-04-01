@@ -9,6 +9,7 @@ import {
   MessageSquare,
   Bot,
   User,
+  AlertTriangle,
 } from "lucide-react";
 
 interface ChatMessage {
@@ -34,6 +35,7 @@ export default function FinancialAdvisor() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; index: number } | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Load history on mount
@@ -202,13 +204,24 @@ export default function FinancialAdvisor() {
     }
   };
 
-  const handleDelete = async (id: string, index: number) => {
+  const handleDelete = (id: string, index: number) => {
+    setDeleteTarget({ id, index });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await financialAdvisorApi.deleteHistory(id);
-      setMessages((prev) => prev.filter((_, i) => i !== index));
+      await financialAdvisorApi.deleteHistory(deleteTarget.id);
+      setMessages((prev) => prev.filter((_, i) => i !== deleteTarget.index));
     } catch (err) {
       console.error("Failed to delete:", err);
+    } finally {
+      setDeleteTarget(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setDeleteTarget(null);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -219,6 +232,7 @@ export default function FinancialAdvisor() {
   };
 
   return (
+    <>
     <div className="flex flex-col h-[calc(100vh-4rem)] bg-gradient-to-br from-slate-50 via-violet-50/30 to-indigo-50/20">
       {/* Header */}
       <div className="flex-shrink-0 px-6 py-5 border-b border-slate-200/60 bg-white/70 backdrop-blur-sm">
@@ -393,5 +407,47 @@ export default function FinancialAdvisor() {
         </p>
       </div>
     </div>
+
+      {/* Delete Confirmation Popup — đặt ngoài layout để overlay phủ toàn bộ viewport */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+          {/* Overlay */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={cancelDelete}
+          />
+          {/* Dialog */}
+          <div className="relative bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2.5 bg-red-100 rounded-xl">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-800">
+                Xác nhận xóa
+              </h3>
+            </div>
+            <p className="text-sm text-slate-600 mb-6 leading-relaxed">
+              Bạn có chắc chắn muốn xóa câu hỏi này khỏi lịch sử trò chuyện?
+              Hành động này không thể hoàn tác.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors duration-200"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-xl transition-colors duration-200 shadow-sm"
+              >
+                Xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </>
   );
 }
