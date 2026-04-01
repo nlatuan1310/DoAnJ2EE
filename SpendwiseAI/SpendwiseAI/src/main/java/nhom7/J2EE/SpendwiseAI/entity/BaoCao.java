@@ -27,9 +27,6 @@ public class BaoCao {
     @Column(name = "dinh_dang")
     private String dinhDang; // pdf / csv
 
-    @Column(name = "file_url", columnDefinition = "TEXT")
-    private String fileUrl;
-
     @Column(name = "ngay_tao")
     private LocalDateTime ngayTao;
 

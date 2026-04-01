@@ -33,4 +33,11 @@ public class GiaoDichCrypto {
 
     @Column(name = "ngay_giao_dich")
     private LocalDateTime ngayGiaoDich;
+
+    @Column(name = "vi_id")
+    private UUID viId;
+
+    @Builder.Default
+    @Column(name = "tien_te")
+    private String tienTe = "USD";
 }

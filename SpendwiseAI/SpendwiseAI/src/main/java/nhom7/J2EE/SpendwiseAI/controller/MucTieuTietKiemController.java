@@ -20,6 +20,11 @@ public class MucTieuTietKiemController {
         this.mucTieuService = mucTieuService;
     }
 
+    @GetMapping
+    public ResponseEntity<List<MucTieuTietKiem>> layTatCa() {
+        return ResponseEntity.ok(mucTieuService.layTatCa());
+    }
+
     @GetMapping("/nguoi-dung/{nguoiDungId}")
     public ResponseEntity<List<MucTieuTietKiem>> layTheoNguoiDung(@PathVariable UUID nguoiDungId) {
         return ResponseEntity.ok(mucTieuService.layTheoNguoiDung(nguoiDungId));
@@ -38,9 +43,15 @@ public class MucTieuTietKiemController {
     }
 
     @PostMapping("/{id}/dong-gop")
-    public ResponseEntity<DongGopTietKiem> dongGop(@PathVariable UUID id,
-                                                    @RequestParam BigDecimal soTien) {
-        return ResponseEntity.ok(mucTieuService.dongGop(id, soTien));
+    public ResponseEntity<?> dongGop(@PathVariable UUID id,
+                                     @RequestParam BigDecimal soTien) {
+        try {
+            return ResponseEntity.ok(mucTieuService.dongGop(id, soTien));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Lỗi hệ thống: " + e.getMessage());
+        }
     }
 
     @GetMapping("/{id}/dong-gop")

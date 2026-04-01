@@ -30,6 +30,44 @@ spring:
   # Security – JWT is handled in SecurityConfig
   # ==========================================
 
+  # ==========================================
+  # Spring AI – Google Gemini
+  # ==========================================
+  ai:
+    google:
+      genai:
+        api-key: ${SPRING_AI_GOOGLE_GENAI_API_KEY:AIzaSy_YOUR_REAL_KEY_HERE}
+        chat:
+          options:
+            model: gemini-2.5-flash
+
+    # ==========================================
+    # Ollama – Llama (RAG Financial Advisor)
+    # ==========================================
+    ollama:
+      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+      chat:
+        options:
+          model: llama3.1:8b
+          temperature: 0.7
+
+  # ==========================================
+  # Mail Configuration
+  # ==========================================
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+
+
 server:
   port: 8080
 
@@ -38,5 +76,14 @@ server:
 # ==========================================
 jwt:
   secret: ${JWT_SECRET:SpendWiseAI-Default-Secret-Key-Change-In-Production-2024-Very-Long-Key}
+
   expiration: 86400000  # 24 giờ (ms)
+
+# ==========================================
+# Crypto Price Configuration
+# ==========================================
+crypto:
+  exchange-rate:
+    usd-to-vnd: 25400
+
 

@@ -1,5 +1,6 @@
 package nhom7.J2EE.SpendwiseAI.service;
 
+import nhom7.J2EE.SpendwiseAI.dto.DanhMucDTO;
 import nhom7.J2EE.SpendwiseAI.entity.DanhMuc;
 import nhom7.J2EE.SpendwiseAI.entity.NguoiDung;
 import nhom7.J2EE.SpendwiseAI.repository.DanhMucRepository;
@@ -8,48 +9,109 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class DanhMucService {
 
     private final DanhMucRepository danhMucRepository;
     private final NguoiDungRepository nguoiDungRepository;
+    private final nhom7.J2EE.SpendwiseAI.repository.GiaoDichRepository giaoDichRepository;
 
-    public DanhMucService(DanhMucRepository danhMucRepository, NguoiDungRepository nguoiDungRepository) {
+    public DanhMucService(DanhMucRepository danhMucRepository, 
+                          NguoiDungRepository nguoiDungRepository,
+                          nhom7.J2EE.SpendwiseAI.repository.GiaoDichRepository giaoDichRepository) {
         this.danhMucRepository = danhMucRepository;
         this.nguoiDungRepository = nguoiDungRepository;
+        this.giaoDichRepository = giaoDichRepository;
     }
 
-    public List<DanhMuc> layTheoNguoiDung(UUID nguoiDungId) {
-        return danhMucRepository.findByNguoiDungId(nguoiDungId);
+    public List<DanhMucDTO.DanhMucResponse> layTheoNguoiDung(UUID nguoiDungId) {
+        return danhMucRepository.findByNguoiDungId(nguoiDungId)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
-    public List<DanhMuc> layTheoLoai(UUID nguoiDungId, String loai) {
-        return danhMucRepository.findByNguoiDungIdAndLoai(nguoiDungId, loai);
+    public List<DanhMucDTO.DanhMucResponse> layTheoLoai(UUID nguoiDungId, String loai) {
+        return danhMucRepository.findByNguoiDungIdAndLoai(nguoiDungId, loai)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
-    public DanhMuc layTheoId(Integer id) {
-        return danhMucRepository.findById(id)
+    public DanhMucDTO.DanhMucResponse layTheoId(Integer id, UUID nguoiDungId) {
+        DanhMuc dm = danhMucRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy danh mục: " + id));
+        
+        kiểmTraQuyềnSởHữu(dm, nguoiDungId);
+        
+        return mapToResponse(dm);
     }
 
-    public DanhMuc tao(UUID nguoiDungId, DanhMuc danhMuc) {
+    public DanhMucDTO.DanhMucResponse tao(UUID nguoiDungId, DanhMucDTO.DanhMucRequest request) {
         NguoiDung nguoiDung = nguoiDungRepository.findById(nguoiDungId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng: " + nguoiDungId));
-        danhMuc.setNguoiDung(nguoiDung);
-        return danhMucRepository.save(danhMuc);
+        
+        DanhMuc dm = DanhMuc.builder()
+                .tenDanhMuc(request.getTenDanhMuc())
+                .loai(request.getLoai())
+                .icon(request.getIcon())
+                .mauSac(request.getMauSac())
+                .nguoiDung(nguoiDung)
+                .build();
+                
+        return mapToResponse(danhMucRepository.save(dm));
     }
 
-    public DanhMuc capNhat(Integer id, DanhMuc duLieuMoi) {
-        DanhMuc dm = layTheoId(id);
-        if (duLieuMoi.getTenDanhMuc() != null) dm.setTenDanhMuc(duLieuMoi.getTenDanhMuc());
-        if (duLieuMoi.getLoai() != null) dm.setLoai(duLieuMoi.getLoai());
-        if (duLieuMoi.getIcon() != null) dm.setIcon(duLieuMoi.getIcon());
-        if (duLieuMoi.getMauSac() != null) dm.setMauSac(duLieuMoi.getMauSac());
-        return danhMucRepository.save(dm);
+    public DanhMucDTO.DanhMucResponse capNhat(Integer id, UUID nguoiDungId, DanhMucDTO.DanhMucRequest request) {
+        DanhMuc dm = danhMucRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy danh mục: " + id));
+        
+        kiểmTraQuyềnSởHữu(dm, nguoiDungId);
+        
+        if (request.getTenDanhMuc() != null) dm.setTenDanhMuc(request.getTenDanhMuc());
+        if (request.getLoai() != null) dm.setLoai(request.getLoai());
+        if (request.getIcon() != null) dm.setIcon(request.getIcon());
+        if (request.getMauSac() != null) dm.setMauSac(request.getMauSac());
+        
+        return mapToResponse(danhMucRepository.save(dm));
     }
 
-    public void xoa(Integer id) {
-        danhMucRepository.deleteById(id);
+    public void xoa(Integer id, UUID nguoiDungId) {
+        DanhMuc dm = danhMucRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy danh mục: " + id));
+        
+        kiểmTraQuyềnSởHữu(dm, nguoiDungId);
+
+        // Xóa tham chiếu danh mục ở các giao dịch liên quan để tránh lỗi khóa ngoại
+        List<nhom7.J2EE.SpendwiseAI.entity.GiaoDich> giaoDichList = giaoDichRepository.findByNguoiDungIdAndDanhMucId(nguoiDungId, id);
+        for (nhom7.J2EE.SpendwiseAI.entity.GiaoDich gd : giaoDichList) {
+            gd.setDanhMuc(null);
+            giaoDichRepository.save(gd);
+        }
+        
+        try {
+            danhMucRepository.delete(dm);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            throw new RuntimeException("Không thể xóa danh mục này vì đang có liên kết dữ liệu ràng buộc.");
+        }
+    }
+
+    private void kiểmTraQuyềnSởHữu(DanhMuc dm, UUID nguoiDungId) {
+        if (!dm.getNguoiDung().getId().equals(nguoiDungId)) {
+            throw new RuntimeException("Bạn không có quyền thao tác trên danh mục này");
+        }
+    }
+
+    private DanhMucDTO.DanhMucResponse mapToResponse(DanhMuc dm) {
+        return DanhMucDTO.DanhMucResponse.builder()
+                .id(dm.getId())
+                .tenDanhMuc(dm.getTenDanhMuc())
+                .loai(dm.getLoai())
+                .icon(dm.getIcon())
+                .mauSac(dm.getMauSac())
+                .build();
     }
 }
+

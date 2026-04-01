@@ -20,4 +20,7 @@ public class TaiSanCrypto {
 
     @Column(name = "ten")
     private String ten;
+
+    @Column(name = "coingecko_id")
+    private String coingeckoId;
 }
