@@ -16,10 +16,14 @@ public class DanhMucService {
 
     private final DanhMucRepository danhMucRepository;
     private final NguoiDungRepository nguoiDungRepository;
+    private final nhom7.J2EE.SpendwiseAI.repository.GiaoDichRepository giaoDichRepository;
 
-    public DanhMucService(DanhMucRepository danhMucRepository, NguoiDungRepository nguoiDungRepository) {
+    public DanhMucService(DanhMucRepository danhMucRepository, 
+                          NguoiDungRepository nguoiDungRepository,
+                          nhom7.J2EE.SpendwiseAI.repository.GiaoDichRepository giaoDichRepository) {
         this.danhMucRepository = danhMucRepository;
         this.nguoiDungRepository = nguoiDungRepository;
+        this.giaoDichRepository = giaoDichRepository;
     }
 
     public List<DanhMucDTO.DanhMucResponse> layTheoNguoiDung(UUID nguoiDungId) {
@@ -79,8 +83,19 @@ public class DanhMucService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy danh mục: " + id));
         
         kiểmTraQuyềnSởHữu(dm, nguoiDungId);
+
+        // Xóa tham chiếu danh mục ở các giao dịch liên quan để tránh lỗi khóa ngoại
+        List<nhom7.J2EE.SpendwiseAI.entity.GiaoDich> giaoDichList = giaoDichRepository.findByNguoiDungIdAndDanhMucId(nguoiDungId, id);
+        for (nhom7.J2EE.SpendwiseAI.entity.GiaoDich gd : giaoDichList) {
+            gd.setDanhMuc(null);
+            giaoDichRepository.save(gd);
+        }
         
-        danhMucRepository.delete(dm);
+        try {
+            danhMucRepository.delete(dm);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            throw new RuntimeException("Không thể xóa danh mục này vì đang có liên kết dữ liệu ràng buộc.");
+        }
     }
 
     private void kiểmTraQuyềnSởHữu(DanhMuc dm, UUID nguoiDungId) {

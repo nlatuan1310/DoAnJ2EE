@@ -122,7 +122,7 @@ export default function GoalDetail() {
         soTienHienTai: goalData.soTienHienTai,
         ngayMucTieu: goalData.ngayMucTieu,
         ngayTao: goalData.ngayTao,
-        viTien: goalData.viTien ? { id: goalData.viTien.id, tenVi: goalData.viTien.tenVi } : undefined,
+        viTien: goalData.viTien ? { id: goalData.viTien.id, tenVi: goalData.viTien.tenVi, soDu: goalData.viTien.soDu } : undefined,
         color: "violet",
       })
       setContributions(contribData.map((c: any) => ({
@@ -150,9 +150,10 @@ export default function GoalDetail() {
       await goalService.contributeToGoal(goal.id, amount)
       // Reload data từ server
       await fetchData()
-    } catch (err) {
+    } catch (err: any) {
       console.error("Lỗi đóng góp:", err)
-      alert("Không thể đóng góp. Vui lòng thử lại.")
+      const msg = err.response?.data;
+      alert(typeof msg === 'string' ? msg : "Không thể đóng góp. Vui lòng thử lại.")
     }
   }
 
@@ -244,7 +245,7 @@ export default function GoalDetail() {
                 <h1 className="text-xl sm:text-2xl font-bold text-white">{goal.tenMucTieu}</h1>
                 <div className="flex items-center gap-3 mt-1">
                   <span className="flex items-center gap-1 text-sm text-white/80">
-                    <Wallet className="w-3.5 h-3.5" /> {goal.viTien?.tenVi}
+                    <Wallet className="w-3.5 h-3.5" /> {goal.viTien?.tenVi} (Số dư: {formatCurrency(goal.viTien?.soDu || 0)})
                   </span>
                   <span className="flex items-center gap-1 text-sm text-white/80">
                     <Calendar className="w-3.5 h-3.5" /> {formatDate(goal.ngayMucTieu)}

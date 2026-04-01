@@ -29,7 +29,6 @@ function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
-// Map API response → SavingGoal (frontend type)
 function mapToSavingGoal(item: goalService.MucTieuTietKiem, index: number): SavingGoal {
   const colors = ["violet", "sky", "emerald", "amber", "rose", "indigo"]
   return {
@@ -39,7 +38,7 @@ function mapToSavingGoal(item: goalService.MucTieuTietKiem, index: number): Savi
     soTienHienTai: item.soTienHienTai,
     ngayMucTieu: item.ngayMucTieu,
     ngayTao: item.ngayTao,
-    viTien: item.viTien ? { id: item.viTien.id, tenVi: item.viTien.tenVi } : undefined,
+    viTien: item.viTien ? { id: item.viTien.id, tenVi: item.viTien.tenVi, soDu: item.viTien.soDu } : undefined,
     color: colors[index % colors.length],
   }
 }
