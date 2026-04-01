@@ -27,6 +27,8 @@ const QUICK_SUGGESTIONS = [
   "Gợi ý cách quản lý tài chính cá nhân",
 ];
 
+const API_BASE_URL = "http://localhost:8080/api";
+
 export default function FinancialAdvisor() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -57,6 +59,9 @@ export default function FinancialAdvisor() {
     }
   };
 
+  /**
+   * Gửi câu hỏi với SSE streaming — nhận response từng token.
+   */
   const handleSend = async (question?: string) => {
     const cauHoi = question || input.trim();
     if (!cauHoi || loading) return;
@@ -64,33 +69,134 @@ export default function FinancialAdvisor() {
     setInput("");
     setLoading(true);
 
-    // Optimistic: add user question immediately
+    // Optimistic: hiện user bubble ngay lập tức
     const tempMsg: ChatMessage = { cauHoi, traLoi: "" };
     setMessages((prev) => [...prev, tempMsg]);
 
+    let streamSucceeded = false;
+
     try {
-      const res = await financialAdvisorApi.askQuestion({ cauHoi });
-      const data = res.data as ChatMessage;
-      // Replace temp message with real response
-      setMessages((prev) => [
-        ...prev.slice(0, -1),
-        {
-          id: data.id,
-          cauHoi: data.cauHoi,
-          traLoi: data.traLoi,
-          ngayTao: data.ngayTao,
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(`${API_BASE_URL}/co-van-ai/hoi-stream`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      ]);
+        body: JSON.stringify({ cauHoi }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const reader = response.body!.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+      let messageId = "";
+      let messageDate = "";
+      let buffer = ""; // Buffer cho SSE event bị tách giữa chừng
+
+      // Đọc SSE stream
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Parse complete SSE events (mỗi event kết thúc bởi \n\n)
+        const segments = buffer.split("\n\n");
+        buffer = segments.pop() || ""; // Giữ lại event chưa hoàn chỉnh trong buffer
+
+        for (const event of segments) {
+          if (!event.trim()) continue;
+
+          const lines = event.split("\n");
+          let eventType = "";
+          let data = "";
+
+          for (const line of lines) {
+            if (line.startsWith("event:")) {
+              eventType = line.slice(6).trim();
+            } else if (line.startsWith("data:")) {
+              // SSE spec: nhiều dòng data: → nối bằng \n
+              data += (data ? "\n" : "") + line.slice(5);
+            }
+          }
+
+          if (eventType === "token" && data) {
+            // Nhận từng token → append vào message
+            streamSucceeded = true;
+            fullText += data;
+            setMessages((prev) => {
+              const updated = [...prev];
+              updated[updated.length - 1] = {
+                ...updated[updated.length - 1],
+                traLoi: fullText,
+              };
+              return updated;
+            });
+          } else if (eventType === "done" && data) {
+            // Stream hoàn tất → nhận ID + ngày tạo
+            const dataParts = data.split("|");
+            messageId = dataParts[0] || "";
+            messageDate = dataParts.slice(1).join("|") || "";
+          } else if (eventType === "error") {
+            fullText =
+              "❌ " + (data || "Không thể kết nối với AI. Vui lòng thử lại.");
+            setMessages((prev) => {
+              const updated = [...prev];
+              updated[updated.length - 1] = {
+                ...updated[updated.length - 1],
+                traLoi: fullText,
+              };
+              return updated;
+            });
+          }
+        }
+      }
+
+      // Cập nhật message cuối cùng với ID và ngày tạo
+      if (messageId) {
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            id: messageId,
+            cauHoi,
+            traLoi: fullText,
+            ngayTao: messageDate,
+          };
+          return updated;
+        });
+      }
     } catch (err: any) {
-      setMessages((prev) => [
-        ...prev.slice(0, -1),
-        {
-          cauHoi,
-          traLoi:
-            "❌ Không thể kết nối với AI. Vui lòng kiểm tra Ollama đang chạy.\n\nLỗi: " +
-            (err.response?.data?.message || err.message),
-        },
-      ]);
+      // CHỈ fallback non-streaming nếu chưa nhận được token nào từ stream
+      if (!streamSucceeded) {
+        try {
+          const res = await financialAdvisorApi.askQuestion({ cauHoi });
+          const data = res.data as ChatMessage;
+          setMessages((prev) => [
+            ...prev.slice(0, -1),
+            {
+              id: data.id,
+              cauHoi: data.cauHoi,
+              traLoi: data.traLoi,
+              ngayTao: data.ngayTao,
+            },
+          ]);
+        } catch {
+          setMessages((prev) => [
+            ...prev.slice(0, -1),
+            {
+              cauHoi,
+              traLoi:
+                "❌ Không thể kết nối với AI. Vui lòng kiểm tra Ollama đang chạy.",
+            },
+          ]);
+        }
+      }
+      // Nếu đã stream thành công rồi → giữ nguyên nội dung đã nhận
     } finally {
       setLoading(false);
     }
@@ -151,7 +257,8 @@ export default function FinancialAdvisor() {
               Xin chào! Tôi là cố vấn tài chính AI
             </h2>
             <p className="text-sm text-slate-500 text-center max-w-md mb-6">
-              Tôi sẽ phân tích dữ liệu giao dịch, ngân sách và mục tiêu tiết kiệm của bạn để đưa ra lời khuyên cá nhân hóa.
+              Tôi sẽ phân tích dữ liệu giao dịch, ngân sách và mục tiêu tiết
+              kiệm của bạn để đưa ra lời khuyên cá nhân hóa.
             </p>
 
             {/* Quick Suggestions */}
@@ -172,7 +279,7 @@ export default function FinancialAdvisor() {
 
         {/* Chat Messages */}
         {messages.map((msg, index) => (
-          <div key={index} className="space-y-4">
+          <div key={msg.id || index} className="space-y-4">
             {/* User Bubble */}
             <div className="flex justify-end">
               <div className="flex items-start gap-2 max-w-[80%]">
@@ -196,6 +303,12 @@ export default function FinancialAdvisor() {
                     <div className="bg-white border border-slate-200/60 px-5 py-4 rounded-2xl rounded-tl-md shadow-sm">
                       <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
                         {msg.traLoi}
+                        {/* Blinking cursor khi đang stream */}
+                        {loading &&
+                          index === messages.length - 1 &&
+                          !msg.id && (
+                            <span className="inline-block w-2 h-4 ml-0.5 bg-violet-500 animate-pulse rounded-sm" />
+                          )}
                       </p>
                       {msg.ngayTao && (
                         <p className="text-[10px] text-slate-400 mt-2">
@@ -217,7 +330,7 @@ export default function FinancialAdvisor() {
                 </div>
               </div>
             ) : (
-              /* Loading indicator when waiting for AI response */
+              /* Loading indicator when waiting for first token */
               <div className="flex justify-start">
                 <div className="flex items-start gap-2">
                   <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center mt-1 shadow-sm">
@@ -276,7 +389,7 @@ export default function FinancialAdvisor() {
           </button>
         </div>
         <p className="text-[11px] text-slate-400 text-center mt-2">
-          Powered by Ollama • Dữ liệu được xử lý hoàn toàn dựa trên Ollama
+          Powered by Ollama • Phản hồi theo thời gian thực
         </p>
       </div>
     </div>
