@@ -20,7 +20,7 @@ public class CryptoMarketService {
     }
 
     /**
-     * Lấy giá hiện tại của một đồng coin từ Binance (Không cần API Key).
+
      * @param symbol Ký hiệu đồng coin, ví dụ: "BTC", "ETH"
      * @return Giá trị bằng VNĐ (sau khi quy đổi từ USDT)
      */
