@@ -125,8 +125,7 @@ export default function FinancialAdvisor() {
               Cố vấn Tài chính AI
             </h1>
             <p className="text-sm text-slate-500">
-              Powered by Llama 🦙 via Ollama — Phân tích dựa trên dữ liệu thực
-              của bạn
+              Phân tích dựa trên dữ liệu thực của bạn
             </p>
           </div>
         </div>
@@ -149,11 +148,10 @@ export default function FinancialAdvisor() {
               <Sparkles className="w-10 h-10 text-violet-600" />
             </div>
             <h2 className="text-lg font-semibold text-slate-700 mb-2">
-              Xin chào! Tôi là cố vấn tài chính AI 🦙
+              Xin chào! Tôi là cố vấn tài chính AI
             </h2>
             <p className="text-sm text-slate-500 text-center max-w-md mb-6">
-              Tôi sẽ phân tích dữ liệu giao dịch, ngân sách và mục tiêu tiết
-              kiệm của bạn để đưa ra lời khuyên cá nhân hóa.
+              Tôi sẽ phân tích dữ liệu giao dịch, ngân sách và mục tiêu tiết kiệm của bạn để đưa ra lời khuyên cá nhân hóa.
             </p>
 
             {/* Quick Suggestions */}
@@ -278,8 +276,7 @@ export default function FinancialAdvisor() {
           </button>
         </div>
         <p className="text-[11px] text-slate-400 text-center mt-2">
-          Powered by Llama 3.1 via Ollama • Dữ liệu được xử lý hoàn toàn trên
-          máy local
+          Powered by Ollama • Dữ liệu được xử lý hoàn toàn dựa trên Ollama
         </p>
       </div>
     </div>

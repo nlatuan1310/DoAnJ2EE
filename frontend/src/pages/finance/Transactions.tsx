@@ -31,7 +31,7 @@ import {
   xoaLichSu,
   xoaTatCaLichSu,
   LichSuTimKiem,
-} from "../services/searchHistoryService";
+} from "../../services/searchHistoryService";
 
 /* ═══════ TYPES ═══════ */
 interface DanhMuc {
@@ -58,7 +58,7 @@ interface GiaoDich {
   viTien?: { id: string; tenVi: string };
 }
 
-import api, { getCurrentUserId, autoCategorizeApi } from "../services/api";
+import api, { getCurrentUserId, autoCategorizeApi } from "../../services/api";
 
 /* ═══════ CONFIG ═══════ */
 const PAGE_SIZE = 10;

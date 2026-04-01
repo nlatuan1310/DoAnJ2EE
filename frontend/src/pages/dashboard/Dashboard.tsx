@@ -207,7 +207,7 @@ export default function Dashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         {/* Đã tiêu */}
-        <Card className="bg-white border border-slate-200 shadow-xs rounded-sm">
+        <Card className="bg-white border border-slate-200 shadow-sm rounded-xl">
           <CardContent className="px-5 pt-5 pb-5">
             <div className="flex items-center justify-between mb-3">
               <div className="text-[11px] uppercase font-semibold text-slate-400 tracking-wider">Đã tiêu</div>
@@ -221,7 +221,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Ngân sách */}
-        <Card className="bg-white border border-slate-200 shadow-xs rounded-sm">
+        <Card className="bg-white border border-slate-200 shadow-sm rounded-xl">
           <CardContent className="px-5 pt-5 pb-5">
             <div className="flex items-center justify-between mb-3">
               <div className="text-[11px] uppercase font-semibold text-slate-400 tracking-wider">Ngân sách</div>
@@ -235,7 +235,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Dự báo cuối tháng */}
-        <Card className={`border shadow-xs rounded-sm ${isOverBudget ? "bg-rose-50 border-rose-200" : "bg-white border-slate-200"}`}>
+        <Card className={`border shadow-sm rounded-xl ${isOverBudget ? "bg-rose-50 border-rose-200" : "bg-white border-slate-200"}`}>
           <CardContent className="px-5 pt-5 pb-5">
             <div className="flex items-center justify-between mb-3">
               <div className="text-[11px] uppercase font-semibold text-slate-400 tracking-wider">Dự báo cuối tháng</div>
@@ -253,7 +253,7 @@ export default function Dashboard() {
         </Card>
 
         {/* % Đã dùng */}
-        <Card className="bg-white border border-slate-200 shadow-xs rounded-sm">
+        <Card className="bg-white border border-slate-200 shadow-sm rounded-xl">
           <CardContent className="px-5 pt-5 pb-5">
             <div className="text-[11px] uppercase font-semibold text-slate-400 tracking-wider mb-2">Tỷ lệ sử dụng</div>
             {budgetLimit > 0 ? (
@@ -292,7 +292,7 @@ export default function Dashboard() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Biểu đồ chính: Thực tế vs Dự báo */}
-        <Card className="lg:col-span-2 bg-white border border-slate-200 shadow-xs rounded-sm">
+        <Card className="lg:col-span-2 bg-white border border-slate-200 shadow-sm rounded-xl">
           <CardHeader className="px-5 pt-5 pb-2">
             <CardTitle className="text-base font-semibold text-slate-800">Thực tế vs Dự báo theo ngày</CardTitle>
             <p className="text-xs text-slate-400 mt-1">Công thức hồi quy: (Chi tiêu TB / Ngày) × Tổng ngày tháng</p>
@@ -360,7 +360,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Biểu đồ phân loại */}
-        <Card className="bg-white border border-slate-200 shadow-xs rounded-sm">
+        <Card className="bg-white border border-slate-200 shadow-sm rounded-xl">
           <CardHeader className="px-5 pt-5 pb-2">
             <CardTitle className="text-base font-semibold text-slate-800">Phân loại Chi tiêu</CardTitle>
             <p className="text-xs text-slate-400 mt-1">{monthInfo.label}</p>

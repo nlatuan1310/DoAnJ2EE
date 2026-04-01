@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { Outlet, useNavigate } from "react-router-dom"
-import { Search, Bell, Info, Sun, LogOut, User, CheckCheck, AlertTriangle } from "lucide-react"
+import { Search, Bell, Info, LogOut, User, CheckCheck, AlertTriangle } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 
 import LandingPage from "@/pages/LandingPage"
@@ -103,10 +103,10 @@ export default function MainLayout() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset className="bg-slate-100 min-w-0 flex-1 flex flex-col h-screen overflow-hidden transition-[margin,width] duration-200 ease-linear">
+      <SidebarInset className="bg-slate-50 min-w-0 flex-1 flex flex-col h-screen overflow-hidden transition-[margin,width] duration-200 ease-linear">
         
         {/* Top Header */}
-        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-end border-b border-slate-200 bg-white px-4 sm:px-6">
+        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-end border-b border-slate-200 bg-white/95 backdrop-blur-sm px-4 sm:px-6">
           
           {/* Right Icons Group */}
           <div className="flex items-center gap-1 sm:gap-2">
@@ -204,11 +204,6 @@ export default function MainLayout() {
               <Info className="w-4 h-4" />
             </button>
 
-            {/* Theme Toggle */}
-            <button className="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
-              <Sun className="w-4 h-4" />
-            </button>
-
             {/* Divider */}
             <div className="w-px h-6 bg-slate-200 mx-1"></div>
 
@@ -250,7 +245,7 @@ export default function MainLayout() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-100">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-50">
           <Outlet />
         </div>
       </SidebarInset>
