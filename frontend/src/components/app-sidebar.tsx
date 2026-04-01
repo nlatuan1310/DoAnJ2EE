@@ -60,9 +60,9 @@ const mainMenuItems: MenuItem[] = [
     ],
   },
   {
-    title: "Quét hóa đơn",
-    url: "/receipt-scanner",
-    icon: ScanLine,
+    title: "Đầu tư",
+    url: "/investments",
+    icon: TrendingUp,
   },
   {
     title: "Danh mục & Thẻ",
@@ -85,19 +85,19 @@ const mainMenuItems: MenuItem[] = [
     icon: BarChart3,
   },
   {
-    title: "Đầu tư",
-    url: "/investments",
-    icon: TrendingUp,
-  },
-  {
-    title: "Cài đặt",
-    url: "/settings",
-    icon: Settings,
+    title: "Quét hóa đơn",
+    url: "/receipt-scanner",
+    icon: ScanLine,
   },
   {
     title: "Cố vấn AI",
     url: "/advisor",
     icon: BrainCircuit,
+  },
+  {
+    title: "Cài đặt",
+    url: "/settings",
+    icon: Settings,
   },
 ]
 
@@ -152,12 +152,12 @@ export function AppSidebar() {
             <SidebarMenuSub className="ml-6 mt-1 border-l border-slate-200 pl-0">
               {item.subItems.map((sub) => (
                 <SidebarMenuSubItem key={sub.title}>
-                    <SidebarMenuSubButton
-                      render={<Link to={sub.url} />}
-                      isActive={isActive(sub.url)}
-                    >
-                        {sub.title}
-                    </SidebarMenuSubButton>
+                  <SidebarMenuSubButton
+                    render={<Link to={sub.url} />}
+                    isActive={isActive(sub.url)}
+                  >
+                    {sub.title}
+                  </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
               ))}
             </SidebarMenuSub>
@@ -170,21 +170,21 @@ export function AppSidebar() {
 
     return (
       <SidebarMenuItem key={item.title}>
-          <SidebarMenuButton
-            render={<Link to={item.url} />}
-            tooltip={item.title}
-            isActive={active}
-            className={`
+        <SidebarMenuButton
+          render={<Link to={item.url} />}
+          tooltip={item.title}
+          isActive={active}
+          className={`
               flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors
               ${active
-                ? "text-violet-600 bg-violet-50"
-                : "text-slate-600 hover:text-violet-600 hover:bg-slate-50"
-              }
+              ? "text-violet-600 bg-violet-50"
+              : "text-slate-600 hover:text-violet-600 hover:bg-slate-50"
+            }
             `}
-          >
-              <item.icon className={`w-4 h-4 ${active ? "text-violet-500" : "text-slate-400"}`} />
-              <span>{item.title}</span>
-          </SidebarMenuButton>
+        >
+          <item.icon className={`w-4 h-4 ${active ? "text-violet-500" : "text-slate-400"}`} />
+          <span>{item.title}</span>
+        </SidebarMenuButton>
       </SidebarMenuItem>
     )
   }
@@ -210,10 +210,10 @@ export function AppSidebar() {
               {mainMenuItems.map((item) => renderMenuItem(item))}
               {user?.vaiTro?.toLowerCase() === 'admin' && (
                 <SidebarMenuItem>
-                    <SidebarMenuButton render={<Link to="/admin" />} className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors text-amber-600 bg-amber-50 hover:bg-amber-100 hover:text-amber-700 mt-4">
-                        <ShieldCheck className="w-4 h-4 text-amber-500" />
-                        <span>Admin Portal</span>
-                    </SidebarMenuButton>
+                  <SidebarMenuButton render={<Link to="/admin" />} className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors text-amber-600 bg-amber-50 hover:bg-amber-100 hover:text-amber-700 mt-4">
+                    <ShieldCheck className="w-4 h-4 text-amber-500" />
+                    <span>Admin Portal</span>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
             </SidebarMenu>

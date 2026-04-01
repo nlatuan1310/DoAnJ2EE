@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { UploadCloud, CheckCircle2, AlertCircle, ScanLine, Save, FileText, Camera, Wallet, X, Sparkles, Bot, Loader2 } from "lucide-react";
-import api, { getCurrentUserId, autoCategorizeApi, danhMucApi } from "../services/api";
+import api, { getCurrentUserId, autoCategorizeApi, danhMucApi } from "../../services/api";
 
 interface DanhMuc {
   id: number;
