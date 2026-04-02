@@ -14,6 +14,8 @@ import {
   docTatCa,
   ThongBao,
 } from "@/services/notificationService"
+import { nganSachApi } from "@/services/api"
+import ThongBaoVuotNganSach from "@/components/ThongBaoVuotNganSach"
 
 export default function MainLayout() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -28,18 +30,31 @@ export default function MainLayout() {
   const [showNotif, setShowNotif] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
+  /* ── Over-Budget Alert State ── */
+  const [overBudgets, setOverBudgets] = useState<any[]>([]);
+
   const fetchNotifications = useCallback(async () => {
     try {
-      const [list, count] = await Promise.all([layThongBao(), demChuaDoc()]);
+      const [list, count, budgetRes] = await Promise.all([
+        layThongBao(), 
+        demChuaDoc(),
+        nganSachApi.getAll()
+      ]);
       setNotifications(list);
       setUnreadCount(count);
+
+      // Theo dõi vượt ngân sách
+      if (budgetRes?.data) {
+        const exceeded = budgetRes.data.filter((b: any) => (b.spent || 0) > b.gioiHanTien);
+        setOverBudgets(exceeded);
+      }
     } catch { /* silent */ }
   }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchNotifications();
-      const interval = setInterval(fetchNotifications, 30000); // Poll every 30s
+      const interval = setInterval(fetchNotifications, 5000); // Rút ngắn xuống 5s để cập nhật ngân sách/thông báo nhanh hơn
       return () => clearInterval(interval);
     }
   }, [isAuthenticated, fetchNotifications]);
@@ -245,8 +260,11 @@ export default function MainLayout() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-50">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-50 relative">
           <Outlet />
+          
+          {/* Over-Budget Alert Floating Component */}
+          {isAuthenticated && <ThongBaoVuotNganSach overBudgets={overBudgets} />}
         </div>
       </SidebarInset>
     </SidebarProvider>
