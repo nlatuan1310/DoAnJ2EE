@@ -16,6 +16,8 @@ import java.util.UUID;
 public interface GiaoDichRepository extends JpaRepository<GiaoDich, UUID>, JpaSpecificationExecutor<GiaoDich> {
 
     List<GiaoDich> findByNguoiDungId(UUID nguoiDungId);
+    
+    org.springframework.data.domain.Page<GiaoDich> findByNguoiDungIdAndHinhAnhUrlIsNotNull(UUID nguoiDungId, org.springframework.data.domain.Pageable pageable);
 
     List<GiaoDich> findByViTienId(UUID viId);
 

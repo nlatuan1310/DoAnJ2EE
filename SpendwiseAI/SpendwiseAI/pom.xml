@@ -159,6 +159,13 @@
 			<version>1.5.5</version>
 		</dependency>
 
+		<!-- Cloudinary cho lưu trữ hình ảnh -->
+		<dependency>
+			<groupId>com.cloudinary</groupId>
+			<artifactId>cloudinary-http44</artifactId>
+			<version>1.38.0</version>
+		</dependency>
+
 		<!-- DevTools -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

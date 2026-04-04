@@ -43,6 +43,12 @@ public class GiaoDich {
     @Column(name = "ai_categorized")
     private Boolean aiCategorized = false;
 
+    @Column(name = "hinh_anh_url", length = 500)
+    private String hinhAnhUrl;
+
+    @Column(name = "hinh_anh_id")
+    private String hinhAnhId;
+
     @Column(name = "ngay_giao_dich")
     private LocalDateTime ngayGiaoDich;
 

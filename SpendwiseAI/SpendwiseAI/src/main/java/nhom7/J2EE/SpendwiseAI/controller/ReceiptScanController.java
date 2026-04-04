@@ -3,14 +3,17 @@ package nhom7.J2EE.SpendwiseAI.controller;
 import nhom7.J2EE.SpendwiseAI.dto.ai.QuetHoaDonResponse;
 import nhom7.J2EE.SpendwiseAI.entity.NguoiDung;
 import nhom7.J2EE.SpendwiseAI.entity.QuetHoaDon;
+import nhom7.J2EE.SpendwiseAI.entity.GiaoDich;
 import nhom7.J2EE.SpendwiseAI.repository.NguoiDungRepository;
 import nhom7.J2EE.SpendwiseAI.service.ReceiptScanService;
+import nhom7.J2EE.SpendwiseAI.service.AutoReceiptService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,11 +26,14 @@ import java.util.UUID;
 public class ReceiptScanController {
 
     private final ReceiptScanService receiptScanService;
+    private final AutoReceiptService autoReceiptService;
     private final NguoiDungRepository nguoiDungRepository;
 
     public ReceiptScanController(ReceiptScanService receiptScanService,
+                                 AutoReceiptService autoReceiptService,
                                  NguoiDungRepository nguoiDungRepository) {
         this.receiptScanService = receiptScanService;
+        this.autoReceiptService = autoReceiptService;
         this.nguoiDungRepository = nguoiDungRepository;
     }
 
@@ -56,6 +62,28 @@ public class ReceiptScanController {
 
         NguoiDung user = getCurrentUser();
         QuetHoaDonResponse response = receiptScanService.scanReceipt(file, user.getId());
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * Tự động quét và lưu giao dịch (Snap & Save / Locket Style)
+     * POST /api/ai/receipt/auto-snap
+     * Content-Type: multipart/form-data
+     * Fields: file, note (optional), amount (optional - ưu tiên hơn AI), viId
+     */
+    @PostMapping(value = "/auto-snap", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<GiaoDich> autoSnapAndSave(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "note", required = false) String note,
+            @RequestParam(value = "amount", required = false) BigDecimal amount,
+            @RequestParam("viId") UUID viId) {
+            
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        NguoiDung user = getCurrentUser();
+        GiaoDich response = autoReceiptService.autoSnapAndSave(file, note, amount, viId, user.getId());
         return ResponseEntity.ok(response);
     }
 

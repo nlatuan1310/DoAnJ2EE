@@ -2,6 +2,8 @@ package nhom7.J2EE.SpendwiseAI.controller;
 
 import nhom7.J2EE.SpendwiseAI.dto.ai.AutoCategorizeDTO;
 import nhom7.J2EE.SpendwiseAI.entity.GiaoDich;
+import nhom7.J2EE.SpendwiseAI.entity.NguoiDung;
+import nhom7.J2EE.SpendwiseAI.repository.NguoiDungRepository;
 import nhom7.J2EE.SpendwiseAI.service.AutoCategorizationService;
 import nhom7.J2EE.SpendwiseAI.service.GiaoDichService;
 import nhom7.J2EE.SpendwiseAI.service.LichSuTimKiemService;
@@ -11,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -25,13 +28,25 @@ public class GiaoDichController {
     private final GiaoDichService giaoDichService;
     private final AutoCategorizationService autoCategorizationService;
     private final LichSuTimKiemService lichSuTimKiemService;
+    private final NguoiDungRepository nguoiDungRepository;
 
     public GiaoDichController(GiaoDichService giaoDichService,
                               AutoCategorizationService autoCategorizationService,
-                              LichSuTimKiemService lichSuTimKiemService) {
+                              LichSuTimKiemService lichSuTimKiemService,
+                              NguoiDungRepository nguoiDungRepository) {
         this.giaoDichService = giaoDichService;
         this.autoCategorizationService = autoCategorizationService;
         this.lichSuTimKiemService = lichSuTimKiemService;
+        this.nguoiDungRepository = nguoiDungRepository;
+    }
+
+    /**
+     * Lấy user hiện tại từ JWT token.
+     */
+    private NguoiDung getCurrentUser() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return nguoiDungRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng hiện tại"));
     }
 
     /**
@@ -107,8 +122,22 @@ public class GiaoDichController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> xoa(@PathVariable UUID id) {
-        giaoDichService.xoa(id);
+        NguoiDung user = getCurrentUser();
+        giaoDichService.xoa(id, user.getId());
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * API chuyên dụng lấy danh sách các Giao dịch dạng Snap (Locket Feed)
+     * Chỉ trả về các giao dịch có chứa hình ảnh.
+     */
+    @GetMapping("/snap-feed")
+    public ResponseEntity<Page<GiaoDich>> laySnapFeed(
+            @RequestParam UUID nguoiDungId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("ngayGiaoDich").descending());
+        return ResponseEntity.ok(giaoDichService.laySnapFeed(nguoiDungId, pageable));
     }
 
     // =============================================
