@@ -12,6 +12,7 @@ import ReceiptScanner from "./pages/ai/ReceiptScanner";
 import Reports from "./pages/finance/Reports";
 import Categories from "./pages/finance/Categories";
 import FinancialAdvisor from "./pages/ai/FinancialAdvisor";
+import SnapFeed from "./pages/ai/SnapFeed";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
@@ -48,6 +49,7 @@ function App() {
               <Route path="/goals/:id" element={<GoalDetail />} />
               <Route path="/investments" element={<Investments />} />
               <Route path="/receipt-scanner" element={<ReceiptScanner />} />
+              <Route path="/snap" element={<SnapFeed />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/categories" element={<Categories />} />
               <Route path="/wallets/personal" element={<PersonalWallets />} />

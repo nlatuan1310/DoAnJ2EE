@@ -25,6 +25,7 @@ import {
   BrainCircuit,
   CreditCard,
   ShieldCheck,
+  Camera,
 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { useState } from "react"
@@ -93,6 +94,11 @@ const mainMenuItems: MenuItem[] = [
     title: "Cố vấn AI",
     url: "/advisor",
     icon: BrainCircuit,
+  },
+  {
+    title: "Snap & Save",
+    url: "/snap",
+    icon: Camera,
   },
   {
     title: "Cài đặt",

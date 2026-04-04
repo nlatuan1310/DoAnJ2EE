@@ -27,6 +27,7 @@ public class GiaoDichService {
     private final NganSachRepository nganSachRepository;
     private final ThongBaoService thongBaoService;
     private final ViTienService viTienService;
+    private final CloudStorageService cloudStorageService;
 
     public GiaoDichService(GiaoDichRepository giaoDichRepository,
             ViTienRepository viTienRepository,
@@ -36,7 +37,8 @@ public class GiaoDichService {
             HoaDonGiaoDichRepository hoaDonGiaoDichRepository,
             NganSachRepository nganSachRepository,
             ThongBaoService thongBaoService,
-            ViTienService viTienService) {
+            ViTienService viTienService,
+            CloudStorageService cloudStorageService) {
         this.giaoDichRepository = giaoDichRepository;
         this.viTienRepository = viTienRepository;
         this.nguoiDungRepository = nguoiDungRepository;
@@ -46,6 +48,7 @@ public class GiaoDichService {
         this.nganSachRepository = nganSachRepository;
         this.thongBaoService = thongBaoService;
         this.viTienService = viTienService;
+        this.cloudStorageService = cloudStorageService;
     }
 
     public List<GiaoDich> layTheoNguoiDung(UUID nguoiDungId) {
@@ -54,6 +57,10 @@ public class GiaoDichService {
         if (viIds.isEmpty())
             return java.util.Collections.emptyList();
         return giaoDichRepository.findByViTienIdIn(viIds);
+    }
+    
+    public Page<GiaoDich> laySnapFeed(UUID nguoiDungId, Pageable pageable) {
+        return giaoDichRepository.findByNguoiDungIdAndHinhAnhUrlIsNotNull(nguoiDungId, pageable);
     }
 
     public List<GiaoDich> layTheoVi(UUID viId) {
@@ -156,19 +163,18 @@ public class GiaoDichService {
     }
 
     @Transactional
-    public void xoa(UUID id) {
+    public void xoa(UUID id, UUID nguoiDungId) {
         GiaoDich gd = layTheoId(id);
 
-        // Kiểm tra quyền (người xoá phải có quyền EDITOR trên ví của giao dịch đó)
+        // Kiểm tra quyền sở hữu: chỉ chủ giao dịch hoặc người có quyền EDITOR trên ví mới được xoá
+        if (gd.getNguoiDung() == null || !gd.getNguoiDung().getId().equals(nguoiDungId)) {
+            // Fallback: kiểm tra quyền EDITOR trên ví
+            if (!viTienService.coQuyen(gd.getViTien().getId(), nguoiDungId, "EDITOR")) {
+                throw new RuntimeException("Bạn không có quyền xoá giao dịch này.");
+            }
+        }
+
         ViTien vi = gd.getViTien();
-        // Giả sử ta muốn biết AI ĐÃ thực hiện hành động xoá, ta cần user ID.
-        // Nhưng phương thức xoa(UUID id) hiện tại không nhận nguoiDungId.
-        // Để đơn giản, ta tạm thời bỏ qua kiểm tra quyền ở đây hoặc thêm tham số.
-        // Tuy nhiên, theo yêu cầu "đừng lộ key", tôi sẽ sửa signature nếu cần.
-        // Nhưng tốt nhất là giữ signature và để Controller truyền ID vào.
-        // Cho mục đích bài thi này, tôi giả định logic này được gọi từ context an toàn.
-        // Tuy nhiên nếu muốn CHẶT CHẼ, ta nên đổi nó thành xoa(UUID id, UUID
-        // userRequestingId)
 
         // Hoàn lại số dư ví
         if ("income".equalsIgnoreCase(gd.getLoai())) {
@@ -177,6 +183,12 @@ public class GiaoDichService {
             vi.setSoDu(vi.getSoDu().add(gd.getSoTien()));
         }
         viTienRepository.save(vi);
+        
+        // Xóa ảnh trên cloud nếu có
+        if (gd.getHinhAnhId() != null && !gd.getHinhAnhId().isBlank()) {
+            cloudStorageService.deleteImage(gd.getHinhAnhId());
+        }
+        
         giaoDichRepository.deleteById(id);
     }
 

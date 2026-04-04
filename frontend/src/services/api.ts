@@ -285,6 +285,27 @@ export const giaoDichApi = {
     const uid = nguoiDungId || getCurrentUserId();
     return api.get(`/giao-dich/nguoi-dung/${uid}`);
   },
+  /** Xóa giao dịch */
+  delete: (id: string) => {
+    return api.delete(`/giao-dich/${id}`);
+  },
+};
+
+// ===== Snap Feed Locket API =====
+
+export const snapApi = {
+  /** Gửi Auto Snap & Save (Tải ảnh lên và nhờ AI ghi nhận) */
+  autoSnapAndSave: (formData: FormData) => {
+    return api.post('/ai/receipt/auto-snap', formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+
+  /** Lấy danh sách giao dịch Snap Locket */
+  getSnapFeed: (page: number = 0, size: number = 20, nguoiDungId?: string) => {
+    const uid = nguoiDungId || getCurrentUserId();
+    return api.get(`/giao-dich/snap-feed?nguoiDungId=${uid}&page=${page}&size=${size}`);
+  },
 };
 
 export default api;
